@@ -237,12 +237,6 @@ void ClusterDuck::setupInternet(String SSID, String PASSWORD)
   Serial.print("Connecting to ");
   Serial.print(SSID);
 
-  // const char * ssid = new char[SSID.length()-1];
-  // const char * pass = new char[PASSWORD.length()-1];
-
-  // SSID.toCharArray(ssid, SSID.length()-1);
-  // PASSWORD.toCharArray(pass, PASSWORD.length()-1);
-
   // Connect to Access Point
   WiFi.begin(SSID.c_str(), PASSWORD.c_str());
 
@@ -366,14 +360,6 @@ void ClusterDuck::runMamaDuck() {
           packetIndex = 0;
 
         }
-        //delete(msg);
-      //} else if(whoIsIt == ping_B) {
-      //   memset(transmission, 0x00, packetIndex);
-      //   packetIndex = 0;
-      //   couple(iamhere_B, "1");
-      //   int state = lora.transmit(transmission, packetIndex);
-      // }
-
     } else {
       // Serial.println("Byte code not recognized!");
       memset(transmission, 0x00, pSize); //Reset transmission
@@ -414,10 +400,6 @@ void ClusterDuck::sendPayloadStandard(String msg, String senderId, String messag
   if(total.length() + 4 > 250) {
     Serial.println("Warning: message is too large!"); //TODO: do something
   }
-
-  // if(packetIndex < 1) {
-  //   packetIndex = total.length();
-  // }
 
   couple(senderId_B, senderId);
   couple(messageId_B, messageId);
@@ -761,10 +743,10 @@ void ClusterDuck::setupLED() {
   ledcAttachPin(ledR, 1); // assign RGB led pins to channels
   ledcAttachPin(ledG, 2);
   ledcAttachPin(ledB, 3);
-//  
-//  // Initialize channels 
-//  // channels 0-15, resolution 1-16 bits, freq limits depend on resolution
-//  // ledcSetup(uint8_t channel, uint32_t freq, uint8_t resolution_bits);
+  
+// Initialize channels 
+// channels 0-15, resolution 1-16 bits, freq limits depend on resolution
+// ledcSetup(uint8_t channel, uint32_t freq, uint8_t resolution_bits);
   ledcSetup(1, 12000, 8); // 12 kHz PWM, 8-bit resolution
   ledcSetup(2, 12000, 8);
   ledcSetup(3, 12000, 8);
