@@ -8,16 +8,19 @@
 #define SSID        "NETGEAR55"
 #define PASSWORD    "fuzzycello602"
 
-#define ORG         "9c6nfo"
-#define DEVICE_ID   "TIMO_DUCK"
-#define DEVICE_TYPE "PAPA"
-#define TOKEN       "qQTQ5q(4qvAVSlxdHu"    
+#define ORG         ""
+#define DEVICE_ID   ""
+#define DEVICE_TYPE ""
+#define TOKEN       ""
 
 char server[]           = ORG ".messaging.internetofthings.ibmcloud.com";
 char topic[]            = "iot-2/evt/status/fmt/json";
 char authMethod[]       = "use-token-auth";
 char token[]            = TOKEN;
 char clientId[]         = "d:" ORG ":" DEVICE_TYPE ":" DEVICE_ID;
+
+String ssid = "";
+String password = "";
 
 ClusterDuck duck;
 
@@ -62,13 +65,16 @@ void setup() {
   duck.setDeviceId("Papa");
 
   duck.setupLoRa();
-  LoRa.receive();
   duck.setupDisplay("Papa");
   setupLED();
   setColor(255,10,000);
 
-  setupWiFi();
-  
+  duck.setupWifiAp();
+	duck.setupDns();
+
+	duck.setupInternet(ssid, password);
+  duck.setupWebServer();
+
   Serial.println("PAPA Online");
 }
 
@@ -77,46 +83,27 @@ void loop() {
   if(WiFi.status() != WL_CONNECTED)
   {
     Serial.print("WiFi disconnected, reconnecting to local network: ");
-    Serial.print(SSID);
-    setupWiFi();
-
+    Serial.print(ssid);
+    duck.setupInternet(ssid, password);
+		duck.setupDns();
   }
   setupMQTT();
 
-  int packetSize = LoRa.parsePacket();
-  if (packetSize != 0) {
-    byte whoIsIt = LoRa.peek();
-    if(whoIsIt != ping) {
-      Serial.println(packetSize);
-      String * val = duck.getPacketData(packetSize);
+  if(duck.getFlag()) {  //If LoRa packet received
+    duck.flipFlag();
+    duck.flipInterrupt();
+    int pSize = duck.handlePacket();
+    if(pSize > 3) {
+      String * msg = duck.getPacketData(pSize);
       quackJson();
+
     }
+    duck.flipInterrupt();
+    duck.startReceive();
   }
 
-  
+
   timer.tick();
-}
-
-void setupWiFi()
-{
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.print(SSID);
-
-  // Connect to Access Poink
-  WiFi.begin(SSID, PASSWORD);
-
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    timer.tick(); //Advance timer to reboot after awhile
-    //delay(500);
-    Serial.print(".");
-  }
-
-  // Connected to Access Point
-  Serial.println("");
-  Serial.println("WiFi connected - PAPA ONLINE");
-  setColor(0,255,0);
 }
 
 void setupMQTT()
@@ -149,11 +136,11 @@ void quackJson() {
   serializeJson(doc, jsonstat);
 
   if (client.publish(topic, jsonstat.c_str())) {
-    
+
     serializeJsonPretty(doc, Serial);
      Serial.println("");
     Serial.println("Publish ok");
-   
+
   }
   else {
     Serial.println("Publish failed");
