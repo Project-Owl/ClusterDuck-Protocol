@@ -12,6 +12,9 @@ auto tymer = timer_create_default();
 byte transmission[250];
 int packetIndex = 0;
 
+String ssid = "";
+String password = "";
+
 String ClusterDuck::_deviceId = "";
 
 ClusterDuck::ClusterDuck() {
@@ -145,8 +148,26 @@ void ClusterDuck::setupWebServer(bool createCaptivePortal) {
   });
 
   webServer.on("/mac", HTTP_GET, [&](AsyncWebServerRequest *request) {
-    String mac = duckMac(true);
-    request->send(200, "text/html", mac);
+    // String mac = duckMac(true);
+    AsyncResponseStream *response = request->beginResponseStream("text/html");
+        response->print("<!DOCTYPE html><html><head><title>Update Wifi Credentials</title></head><body>");
+    response->print("<p>Use this page to update your Wifi credentials</p>");
+
+
+		response->print("<form action='/changeSSID' method='post'>");
+
+		response->print("<label for='ssid'>SSID:</label><br>");
+		response->print("<input name='ssid' type='text' placeholder='SSID' /><br><br>");
+
+		response->print("<label for='pass'>Password:</label><br>");
+		response->print("<input name='pass' type='text' placeholder='Password' /><br><br>");
+
+    response->print("<input type='submit' value='Submit' />");
+
+		response->print("</form>");
+
+    response->print("</body></html>");
+    request->send(response);
   });
 
 	webServer.on("/wifi", HTTP_GET, [&](AsyncWebServerRequest *request) {
@@ -233,6 +254,8 @@ void ClusterDuck::setupDns() {
 
 void ClusterDuck::setupInternet(String SSID, String PASSWORD)
 {
+  ssid = SSID;
+  password = PASSWORD;
   Serial.println();
   Serial.print("Connecting to ");
   Serial.print(SSID);
@@ -243,8 +266,7 @@ void ClusterDuck::setupInternet(String SSID, String PASSWORD)
   while (WiFi.status() != WL_CONNECTED)
   {
     tymer.tick(); //Advance timer to reboot after awhile
-    //delay(500);
-    //Serial.print(".");
+    //TODO: Change this to make sure it is non-blocking for all other processes
   }
 
   // Connected to Access Point
@@ -349,17 +371,15 @@ void ClusterDuck::runMamaDuck() {
     int pSize = handlePacket();
     Serial.println(pSize);
     if(pSize > 0) {
-    //   byte whoIsIt = transmission[0];
-      //if(whoIsIt == senderId_B) {
-        String * msg = getPacketData(pSize);
+      String * msg = getPacketData(pSize);
+      packetIndex = 0;
+      if(msg[0] != "ping" && !idInPath(_lastPacket.path)) {
+        Serial.print("Send Packet");
+        sendPayloadStandard(_lastPacket.payload, _lastPacket.senderId, _lastPacket.messageId, _lastPacket.path);
+        memset(transmission, 0x00, pSize); //Reset transmission
         packetIndex = 0;
-        if(msg[0] != "ping" && !idInPath(_lastPacket.path)) {
-          Serial.print("Send Packet");
-          sendPayloadStandard(_lastPacket.payload, _lastPacket.senderId, _lastPacket.messageId, _lastPacket.path);
-          memset(transmission, 0x00, pSize); //Reset transmission
-          packetIndex = 0;
 
-        }
+      }
     } else {
       // Serial.println("Byte code not recognized!");
       memset(transmission, 0x00, pSize); //Reset transmission
@@ -659,7 +679,6 @@ String ClusterDuck::uuidCreator() {
 }
 
 //Getters
-
 String ClusterDuck::getDeviceId() {
   return _deviceId;
 }
@@ -680,6 +699,14 @@ volatile bool ClusterDuck::getInterrupt() {
 
 int ClusterDuck::getRSSI() {
   return lora.getRSSI();
+}
+
+String ClusterDuck::getSSID() {
+  return ssid;
+}
+
+String ClusterDuck::getPassword() {
+  return password;
 }
 
 //Setter

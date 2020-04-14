@@ -19,9 +19,6 @@ char authMethod[]       = "use-token-auth";
 char token[]            = TOKEN;
 char clientId[]         = "d:" ORG ":" DEVICE_TYPE ":" DEVICE_ID;
 
-String ssid = "";
-String password = "";
-
 ClusterDuck duck;
 
 auto timer = timer_create_default(); // create a timer with default settings
@@ -43,7 +40,7 @@ void setup() {
   duck.setupWifiAp();
 	duck.setupDns();
 
-	duck.setupInternet(ssid, password);
+	duck.setupInternet(SSID, PASSWORD);
   duck.setupWebServer();
 
   Serial.println("PAPA Online");
@@ -54,8 +51,8 @@ void loop() {
   if(WiFi.status() != WL_CONNECTED)
   {
     Serial.print("WiFi disconnected, reconnecting to local network: ");
-    Serial.print(ssid);
-    duck.setupInternet(ssid, password);
+    Serial.print(duck.getSSID());
+    duck.setupInternet(duck.getSSID(), duck.getPassword());
 		duck.setupDns();
   }
   setupMQTT();

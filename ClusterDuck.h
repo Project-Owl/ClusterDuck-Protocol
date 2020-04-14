@@ -88,6 +88,9 @@ class ClusterDuck {
     static void setColor(int ledR = 25,int ledG = 4,int ledB = 2);
     static void setupLED();
 
+    static String getSSID();
+    static String getPassword();
+
   protected:
     static Packet _lastPacket;
     static String _deviceId;
