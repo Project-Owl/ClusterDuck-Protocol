@@ -148,26 +148,8 @@ void ClusterDuck::setupWebServer(bool createCaptivePortal) {
   });
 
   webServer.on("/mac", HTTP_GET, [&](AsyncWebServerRequest *request) {
-    // String mac = duckMac(true);
-    AsyncResponseStream *response = request->beginResponseStream("text/html");
-        response->print("<!DOCTYPE html><html><head><title>Update Wifi Credentials</title></head><body>");
-    response->print("<p>Use this page to update your Wifi credentials</p>");
-
-
-		response->print("<form action='/changeSSID' method='post'>");
-
-		response->print("<label for='ssid'>SSID:</label><br>");
-		response->print("<input name='ssid' type='text' placeholder='SSID' /><br><br>");
-
-		response->print("<label for='pass'>Password:</label><br>");
-		response->print("<input name='pass' type='text' placeholder='Password' /><br><br>");
-
-    response->print("<input type='submit' value='Submit' />");
-
-		response->print("</form>");
-
-    response->print("</body></html>");
-    request->send(response);
+    String mac = duckMac(true);
+    request->send(200, "text/html", mac);
   });
 
 	webServer.on("/wifi", HTTP_GET, [&](AsyncWebServerRequest *request) {
@@ -260,9 +242,8 @@ void ClusterDuck::setupInternet(String SSID, String PASSWORD)
   Serial.print("Connecting to ");
   Serial.print(SSID);
 
+  if (SSID != "" && PASSWORD != "") {
   // Connect to Access Point
-  if (SSID != "" && PASSWORD != "")
-  {
     WiFi.begin(SSID.c_str(), PASSWORD.c_str());
 
     while (WiFi.status() != WL_CONNECTED)

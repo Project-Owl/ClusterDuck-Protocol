@@ -37,7 +37,8 @@ void setup() {
   duck.setupLoRa();
   duck.setupDisplay("Papa");
 
-  duck.setupWifiAp();
+  const * char ap = "PapaDuck Setup";
+  duck.setupWifiAp(ap);
 	duck.setupDns();
 
 	duck.setupInternet(SSID, PASSWORD);
