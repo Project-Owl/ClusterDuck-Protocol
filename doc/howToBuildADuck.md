@@ -142,7 +142,6 @@ You will need to clone the ClusterDuck Protocol onto your local machine and incl
 
 You should be able pull new commits directly to this folder in your Arduino library.
 
-
 #### Add required libraries
 
 The required libraries to work with the ClusterDuck protocol can be installed in multiple ways. There is a folder in the source code that is called “Libraries” and contains all the submoduls to work with the ClusterDuck Protocol. Or you can download all the libraries manual and import into Arduino by .zip. Some libraries are available in the Arduino Libraries manager. 
