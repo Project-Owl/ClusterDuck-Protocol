@@ -106,7 +106,8 @@ Download USB to UART Bridge VCP Driver from [here](https://www.silabs.com/produc
 #### Ubuntu Linux Platforms: 
 *  The driver is already installed on your machine due to latest kernels. you can check to see by running the following commands. 
 ```ls -al /lib/modules/"$(uname -r)"/kernel/drivers/usb/serial/usbserial.ko
-
+```
+```
 ls -al /lib/modules/"$(uname -r)"/kernel/drivers/usb/serial/cp210x.ko
 ```
 
