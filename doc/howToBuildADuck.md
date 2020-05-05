@@ -124,6 +124,7 @@ ls -al /lib/modules/"$(uname -r)"/kernel/drivers/usb/serial/cp210x.ko
     ![Add additional boards to Arduino](./assets/images/arduino_boards.png "Arduino Boards")
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Install Clusterduck Protocol
 =======
 ### Install ClusterDuck Protocol
@@ -134,6 +135,9 @@ ls -al /lib/modules/"$(uname -r)"/kernel/drivers/usb/serial/cp210x.ko
 >>>>>>> 28d206c7eac3564e9675b2a68d28eac438801971
 
 The required libraries to work with the ClusterDuck protocol can be installed in multiple ways. There is a folder in the source code that is called “Libraries” and contains all the submoduls to work with the ClusterDuck Protocol. Or you can download all the libraries manual and import into Arduino by .zip. Some libraries are available in the Arduino Libraries manager. 
+=======
+### Install ClusterDuck Protocol
+>>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
 
 ###### Using the Library Manager “COMING SOON”
 
@@ -154,10 +158,13 @@ Return to the _Sketch > Include Library menu._ menu. You should now see the libr
 #### Manual Install
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> some trivial format and spelling changes
 =======
 >>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
 >>>>>>> 28d206c7eac3564e9675b2a68d28eac438801971
+=======
+>>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
 You will need to clone the ClusterDuck Protocol onto your local machine and include the libraries folder into your local arduino libraries folder.
 
 1. Clone the ClusterDuck Protocol onto your local machine `git clone https://github.com/Code-and-Response/ClusterDuck-Protocol.git`
@@ -179,10 +186,13 @@ You should be able pull new commits directly to this folder in your Arduino libr
 
 The required libraries to work with the ClusterDuck protocol can be installed in multiple ways. There is a folder in the source code that is called “Libraries” and contains all the submodules to work with the ClusterDuck Protocol. Or you can download all the libraries manual and import into Arduino by .zip. Some libraries are available in the Arduino Libraries manager. 
 <<<<<<< HEAD
+<<<<<<< HEAD
 >>>>>>> some trivial format and spelling changes
 =======
 >>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
 >>>>>>> 28d206c7eac3564e9675b2a68d28eac438801971
+=======
+>>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
 
 You should be able pull new commits directly to this folder in your Arduino library.
 
@@ -296,8 +306,11 @@ DuckLink Hardware and Firmware Assembly
 
     ![Running duck example](./assets/images/setup.png "Running duck example")
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Setting up the IBM Watson IoT Platform
 =======
+=======
+>>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
 
 ## Setting up the IBM Watson IoT Platform
 <<<<<<< HEAD
