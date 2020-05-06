@@ -125,6 +125,7 @@ ls -al /lib/modules/"$(uname -r)"/kernel/drivers/usb/serial/cp210x.ko
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
 <<<<<<< HEAD
@@ -144,6 +145,9 @@ The required libraries to work with the ClusterDuck protocol can be installed in
 >>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
 =======
 >>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
+=======
+### Install ClusterDuck Protocol
+>>>>>>> f5ecfa4f0547603cdf0d4a4914a4155a79ddd4eb
 
 ###### Using the Library Manager “COMING SOON”
 
@@ -166,6 +170,7 @@ Return to the _Sketch > Include Library menu._ menu. You should now see the libr
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
 >>>>>>> some trivial format and spelling changes
@@ -177,6 +182,8 @@ Return to the _Sketch > Include Library menu._ menu. You should now see the libr
 >>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
 =======
 >>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
+=======
+>>>>>>> f5ecfa4f0547603cdf0d4a4914a4155a79ddd4eb
 You will need to clone the ClusterDuck Protocol onto your local machine and include the libraries folder into your local arduino libraries folder.
 
 1. Clone the ClusterDuck Protocol onto your local machine `git clone https://github.com/Code-and-Response/ClusterDuck-Protocol.git`
@@ -200,6 +207,7 @@ The required libraries to work with the ClusterDuck protocol can be installed in
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
 >>>>>>> some trivial format and spelling changes
@@ -211,6 +219,8 @@ The required libraries to work with the ClusterDuck protocol can be installed in
 >>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
 =======
 >>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
+=======
+>>>>>>> f5ecfa4f0547603cdf0d4a4914a4155a79ddd4eb
 
 You should be able pull new commits directly to this folder in your Arduino library.
 
@@ -326,6 +336,7 @@ DuckLink Hardware and Firmware Assembly
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Setting up the IBM Watson IoT Platform
 =======
 =======
@@ -335,6 +346,8 @@ DuckLink Hardware and Firmware Assembly
 # Setting up the IBM Watson IoT Platform
 =======
 >>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
+=======
+>>>>>>> f5ecfa4f0547603cdf0d4a4914a4155a79ddd4eb
 
 ## Setting up the IBM Watson IoT Platform
 <<<<<<< HEAD
