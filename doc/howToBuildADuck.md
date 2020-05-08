@@ -123,31 +123,7 @@ ls -al /lib/modules/"$(uname -r)"/kernel/drivers/usb/serial/cp210x.ko
 
     ![Add additional boards to Arduino](./assets/images/arduino_boards.png "Arduino Boards")
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
-<<<<<<< HEAD
-# Install Clusterduck Protocol
-=======
 ### Install ClusterDuck Protocol
-<<<<<<< HEAD
->>>>>>> some trivial format and spelling changes
-=======
->>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
->>>>>>> 28d206c7eac3564e9675b2a68d28eac438801971
-
-The required libraries to work with the ClusterDuck protocol can be installed in multiple ways. There is a folder in the source code that is called “Libraries” and contains all the submoduls to work with the ClusterDuck Protocol. Or you can download all the libraries manual and import into Arduino by .zip. Some libraries are available in the Arduino Libraries manager. 
-<<<<<<< HEAD
-=======
-### Install ClusterDuck Protocol
->>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
-=======
->>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
-=======
-### Install ClusterDuck Protocol
->>>>>>> f5ecfa4f0547603cdf0d4a4914a4155a79ddd4eb
 
 ###### Using the Library Manager “COMING SOON”
 
@@ -162,28 +138,8 @@ Navigate to the downloaded ClusterDuck Protocol Folder and select.
 
 Return to the _Sketch > Include Library menu._ menu. You should now see the library at the bottom of the drop-down menu. It is ready to be used in your sketch. The zip file will have been expanded in the _libraries_ folder in your Arduino sketches directory.
 
-<<<<<<< HEAD
-## Manual Install
-=======
 #### Manual Install
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
->>>>>>> some trivial format and spelling changes
-=======
->>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
->>>>>>> 28d206c7eac3564e9675b2a68d28eac438801971
-<<<<<<< HEAD
-=======
->>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
-=======
->>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
-=======
->>>>>>> f5ecfa4f0547603cdf0d4a4914a4155a79ddd4eb
 You will need to clone the ClusterDuck Protocol onto your local machine and include the libraries folder into your local arduino libraries folder.
 
 1. Clone the ClusterDuck Protocol onto your local machine `git clone https://github.com/Code-and-Response/ClusterDuck-Protocol.git`
@@ -195,32 +151,12 @@ You will need to clone the ClusterDuck Protocol onto your local machine and incl
 1. Open Arduino IDE
 1. You should now be able to see the examples by going to File -> Examples -> ClusterDuck
 
-<<<<<<< HEAD
-**Linux Note**: Easiest way I found it was to go to each libraries github repo and clone it directly into your Arduino > libraries folder. 
-=======
 You should be able pull new commits directly to this folder in your Arduino library.
 
 
 #### Add required libraries
 
 The required libraries to work with the ClusterDuck protocol can be installed in multiple ways. There is a folder in the source code that is called “Libraries” and contains all the submodules to work with the ClusterDuck Protocol. Or you can download all the libraries manual and import into Arduino by .zip. Some libraries are available in the Arduino Libraries manager. 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
->>>>>>> some trivial format and spelling changes
-=======
->>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
->>>>>>> 28d206c7eac3564e9675b2a68d28eac438801971
-<<<<<<< HEAD
-=======
->>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
-=======
->>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
-=======
->>>>>>> f5ecfa4f0547603cdf0d4a4914a4155a79ddd4eb
 
 You should be able pull new commits directly to this folder in your Arduino library.
 
@@ -333,28 +269,8 @@ DuckLink Hardware and Firmware Assembly
     Finished Duck:
 
     ![Running duck example](./assets/images/setup.png "Running duck example")
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-# Setting up the IBM Watson IoT Platform
-=======
-=======
->>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
-=======
-<<<<<<< HEAD
-# Setting up the IBM Watson IoT Platform
-=======
->>>>>>> e74df2b97c8c76c1891ad75dd653be1cb2a620d0
-=======
->>>>>>> f5ecfa4f0547603cdf0d4a4914a4155a79ddd4eb
 
 ## Setting up the IBM Watson IoT Platform
-<<<<<<< HEAD
->>>>>>> some trivial format and spelling changes
-=======
->>>>>>> b4b6c2b82f06a1dfb8dfcbcdedce98e0fdbb043e
->>>>>>> 28d206c7eac3564e9675b2a68d28eac438801971
 
 1. Create an IBM Cloud account through [this link](https://ibm.biz/BdqiVW). Fill out all the required information and confirm your email address.
 1. Follow this link to provision an instance of the [IBM Watson IoT Platform](https://cloud.ibm.com/catalog/services/internet-of-things-platform). Note: you can also find this by [browsing through the catalog](https://cloud.ibm.com/catalog).
