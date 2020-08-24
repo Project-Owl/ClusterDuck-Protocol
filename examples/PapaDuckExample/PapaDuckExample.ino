@@ -5,13 +5,13 @@
 #include <WiFiClientSecure.h>
 #include "timer.h"
 
-#define SSID        ""
-#define PASSWORD    ""
+#define SSID        "Brave24"
+#define PASSWORD    "tcrack003"
 
-#define ORG         ""
-#define DEVICE_ID   ""
-#define DEVICE_TYPE ""
-#define TOKEN       ""
+#define ORG         "9c6nfo"
+#define DEVICE_ID   "tCrackhouse"
+#define DEVICE_TYPE "PAPA"
+#define TOKEN       "FcKVN2D+GH0SnYGynR"
 
 char server[]           = ORG ".messaging.internetofthings.ibmcloud.com";
 char topic[]            = "iot-2/evt/status/fmt/json";
@@ -37,7 +37,7 @@ void setup() {
   duck.setupLoRa();
   duck.setupDisplay("Papa");
 
-  const * char ap = "PapaDuck Setup";
+  const char * ap = "PapaDuck Setup";
   duck.setupWifiAp(ap);
 	duck.setupDns();
 
