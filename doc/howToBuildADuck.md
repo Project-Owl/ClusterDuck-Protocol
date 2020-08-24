@@ -1,3 +1,4 @@
+
 # How to build a duck
 
 <!-- MarkdownTOC levels="2,3" autolink="true" -->
@@ -15,7 +16,7 @@
 - [Arduino IDE](#arduino-ide)
     - [Install VCP Driver](#install-vcp-driver)
     - [Install the necessary libraries that work with ClusterDuck Protocol:](#install-the-necessary-libraries-that-work-with-clusterduck-protocol)
-    - [Install Clusterduck Protocol](#install-clusterduck-protocol)
+    - [Install ClusterDuck Protocol](#install-clusterduck-protocol)
     - [Load the Heltec ESP32 Board to your Arduino IDE:](#load-the-heltec-esp32-board-to-your-arduino-ide)
 - [Install The firmware](#install-the-firmware)
 - [Setting up the IBM Watson IoT Platform](#setting-up-the-ibm-watson-iot-platform)
@@ -24,7 +25,7 @@
     - [Errors when compiling](#errors-when-compiling)
     - [Setup Issues](#setup-issues)
     - [Cloud Errors](#cloud-errors)
-- [API Reference And Quickstart CLusterDuck Protocol](#api-reference-and-quickstart-clusterduck-protocol)
+- [API Reference And Quickstart ClusterDuck Protocol](#api-reference-and-quickstart-clusterduck-protocol)
     - [Quick Start](#quick-start)
     - [API](#api)
 
@@ -43,11 +44,11 @@ These are the basic nodes of the mesh network. The DuckLinks create a WiFi netwo
 
 ### MamaDucks
 
-MamaDucks act as central hubs to DuckLink groups.  The MamaDuck is able to receive data over LoRa from the DuckLinks and transmit this data further into the network.  This transmission can occur through other MamaDucks on the way towards the PapaDuck (once again using LoRa). The MamaDuck has most of the same properties as a Ducklink, though small changes in the device firmware help to optimize the architecture of the network.
+MamaDucks act as central hubs to DuckLink groups.  The MamaDuck is able to receive data over LoRa from the DuckLinks and transmit this data further into the network.  This transmission can occur through other MamaDucks on the way towards the PapaDuck (once again using LoRa). The MamaDuck has most of the same properties as a DuckLink, though small changes in the device firmware help to optimize the architecture of the network.
 
 ### PapaDuck
 
-PapaDuck is the final Duck in the ClusterDuck and transmits network data to the internet.  When communicating with other Ducks the PapaDuck similarly uses LoRa. The data that the PapaDuck receives gets pushed to the OWL Data Management System (DMS), the cloud platform, through the Internet. It acts like a gateway that collects data from MamaDucks and then upload it to OWL.
+PapaDuck is the final Duck in the ClusterDuck and transmits network data to the internet.  When communicating with other Ducks the PapaDuck similarly uses LoRa. The data that the PapaDuck receives gets pushed to the OWL Data Management System (DMS), the cloud platform, through the Internet. It acts like a gateway that collects data from MamaDucks and then upload it to the DMS.
                         
 ## Raw Materials
 
@@ -55,9 +56,9 @@ PapaDuck is the final Duck in the ClusterDuck and transmits network data to the 
 
 You will need the [Arduino IDE](https://www.arduino.cc/en/main/software) to install the firmware on your Arduino devices.
 
-Or you can use your favorite Code editor with the [platformIO](https://platformio.org/) plugin.
+Or you can use your favorite Code editor with the [PlatformIO](https://platformio.org/) plugin.
 
-The Ducklinks use our [ClusterDuck](https://github.com/Code-and-Response/ClusterDuck-Protocol) Protocol. Project OWL’s open source Duck firmware.
+The DuckLinks use our [ClusterDuck](https://github.com/Code-and-Response/ClusterDuck-Protocol) Protocol. Project OWL’s open source Duck firmware.
 
 Depending on your computer setup, you may also need [USB to UART drivers](https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers).   If you have any problems, please reach out on the [Project OWL Github](https://github.com/Project-Owl) or in the [Project OWL slack.](https://www.project-owl.com/slack)
 
@@ -75,7 +76,8 @@ There are many combinations of electronics, batteries, and enclosures that can b
 
 
 ##  PlatformIO
-[PlatformIO](https://platformio.org/) is a ecosystem for embedded development. Grab your favorite IDE from [here](https://platformio.org/install/integration) and make sure to install the platformIO IDE extension. If you are not sure which IDE to use, use [VSCode](https://docs.platformio.org/en/latest/integration/ide/vscode.html#installation).
+
+[PlatformIO](https://platformio.org/) is a ecosystem for embedded development. Grab your favorite IDE from [here](https://platformio.org/install/integration) and make sure to install the PlatformIO IDE extension. If you are not sure which IDE to use, use [VSCode](https://docs.platformio.org/en/latest/integration/ide/vscode.html#installation).
 
 ### Installing ClusterDuck-Protocol global
 
@@ -97,8 +99,18 @@ Download USB to UART Bridge VCP Driver from [here](https://www.silabs.com/produc
 ### Install VCP Driver
 
 #### MacOS:
+
 * Make sure you click on the folder that says Legacy MacVCP Driver and then click on ‘Silicon Labs VCP Driver.pkg’
 * Once it is finished installing, go to Mac System Preferences -> Security and Privacy -> General. Make sure Silicon Labs is allowed.
+
+#### Ubuntu Linux Platforms: 
+*  The driver is already installed on your machine due to latest kernels. you can check to see by running the following commands. 
+```
+ls -al /lib/modules/"$(uname -r)"/kernel/drivers/usb/serial/usbserial.ko
+```
+```
+ls -al /lib/modules/"$(uname -r)"/kernel/drivers/usb/serial/cp210x.ko
+```
 
 ### Install the necessary libraries that work with ClusterDuck Protocol: 
 
@@ -112,11 +124,11 @@ Download USB to UART Bridge VCP Driver from [here](https://www.silabs.com/produc
 
     ![Add additional boards to Arduino](./assets/images/arduino_boards.png "Arduino Boards")
 
-### Install Clusterduck Protocol
+### Install ClusterDuck Protocol
 
-#### Using the Library Manager “COMING SOON”
+###### Using the Library Manager “COMING SOON”
 
-#### Importing as a .zip Library
+## Importing as a .zip Library
 
 In the Arduino IDE, navigate to _Sketch > Include Library > Add .ZIP Library_. At the top of the drop down list, select the option to "Add .ZIP Library".
 
@@ -128,12 +140,14 @@ Navigate to the downloaded ClusterDuck Protocol Folder and select.
 Return to the _Sketch > Include Library menu._ menu. You should now see the library at the bottom of the drop-down menu. It is ready to be used in your sketch. The zip file will have been expanded in the _libraries_ folder in your Arduino sketches directory.
 
 #### Manual Install
+
 You will need to clone the ClusterDuck Protocol onto your local machine and include the libraries folder into your local arduino libraries folder.
+
 1. Clone the ClusterDuck Protocol onto your local machine `git clone https://github.com/Code-and-Response/ClusterDuck-Protocol.git`
 1. Pull all the Library submodules needed for the Arduino IDE `git submodule update --init --recursive`
 1. Copy the `ClusterDuck-Protocol`folder into your local Arduino Libraries folder **MacOs** _/Users/USER/Documents/Arduino/_. **windows** _C:/Users/USER/Documents/Arduino._
 1. Navigate into the `ClusterDuck-Protocol` folder and open `Libraries` folder
-1. Copy all the libraris form the `Libraries` folder
+1. Copy all the libraries form the `Libraries` folder
 1. Paste into into your local Arduino Libraries folder **MacOs** _/Users/USER/Documents/Arduino/_.  **windows** _C:/Users/USER/Documents/Arduino._
 1. Open Arduino IDE
 1. You should now be able to see the examples by going to File -> Examples -> ClusterDuck
@@ -143,10 +157,11 @@ You should be able pull new commits directly to this folder in your Arduino libr
 
 #### Add required libraries
 
-The required libraries to work with the ClusterDuck protocol can be installed in multiple ways. There is a folder in the source code that is called “Libraries” and contains all the submoduls to work with the ClusterDuck Protocol. Or you can download all the libraries manual and import into Arduino by .zip. Some libraries are available in the Arduino Libraries manager. 
+The required libraries to work with the ClusterDuck protocol can be installed in multiple ways. There is a folder in the source code that is called “Libraries” and contains all the submodules to work with the ClusterDuck Protocol. Or you can download all the libraries manual and import into Arduino by .zip. Some libraries are available in the Arduino Libraries manager. 
 
+You should be able pull new commits directly to this folder in your Arduino library.
 
-##### Installing libraries through Library Manager
+## Installing libraries through Library Manager
 
 Some Libraries can be installed with the Arduino Library manager. 
 
@@ -157,7 +172,7 @@ Go to _Sketch > Include Library > Manage Libraries_:
 * Search for ArduinoJson and install _ArduinoJson by Benoit Blanchon_
 
 
-##### Installing libraries by adding .Zip files
+## Installing libraries by adding .Zip files
 
 To add Libraries by zip files. Go to _Sketch > include Library > add .zip Library…_
 
@@ -181,7 +196,7 @@ Go to the following websites and download the Libraries:
 * [espressif/arduino-esp32: Arduino core for the ESP32](https://github.com/espressif/arduino-esp32)
 
 
-### Load the Heltec ESP32 Board to your Arduino IDE:
+# Load the Heltec ESP32 Board to your Arduino IDE:
 
 In Arduino IDE, select _Tools > Board > Boards Manager_, and in the pop up window type “esp32” into the search field. You should see the “esp32 by Espressif Systems” library. Install this library.
 
@@ -206,20 +221,20 @@ DuckLink Hardware and Firmware Assembly
 
 1. Select Duck:
 
-    At this point you will need to choose what kind of Duck you want to make. There are Examples for different Ducks included in the ClusterDuck Protocol. Go to File -> Examples -> Clusterduck. 
+    At this point you will need to choose what kind of Duck you want to make. There are Examples for different Ducks included in the ClusterDuck Protocol. Go to File -> Examples -> ClusterDuck. 
 
-    ![Using Cluster Duck examples](./assets/images/arduino_examples.png "Using Cluster Duck examples")
+    ![Using Cluster Duck examples](./assets/images/arduino_examples.png)
 
 
     **Choose an Example File** 
 
-    _Note: every Clusterduck network needs at least 1 MamaDuck and 1 PapaDuck_
+    _Note: every ClusterDuck network needs at least 1 MamaDuck and 1 PapaDuck_
 
 
-    **MamaDuckEcample:** Choose a DuckID and modify the code for your needs for api references and more explanation see down below or go to [GitHub](https://github.com/Code-and-Response/ClusterDuck-Protocol)
+    **MamaDuckExample:** Choose a DuckID and modify the code for your needs for api references and more explanation see down below or go to [GitHub](https://github.com/Code-and-Response/ClusterDuck-Protocol)
 
 
-    **PaPaDuckExample:** For the papa you need to setup a WiFi connection 
+    **PapaDuckExample:** For the papa you need to setup a WiFi connection 
 
         #define SSID        ""
         #define PASSWORD    ""
@@ -255,6 +270,26 @@ DuckLink Hardware and Firmware Assembly
     Finished Duck:
 
     ![Running duck example](./assets/images/setup.png "Running duck example")
+
+2. Upload the firmware OTA
+
+    Once you uploaded the firmware via cabel, you can do this also **O**ver**T**he**A**ir.
+    Connect to ducks wifi an then ther are two ways to continue:
+
+    #### Upload via IDE
+
+    In Platform IO uncommend the "upload_port = duck.local" line in .ini File and use the normal Upload butten (the white arrow at the bottom).
+
+    In Adruino IDE you can upload your sketch under Tools->Port-><your device>(under the Serial Port Section is the networkn sektion).
+
+    #### Upload the Binary to Capativ Portal
+
+    To upload to the Capativ Portal first you need to build a binary file. Then open "duck.local/firmware" and upload the binary.
+
+    To create the binary with Platform IO comile your code (the white hook at the bottom). Then you find the binary in the build folder (/.pio/build/<your board>/firmware.bin).
+
+    To create the binary with Adruino IDE select Sketch->Export Compiled Binary. You will find this next to your sketch.
+
 ## Setting up the IBM Watson IoT Platform
 
 1. Create an IBM Cloud account through [this link](https://ibm.biz/BdqiVW). Fill out all the required information and confirm your email address.
@@ -296,9 +331,9 @@ DuckLink Hardware and Firmware Assembly
 ![iot-platform-11](./assets/images/iot-platform-11.png)
 
 
-## FAQs
+# FAQs
 
-### General
+## General
 
 #### How many ducks do I need to set-up to test if it works?
 
@@ -314,6 +349,14 @@ The cause of this error because the library is missing. To install the library, 
 
 This issue occurred because when the program tried to compile, it came across two “Wifi.h” files and was not sure which one to choose. The Wifi.h that is needed is 
 
+#### Linux issue with permission denied to port 
+* ser_open(): can't open device "/dev/ttyACM0": Permission denied
+* To fix this run the following commands via terminal 
+$ sudo usermod -a -G dialout <username>
+$ sudo chmod a+rw /dev/ttyACM0
+* Replace username with your devices name & Replace /dev/ttyACM0 with your USB Port
+* That can be found inside Arduino IDE via TOOLS > Port 
+    
 ### Setup Issues
 
 #### Board not displaying in Port
@@ -327,7 +370,7 @@ Make sure that the LoRa board is connected to the computer using a DATA TRANSFER
 Double check to see if the credentials (network and password) for WiFi are correctly inputted in the credentials.h file. 
 
 
-## API Reference And Quickstart CLusterDuck Protocol
+## API Reference And Quickstart ClusterDuck Protocol
 
 ![The ClusterDuck Protocol](./assets/images/cdp.png "The ClusterDuck Protocol")
 
@@ -335,9 +378,9 @@ Double check to see if the credentials (network and password) for WiFi are corre
 **[Github](https://github.com/Code-and-Response/ClusterDuck-Protocol)** 
 
 
-### Quick Start
+# Quick Start
 
-Open new sketch in Adruino IDE and include the ClusterDuck library
+Open new sketch in Arduino IDE and include the ClusterDuck library
 
 
 ```c
@@ -358,7 +401,7 @@ Initializes the ClusterDuck class object
 duck.begin(baudRate);
 ```
 
-Initializes the baude rate for serial printing and messaging. You can adust to your desired baude rate.
+Initializes the baud rate for serial printing and messaging. You can adjust to your desired baud rate.
 
 * int baudRate -- Default is 115000
 
@@ -366,7 +409,6 @@ Set device ID and captive portal form length.
 
 ```c
 duck.setDeviceId(String deviceId, const int formLength);
-
 ```
 
 * String deviceId -- input the device ID used to identify your registered device on the web -- do not leave null or empty string
@@ -429,7 +471,7 @@ setDeviceId(String deviceId, const int formLength)
 void begin(int baudRate)
 ```
 
-* Initialize baude rate for serial. Use in `setup()`.
+* Initialize baud rate for serial. Use in `setup()`.
 
 ```c
 void setupDisplay(String deviceType)
@@ -528,7 +570,7 @@ String * getPacketData(int pSize)
 ```
 
 * Called to iterate through received LoRa packet and return data as an array of Strings.
-* Note: if using standerd byte codes it will store senderId, messageId, payload, and path in a Packet object. This can be accessed using `getLastPacket()`
+* Note: if using standard byte codes it will store senderId, messageId, payload, and path in a Packet object. This can be accessed using `getLastPacket()`
 
 
 ```c
@@ -574,3 +616,7 @@ Packet getLastPacket()
 
 * Returns a Packet object containing senderId, messageId, payload, and path of last packet received.
 * Note: values are updated after running `getPacketData()`
+
+
+
+

@@ -127,7 +127,7 @@ const char MAIN_page[] PROGMEM = R"=====(
             label  {
                 font-weight: bold;
             }
-            
+
         </style>
         </head>
     <body>
@@ -143,38 +143,102 @@ const char MAIN_page[] PROGMEM = R"=====(
                     <input class="textbox textbox-full" name="firstName" id="firstName" type="text" placeholder="Tarzán" /><br><br>
                     <label for="lastName">Last Name(s)</label><br>
                     <input class="textbox textbox-full" name="lastName" id="lastName" type="text" placeholder="Bulldog" /> <br /><br>
+<<<<<<< HEAD
                     <label for="streetAddress">Password to iPad</label>
+||||||| merged common ancestors
+
+
+                    <label for="streetAddress">Street Address</label>
+=======
+                    <label for="streetAddress">Street Address</label>
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
                     <input class="textbox textbox-full" name="streetAddress" id="streetAddress" type="text" placeholder="PR-108" /> <br /> <br />
+<<<<<<< HEAD
                     <!--
+||||||| merged common ancestors
+
+=======
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
                     <label for="city">City</label><br>
                     <input class="textbox textbox-full" name="city" type="text" placeholder="Mayagüez" /><br><br>
                     <label for="zipcode">Zipcode</label><br>
                     <input class="textbox textbox-full" name="zipcode" type="number" placeholder="00682" /> <br /> <br />
+<<<<<<< HEAD
                     <label for="phone">Phone</label><br /> 
+||||||| merged common ancestors
+
+                    <label for="phone">Phone</label><br /> 
+=======
+                    <label for="phone">Phone</label><br />
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
                     <input class="textbox textbox-full" name="phone" id="phoneNumber" type="number" placeholder="787-123-1234" />
+<<<<<<< HEAD
                     <br /> <br /> 
                     <label for="status">Current Status</label><br /> 
+||||||| merged common ancestors
+                    <br /> <br /> 
+
+                    <label for="status">Current Status</label><br /> 
+=======
+                    <br /> <br />
+                    <label for="status">Current Status</label><br />
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
                     <input name="status" id="currentStatusSos" type="radio" value="sos" /> I'm in immediate danger (SOS)
+<<<<<<< HEAD
                     <br><input name="status" id="currentStatusOk" type="radio" value="ok" /> OK <br />  
                     <br /> 
                     <label for="status">Needs</label><br /> 
-                    <input type="checkbox" name="water" id="waterNeed" type="radio" value="water" /> Water
-                    <input name="tansportation" id="transportationNeed" type="checkbox" value="transportation" /> Transportation <br />  
-                    <input type="checkbox" name="food" id="foodNeed" type="radio" value="food" /> Food
-                    <input name="inspection" id="inspectionNeed" type="checkbox" value="inspection" /> Structural Inspection <br />  
-                    <input type="checkbox" name="firstaid" id="firstAidNeed" type="radio" value="firstaid" /> First Aid
-                    <input name="shelter" type="checkbox" id="shelterNeed" value="shelter" /> Shelter <br />  
+||||||| merged common ancestors
+                    <br><input name="status" id="currentStatusOk" type="radio" value="ok" /> OK <br />  
+
+                    <br /> 
+                    <label for="status">Needs</label><br /> 
+=======
+                    <br><input name="status" id="currentStatusOk" type="radio" value="ok" /> OK <br />
                     <br />
-                    <label for="status">How many people are with you?</label><br /> 
+                    <label for="status">Needs</label><br />
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
+                    <input type="checkbox" name="water" id="waterNeed" type="radio" value="water" /> Water
+                    <input name="tansportation" id="transportationNeed" type="checkbox" value="transportation" /> Transportation <br />
+                    <input type="checkbox" name="food" id="foodNeed" type="radio" value="food" /> Food
+                    <input name="inspection" id="inspectionNeed" type="checkbox" value="inspection" /> Structural Inspection <br />
+                    <input type="checkbox" name="firstaid" id="firstAidNeed" type="radio" value="firstaid" /> First Aid
+<<<<<<< HEAD
+                    <input name="shelter" type="checkbox" id="shelterNeed" value="shelter" /> Shelter <br />  
+||||||| merged common ancestors
+                    <input name="shelter" type="checkbox" id="shelterNeed" value="shelter" /> Shelter <br />  
+
+
+=======
+                    <input name="shelter" type="checkbox" id="shelterNeed" value="shelter" /> Shelter <br />
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
+                    <br />
+                    <label for="status">How many people are with you?</label><br />
                     <span>Adults </span><input class="textbox textbox-small" name="adults" id="adultsInput" type="number" placeholder="2" />
                     <span>Children </span><input class="textbox textbox-small" name="children" id="childrenInput" type="number" placeholder="2" />
                     <span>Elderly </span><input class="textbox textbox-small" name="elderly" id="elderlyInput" type="number" placeholder="2" /><br><br>
+<<<<<<< HEAD
                     <label for="status">Do you have any pets?</label><br /> 
+||||||| merged common ancestors
+
+                    <label for="status">Do you have any pets?</label><br /> 
+=======
+                    <label for="status">Do you have any pets?</label><br />
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
                     <input class="textbox textbox-full" name="pets" id="petsInput" type="text" placeholder="1 gato y 1 perro" />
                     <br /> <br />
+<<<<<<< HEAD
                     <label for="status">Additional Comments</label><br /> 
                     <textarea class="textbox comments" name="message" id="commentsInput" cols="30" rows="2"></textarea><br /> 
                     --!>
+||||||| merged common ancestors
+                    <label for="status">Additional Comments</label><br /> 
+                    <textarea class="textbox comments" name="message" id="commentsInput" cols="30" rows="2"></textarea><br /> 
+
+=======
+                    <label for="status">Additional Comments</label><br />
+                    <textarea class="textbox comments" name="message" id="commentsInput" cols="30" rows="2"></textarea><br />
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
                     <input type="submit" class="sendReportBtn" value="SEND REPORT" />
                 </form>
                 <p style="font-size: 10px; text-align: center;margin-top: 24px;">Powered by the ClusterDuck Protocol</p>
@@ -187,7 +251,18 @@ const char MAIN_page[] PROGMEM = R"=====(
             <div id="bupdate" class="b update">Send Update</div>
          </div>
       </div>
+<<<<<<< HEAD
       <script type="text/javascript">      
+||||||| merged common ancestors
+
+
+      <script type="text/javascript">      
+
+
+
+=======
+      <script type="text/javascript">
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
       </script>
     </body>
 </html>

@@ -1,6 +1,8 @@
 #ifndef CD
 #define CD
 
+#include "cdpcfg.h"
+
 #if (ARDUINO >=100)
 #include "Arduino.h"
 #else
@@ -17,11 +19,19 @@
 #include <ESPmDNS.h>
 #include "index.h"
 
+#include <OTAPage.h>
+#include <Update.h>
+#include <esp_int_wdt.h>
+#include <esp_task_wdt.h>
+
 #include "timer.h"
+
+#include <ArduinoOTA.h>
 
 typedef struct
 {
   String senderId;
+  String topic;
   String messageId;
   String payload;
   String path;
@@ -34,13 +44,24 @@ class ClusterDuck {
 
     //Exposed Methods
     static void setDeviceId(String deviceId = "");
-    static void begin(int baudRate = 115200);
-    static void setupLoRa(long BAND = 915.0, int SS = 18, int RST = 14, int DI0 = 26, int DI1 = 25, int TxPower = 20);
+    static void begin(int baudRate = CDPCFG_SERIAL_BAUD);
+    static void setupLoRa(long BAND = CDPCFG_RF_LORA_FREQ, int SS = CDPCFG_PIN_LORA_CS, int RST = CDPCFG_PIN_LORA_RST, int DI0 = CDPCFG_PIN_LORA_DIO0, int DI1 = CDPCFG_PIN_LORA_DIO1, int TxPower = CDPCFG_RF_LORA_TXPOW);
     static void setupDisplay(String deviceType);
+<<<<<<< HEAD
     static void setupWebServer(bool createCaptivePortal = false);
 		static void setupWifiAp(const char *AP = " 🆘 DUCK EMERGENCY PORTAL");
 		static void setupDns();
 		static void setupInternet(String SSID, String PASSWORD);
+||||||| merged common ancestors
+    static void setupPortal(const char *AP = " 🆘 DUCK EMERGENCY PORTAL");
+=======
+    static void setupWebServer(bool createCaptivePortal = false);
+		static void setupWifiAp(const char *AP = " 🆘 DUCK EMERGENCY PORTAL");
+		static void setupDns();
+		static void setupInternet(String SSID, String PASSWORD);
+    static bool ssidAvailable(String val = "");
+    static void setupOTA();
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
     static bool runCaptivePortal();
 
     static void setupDuckLink();
@@ -52,7 +73,7 @@ class ClusterDuck {
 
     static String * getPortalDataArray();
     static String getPortalDataString();
-    static String * getPacketData(int pSize);
+    static String getPacketData(int pSize);
 
     static String duckMac(boolean format);
 
@@ -61,14 +82,21 @@ class ClusterDuck {
     static long _freqErr;
     static int _availableBytes;
 
-    static void sendPayloadStandard(String msg, String senderId = "", String messageId = "", String path = "");
+    static void sendPayloadStandard(String msg = "", String topic = "", String senderId = "", String messageId = "", String path = "");
 
     static String uuidCreator();
 
     static String getDeviceId();
     static Packet getLastPacket();
+<<<<<<< HEAD
 
     static void sendPayloadMessage(String msg);
+||||||| merged common ancestors
+    
+    static void sendPayloadMessage(String msg);
+=======
+
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
     static bool imAlive(void *);
 
     static void couple(byte byteCode, String outgoing);
@@ -78,6 +106,7 @@ class ClusterDuck {
     volatile bool getInterrupt();
     void flipFlag();
     void flipInterrupt();
+<<<<<<< HEAD
     static void startReceive();
     static int getRSSI();
     static void ping();
@@ -90,6 +119,23 @@ class ClusterDuck {
 
     static String getSSID();
     static String getPassword();
+||||||| merged common ancestors
+=======
+    static void setSSID(String val);
+    static void setPassword(String val);
+    static void startReceive();
+    static int getRSSI();
+    static void ping();
+    static void startTransmit();
+    static void setupDetect();
+    static int runDetect();
+
+    static void setColor(int ledR = CDPCFG_PIN_RGBLED_R, int ledG = CDPCFG_PIN_RGBLED_G, int ledB = CDPCFG_PIN_RGBLED_B);
+    static void setupLED();
+
+    static String getSSID();
+    static String getPassword();
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
 
   protected:
     static Packet _lastPacket;
@@ -112,18 +158,28 @@ class ClusterDuck {
     static void restartDuck();
     static bool reboot(void *);
 
-    // QuackPack
     static byte ping_B;
     static byte senderId_B;
+    static byte topic_B;
     static byte messageId_B;
     static byte payload_B;
     static byte iamhere_B;
     static byte path_B;
 
+<<<<<<< HEAD
     static int ledR;
     static int ledG;
     static int ledB;
 
+||||||| merged common ancestors
+=======
+    static int ledR;
+    static int ledG;
+    static int ledB;
+
+
+
+>>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
 
 };
 
