@@ -142,7 +142,7 @@ Return to the _Sketch > Include Library menu._ menu. You should now see the libr
 #### Manual Install
 
 You will need to clone the ClusterDuck Protocol onto your local machine and include the libraries folder into your local arduino libraries folder. 
-For **MacOs** the local arduino libraries are located located in _/Users/USER/Documents/Arduino/_.
+For **MacOs** the local arduino libraries are located in _/Users/USER/Documents/Arduino/_.
 For **windows** the local arduino libraries are located in _C:/Users/USER/Documents/Arduino._
 
 1. Clone the ClusterDuck-Protocol repository onto your local machine `git clone https://github.com/Code-and-Response/ClusterDuck-Protocol.git`
