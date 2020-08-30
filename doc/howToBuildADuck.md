@@ -40,7 +40,7 @@ Ducks are IoT devices that connect together to form simple mesh networks.  The D
 
 ### DuckLinks
 
-These are the basic nodes of the mesh network. The DuckLinks create a WiFi network where users can connect to it and submit emergencies. The DuckLink collects that data and transmits it to the MamaDuck using LoRa (915 MHz in the United States, 433 MHz in Europe and Asia). Anyone with a working WiFi device such as a smartphone or laptop can connect to a DuckLink.
+These are the basic nodes of the mesh network. The DuckLinks create a WiFi network where users can connect to it and submit emergencies. The DuckLink collects that data and transmits it to the MamaDuck using LoRa (915 MHz in the United States, 868Mhz in Europe and 433 MHz in Asia). Anyone with a working WiFi device such as a smartphone or laptop can connect to a DuckLink.
 
 ### MamaDucks
 
@@ -48,7 +48,7 @@ MamaDucks act as central hubs to DuckLink groups.  The MamaDuck is able to recei
 
 ### PapaDuck
 
-PapaDuck is the final Duck in the ClusterDuck and transmits network data to the internet.  When communicating with other Ducks the PapaDuck similarly uses LoRa. The data that the PapaDuck receives gets pushed to the OWL Data Management System (DMS), the cloud platform, through the Internet. It acts like a gateway that collects data from MamaDucks and then upload it to the DMS.
+PapaDuck is the final Duck in the ClusterDuck and transmits network data to the internet. When communicating with other Ducks the PapaDuck similarly uses LoRa. The data that the PapaDuck receives gets pushed to the OWL Data Management System (DMS), the cloud platform, through the Internet. It acts like a gateway that collects data from MamaDucks and then upload it to the DMS.
                         
 ## Raw Materials
 
@@ -141,14 +141,17 @@ Return to the _Sketch > Include Library menu._ menu. You should now see the libr
 
 #### Manual Install
 
-You will need to clone the ClusterDuck Protocol onto your local machine and include the libraries folder into your local arduino libraries folder.
+You will need to clone the ClusterDuck Protocol onto your local machine and include the libraries folder into your local arduino libraries folder. 
+For **MacOs** the local arduino libraries are located located in _/Users/USER/Documents/Arduino/_.
+For **windows** the local arduino libraries are located in _C:/Users/USER/Documents/Arduino._
 
-1. Clone the ClusterDuck Protocol onto your local machine `git clone https://github.com/Code-and-Response/ClusterDuck-Protocol.git`
+1. Clone the ClusterDuck-Protocol repository onto your local machine `git clone https://github.com/Code-and-Response/ClusterDuck-Protocol.git`
+1. Navigate to the cloned repository folder `ClusterDuck-Protocol`
 1. Pull all the Library submodules needed for the Arduino IDE `git submodule update --init --recursive`
-1. Copy the `ClusterDuck-Protocol`folder into your local Arduino Libraries folder **MacOs** _/Users/USER/Documents/Arduino/_. **windows** _C:/Users/USER/Documents/Arduino._
-1. Navigate into the `ClusterDuck-Protocol` folder and open `Libraries` folder
-1. Copy all the libraries form the `Libraries` folder
-1. Paste into into your local Arduino Libraries folder **MacOs** _/Users/USER/Documents/Arduino/_.  **windows** _C:/Users/USER/Documents/Arduino._
+1. Copy the `ClusterDuck-Protocol` folder into your local arduino libraries folder
+1. Navigate into the `ClusterDuck-Protocol` copy folder and open `Libraries` folder
+1. Copy all the libraries from the `Libraries` folder
+1. Paste them into your local arduino libraries folder
 1. Open Arduino IDE
 1. You should now be able to see the examples by going to File -> Examples -> ClusterDuck
 
