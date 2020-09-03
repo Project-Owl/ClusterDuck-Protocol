@@ -5,13 +5,13 @@
 #include <WiFiClientSecure.h>
 #include "timer.h"
 
-#define SSID        ""
-#define PASSWORD    ""
+#define SSID        "HEINEKEN"
+#define PASSWORD    "duckduckowl"
 
-#define ORG         ""
-#define DEVICE_ID   ""
-#define DEVICE_TYPE ""
-#define TOKEN       ""
+#define ORG         "9c6nfo"
+#define DEVICE_ID   "tCrackhouse"
+#define DEVICE_TYPE "PAPA"
+#define TOKEN       "FcKVN2D+GH0SnYGynR"
 
 char server[]           = ORG ".messaging.internetofthings.ibmcloud.com";
 char authMethod[]       = "use-token-auth";
@@ -89,7 +89,7 @@ void setupMQTT()
     {
       timer.tick(); //Advance timer to reboot after awhile
       Serial.print("i");
-      delay(500);
+      delay(1000);
     }
   }
 }
@@ -121,7 +121,7 @@ void quackJson() {
   if (client.publish(topic, jsonstat.c_str())) {
 
     serializeJsonPretty(doc, Serial);
-     Serial.println("");
+    Serial.println("");
     Serial.println("Publish ok");
 
   }
