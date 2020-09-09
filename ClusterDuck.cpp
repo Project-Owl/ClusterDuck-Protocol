@@ -527,8 +527,9 @@ int ClusterDuck::handlePacket() {
     Serial.print("LORA RCV");
     Serial.print(" millis:");
     Serial.print(millis());
+    _lastPacket.rssi = lora.getRSSI();
     Serial.print(" rssi:");
-    Serial.print(lora.getRSSI());
+    Serial.print(_lastPacket.rssi);
     Serial.print(" snr:");
     Serial.print(lora.getSNR());
     Serial.print(" fe:");

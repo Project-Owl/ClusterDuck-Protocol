@@ -1,4 +1,3 @@
-//#include "timer.h"
 #include <ClusterDuck.h>
 
 ClusterDuck duck;
@@ -60,3 +59,4 @@ void loop() {
     duck.startReceive(); 
    }
 }
+

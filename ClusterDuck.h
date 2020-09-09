@@ -34,6 +34,7 @@ typedef struct
   String messageId;
   String payload;
   String path;
+  int rssi;
 } Packet;
 
 class ClusterDuck {
