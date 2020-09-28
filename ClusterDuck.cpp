@@ -115,11 +115,6 @@ void ClusterDuck::setupLoRa(long BAND, int SS, int RST, int DI0, int DI1, int Tx
 #endif
     Serial.print("Starting LoRa Failed!!!");
     Serial.println(state);
-<<<<<<< HEAD
-    restartDuck();
-||||||| merged common ancestors
-    while (true);
-=======
     restartDuck();
   }
 
@@ -146,7 +141,6 @@ void ClusterDuck::setupLoRa(long BAND, int SS, int RST, int DI0, int DI1, int Tx
   if (lora.setGain(CDPCFG_RF_LORA_GAIN) == ERR_INVALID_GAIN) {
     Serial.println(F("Selected gain is invalid for this module!"));
     while (true);
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
   }
 
   lora.setDio0Action(setFlag);
@@ -200,30 +194,8 @@ void handleFirmwareUpload(AsyncWebServerRequest *request, String filename, size_
   }
 }
 
-<<<<<<< HEAD
-//=========================================================
-
 //Setup WebServer
 void ClusterDuck::setupWebServer(bool createCaptivePortal) {
-||||||| merged common ancestors
-//=========================================================
-
-//Setup Captive Portal
-void ClusterDuck::setupPortal(const char *AP) {
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(AP);
-  delay(200); // wait for 200ms for the access point to start before configuring
-
-  WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-
-  Serial.println("Created Hotspot");
-
-  dnsServer.start(DNS_PORT, "*", apIP);
-
-=======
-//Setup WebServer
-void ClusterDuck::setupWebServer(bool createCaptivePortal) {
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
   Serial.println("Setting up Web Server");
 
   webServer.onNotFound([&](AsyncWebServerRequest *request) {
@@ -319,19 +291,6 @@ void ClusterDuck::setupWebServer(bool createCaptivePortal) {
     request->send(200, "text/html", mac);
   });
 
-<<<<<<< HEAD
-	webServer.on("/wifi", HTTP_GET, [&](AsyncWebServerRequest *request) {
-
-		AsyncResponseStream *response = request->beginResponseStream("text/html");
-    response->print("<!DOCTYPE html><html><head><title>Update Wifi Credentials</title></head><body>");
-    response->print("<p>Use this page to update your Wifi credentials</p>");
-
-
-		response->print("<form action='/changeSSID' method='post'>");
-||||||| merged common ancestors
-  // for captive portal
-  webServer.addHandler(new CaptiveRequestHandler(MAIN_page)).setFilter(ON_AP_FILTER);
-=======
 	webServer.on("/wifi", HTTP_GET, [&](AsyncWebServerRequest *request) {
 
 		AsyncResponseStream *response = request->beginResponseStream("text/html");
@@ -381,78 +340,11 @@ void ClusterDuck::setupWebServer(bool createCaptivePortal) {
       request->send(500, "text/plain", "There was an error");
     }
 	});
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
 
-<<<<<<< HEAD
-		response->print("<label for='ssid'>SSID:</label><br>");
-		response->print("<input name='ssid' type='text' placeholder='SSID' /><br><br>");
-
-		response->print("<label for='pass'>Password:</label><br>");
-		response->print("<input name='pass' type='text' placeholder='Password' /><br><br>");
-
-    response->print("<input type='submit' value='Submit' />");
-
-		response->print("</form>");
-
-    response->print("</body></html>");
-    request->send(response);
-	});
-
-	webServer.on("/changeSSID", HTTP_POST, [&](AsyncWebServerRequest *request) {
-		int paramsNumber = request->params();
-    String val = "";
-		String SSID = "";
-		String PASSWORD = "";
-
-    for (int i = 0; i < paramsNumber; i++) {
-      AsyncWebParameter *p = request->getParam(i);
-
-      String name = String(p->name());
-      String value = String(p->value());
-
-			if (name == "ssid") {
-        SSID = String(p->value());
-			} else if (name == "pass") {
-				PASSWORD = String(p->value());
-			}
-    }
-
-		if (SSID != "" && PASSWORD != "") {
-			setupInternet(SSID, PASSWORD);
-      request->send(200, "text/plain", "Success");
-		} else {
-      request->send(500, "text/plain", "There was an error");
-    }
-	});
-
-  // for captive portal
-	if (createCaptivePortal == true) {
-		webServer.addHandler(new CaptiveRequestHandler(MAIN_page)).setFilter(ON_AP_FILTER);
-	}
-||||||| merged common ancestors
-  // Test 👍👌😅
-=======
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
 
   webServer.begin();
-<<<<<<< HEAD
-}
-||||||| merged common ancestors
-=======
 }
 
-void ClusterDuck::setupWifiAp(const char *AP) {
-	WiFi.mode(WIFI_AP);
-  WiFi.softAP(AP);
-  delay(200); // wait for 200ms for the access point to start before configuring
-
-  WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-
-  Serial.println("Created Wifi Access Point");
-}
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
-
-<<<<<<< HEAD
 void ClusterDuck::setupWifiAp(const char *AP) {
 	WiFi.mode(WIFI_AP);
   WiFi.softAP(AP);
@@ -467,14 +359,6 @@ void ClusterDuck::setupDns() {
 	dnsServer.start(DNS_PORT, "*", apIP);
 
 	if (!MDNS.begin(DNS))
-||||||| merged common ancestors
-  if (!MDNS.begin(DNS))
-=======
-void ClusterDuck::setupDns() {
-	dnsServer.start(DNS_PORT, "*", apIP);
-
-	if (!MDNS.begin(DNS))
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
   {
     Serial.println("Error setting up MDNS responder!");
   }
@@ -509,33 +393,6 @@ void ClusterDuck::setupInternet(String SSID, String PASSWORD)
   }
 }
 
-<<<<<<< HEAD
-void ClusterDuck::setupInternet(String SSID, String PASSWORD)
-{
-  ssid = SSID;
-  password = PASSWORD;
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.print(SSID);
-
-  if (SSID != "" && PASSWORD != "") {
-  // Connect to Access Point
-    WiFi.begin(SSID.c_str(), PASSWORD.c_str());
-
-    while (WiFi.status() != WL_CONNECTED)
-    {
-      tymer.tick(); //Advance timer to reboot after awhile
-      //TODO: Change this to make sure it is non-blocking for all other processes
-    }
-
-    // Connected to Access Point
-    Serial.println("");
-    Serial.println("DUCK CONNECTED TO INTERNET");
-  }
-}
-
-||||||| merged common ancestors
-=======
 bool ClusterDuck::ssidAvailable(String val) { //TODO: needs to be cleaned up for null case
   int n = WiFi.scanNetworks();
   Serial.println("scan done");
@@ -590,23 +447,14 @@ void ClusterDuck::setupOTA(){
   ArduinoOTA.begin();
 }
 
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
 //Setup premade DuckLink with default settings
 void ClusterDuck::setupDuckLink() {
   setupDisplay("Duck");
   setupLoRa();
-<<<<<<< HEAD
-	setupWifiAp();
-	setupDns();
-  setupWebServer(true);
-||||||| merged common ancestors
-  setupPortal();
-=======
 	setupWifiAp();
 	setupDns();
   setupWebServer(true);
   setupOTA();
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
 
   Serial.println("Duck Online");
 }
@@ -614,40 +462,6 @@ void ClusterDuck::setupDuckLink() {
 void ClusterDuck::runDuckLink() {
   ArduinoOTA.handle();
   processPortalRequest();
-}
-
-void ClusterDuck::setupDetect() {
-  setupDisplay("Detector");
-  setupLoRa();
-  // setupWifiAp(false);
-	// setupDns();
-  // setupWebServer(false);
-  // setupOTA();
-
-  Serial.println("Detector Online");
-}
-
-int ClusterDuck::runDetect() {
-  ArduinoOTA.handle();
-  int val = 0;
-  if(receivedFlag) {  //If LoRa packet received
-    receivedFlag = false;
-    enableInterrupt = false;
-    int pSize = handlePacket();
-    Serial.print("runDetect pSize ");
-    Serial.println(pSize);
-    if(pSize > 0) {
-      for(int i=0; i < pSize; i++) {
-        if(transmission[i] == iamhere_B) {
-          val = lora.getRSSI();
-        }
-      }
-    }
-    enableInterrupt = true;
-    Serial.println("runDetect startReceive");
-    startReceive();
-  }
-  return val;
 }
 
 void ClusterDuck::setupDetect() {
@@ -690,69 +504,15 @@ void ClusterDuck::processPortalRequest() {
 void ClusterDuck::setupMamaDuck() {
   setupDisplay("Mama");
   setupLoRa();
-<<<<<<< HEAD
-	setupWifiAp();
-	setupDns();
-  setupWebServer(true);
-||||||| merged common ancestors
-=======
 	setupWifiAp();
 	setupDns();
   setupWebServer(true);
   setupOTA();
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
 
   Serial.println("MamaDuck Online");
 
-<<<<<<< HEAD
-  tymer.every(1800000, imAlive);
-  tymer.every(43200000, reboot);
-}
-
-int ClusterDuck::handlePacket() {
-  int pSize = lora.getPacketLength();
-  memset(transmission, 0x00, pSize); //Reset transmission
-  packetIndex = 0;
-  int state = lora.readData(transmission, pSize);
-
-  if (state == ERR_NONE) {
-    // packet was successfully received
-    Serial.println("Packet Received!");
-    Serial.println(pSize);
-
-    return pSize;
-  } else {
-    // some other error occurred
-    Serial.print("Failed, code ");
-    Serial.println(state);
-
-    return -1;
-  }
-||||||| merged common ancestors
-  tymer.every(1800000, imAlive);
-  tymer.every(43200000, reboot);
-}
-
-int ClusterDuck::handlePacket() {
-  int pSize = lora.getPacketLength();
-  int state = lora.readData(transmission, pSize);
-
-  if (state == ERR_NONE) {
-    // packet was successfully received
-    Serial.println("Packet Received!");
-
-    return pSize;
-  } else {
-    // some other error occurred
-    Serial.print("Failed, code ");
-    Serial.println(state);
-
-    return -1;
-  }
-=======
   tymer.every(CDPCFG_MILLIS_ALIVE, imAlive);
   tymer.every(CDPCFG_MILLIS_REBOOT, reboot);
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
 }
 
 void ClusterDuck::runMamaDuck() {
@@ -765,62 +525,19 @@ void ClusterDuck::runMamaDuck() {
     receivedFlag = false;
     enableInterrupt = false;
     int pSize = handlePacket();
-<<<<<<< HEAD
-    Serial.println(pSize);
-||||||| merged common ancestors
-=======
     Serial.print("runMamaDuck pSize ");
     Serial.println(pSize);
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
     if(pSize > 0) {
-<<<<<<< HEAD
-      String * msg = getPacketData(pSize);
-      packetIndex = 0;
-      if(msg[0] != "ping" && !idInPath(_lastPacket.path)) {
-        Serial.print("Send Packet");
-        sendPayloadStandard(_lastPacket.payload, _lastPacket.senderId, _lastPacket.messageId, _lastPacket.path);
-        memset(transmission, 0x00, pSize); //Reset transmission
-||||||| merged common ancestors
-      byte whoIsIt = transmission[0];
-      if(whoIsIt == senderId_B) {
-        String * msg = getPacketData(pSize);
-        if(!idInPath(_lastPacket.path)) {
-          sendPayloadStandard(_lastPacket.payload, _lastPacket.senderId, _lastPacket.messageId, _lastPacket.path);
-          
-          lora.startReceive();
-          enableInterrupt = true;
-        }
-        delete(msg);
-      } else if(whoIsIt == ping_B) {
-        memset(transmission, 0x00, packetIndex);
-=======
       String msg = getPacketData(pSize);
       packetIndex = 0;
       if(msg != "ping" && !idInPath(_lastPacket.path)) {
         Serial.println("runMamaDuck relayPacket");
         sendPayloadStandard(_lastPacket.payload, _lastPacket.topic, _lastPacket.senderId, _lastPacket.messageId, _lastPacket.path);
         memset(transmission, 0x00, CDPCFG_CDP_BUFSIZE); //Reset transmission
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
         packetIndex = 0;
 
       }
     } else {
-<<<<<<< HEAD
-      // Serial.println("Byte code not recognized!");
-      memset(transmission, 0x00, pSize); //Reset transmission
-      packetIndex = 0;
-
-     }
-    enableInterrupt = true;
-    startReceive();
-    Serial.println("Start receive");
-||||||| merged common ancestors
-      Serial.println("Byte code not recognized!"); 
-      memset(transmission, 0x00, pSize); //Reset transmission
-
-    }
-    
-=======
       // Serial.println("Byte code not recognized!");
       memset(transmission, 0x00, CDPCFG_CDP_BUFSIZE); //Reset transmission
       packetIndex = 0;
@@ -829,35 +546,12 @@ void ClusterDuck::runMamaDuck() {
     enableInterrupt = true;
     Serial.println("runMamaDuck startReceive");
     startReceive();
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
   }
 
   processPortalRequest();
 
 }
 
-<<<<<<< HEAD
-void ClusterDuck::sendPayloadMessage(String msg) {
-  couple(senderId_B, _deviceId);
-  couple(messageId_B, uuidCreator());
-  couple(payload_B, msg);
-  couple(path_B, _deviceId);
-
-  Serial.println("Packet index: ");
-  Serial.print(packetIndex);
-  startTransmit();
-||||||| merged common ancestors
-void ClusterDuck::sendPayloadMessage(String msg) {
-  couple(senderId_B, _deviceId);
-  couple(messageId_B, uuidCreator());
-  couple(payload_B, msg);
-  couple(path_B, _deviceId);
-
-  int state = lora.transmit(transmission, packetIndex);
-
-  memset(transmission, 0x00, packetIndex); //Reset transmission
-  packetIndex = 0; //Reset packetIndex
-=======
 String tohex(byte *data, int size) {
   String buf = "";
   buf.reserve(size*2);
@@ -875,25 +569,7 @@ int ClusterDuck::handlePacket() {
   memset(transmission, 0x00, CDPCFG_CDP_BUFSIZE); //Reset transmission
   packetIndex = 0;
   int state = lora.readData(transmission, pSize);
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
 
-<<<<<<< HEAD
-||||||| merged common ancestors
-  if (state == ERR_NONE) {
-    // the packet was successfully transmitted
-    Serial.println("Packet sent");
-  } else if (state == ERR_PACKET_TOO_LONG) {
-    // the supplied packet was longer than 256 bytes
-    Serial.println(F(" too long!"));
-  } else if (state == ERR_TX_TIMEOUT) {
-    // timeout occured while transmitting packet
-    Serial.println(F(" timeout!"));
-  } else {
-    // some other error occurred
-    Serial.print(F("failed, code "));
-    Serial.println(state);
-  }
-=======
   if (state == ERR_NONE) {
     // packet was successfully received
     Serial.print("handlePacket pSize ");
@@ -922,7 +598,6 @@ int ClusterDuck::handlePacket() {
 
     return -1;
   }
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
 }
 
 void ClusterDuck::sendPayloadStandard(String msg, String topic, String senderId, String messageId, String path) {
@@ -947,15 +622,8 @@ void ClusterDuck::sendPayloadStandard(String msg, String topic, String senderId,
   couple(path_B, path);
   couple(topic_B, topic);
 
-<<<<<<< HEAD
-  Serial.println("Packet index: ");
-  Serial.print(packetIndex);
-||||||| merged common ancestors
-  int state = lora.transmit(transmission, packetIndex);
-=======
   Serial.print("sendPayloadStandard packetIndex ");
   Serial.println(packetIndex);
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
 
   startTransmit();
 
@@ -1003,39 +671,19 @@ bool ClusterDuck::idInPath(String path) {
   return false;
 }
 
-<<<<<<< HEAD
-String * ClusterDuck::getPacketData(int pSize) {
-  String * packetData = new String[pSize];
-  if(pSize == 0) {
-    Serial.println("Packet is empty!");
-    return packetData;
-  }
-||||||| merged common ancestors
-String * ClusterDuck::getPacketData(int pSize) {
-  String * packetData = new String[pSize];
-=======
 String ClusterDuck::getPacketData(int pSize) {
   String packetData = "";
   if(pSize == 0) {
     Serial.println("getPacketData Packet is empty!");
     return packetData;
   }
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
   packetIndex = 0;
   int len = 0;
-<<<<<<< HEAD
-  byte byteCode;
-  bool sId, mId, pLoad, pth, ping;
-||||||| merged common ancestors
-  byte byteCode;
-  bool sId, mId, pLoad, pth;
-=======
   bool sId = false;
   bool mId = false;
   bool pLoad = false;
   bool pth = false;
   bool tpc = false;
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
   String msg = "";
   bool gotLen = false;
 
@@ -1071,7 +719,6 @@ String ClusterDuck::getPacketData(int pSize) {
         Serial.println("getPacketData Path: " + _lastPacket.topic);
         msg = "";
         tpc = false;
-        Serial.println("hit1");
 
       }
     }
@@ -1100,34 +747,7 @@ String ClusterDuck::getPacketData(int pSize) {
       tpc = true;
       len = transmission[i+1];
       Serial.println("getPacketData topic_B Len = " + String(len));
-      Serial.println("hit2");
 
-<<<<<<< HEAD
-    } else if(transmission[i] == ping_B) {
-      if(_deviceId != "Det") {
-        memset(transmission, 0x00, packetIndex);
-        packetIndex = 0;
-        couple(iamhere_B, "1");
-        startTransmit();
-        Serial.println("pong sent");
-        packetData[0] = "ping";
-        return packetData;
-      }
-      memset(transmission, 0x00, packetIndex);
-      packetIndex = 0;
-      packetData[0] = "ping";
-
-    } else if(transmission[i] == iamhere_B) {
-      Serial.print("pong");
-      memset(transmission, 0x00, packetIndex);
-      packetIndex = 0;
-      packetData[0] = "pong";
-      return packetData;
-
-      } else if(len > 0 && gotLen) {
-||||||| merged common ancestors
-    } else if(len > 0 && gotLen) {
-=======
     } else if(transmission[i] == ping_B) {
       if(_deviceId != "Det") {
         memset(transmission, 0x00, CDPCFG_CDP_BUFSIZE);
@@ -1150,7 +770,6 @@ String ClusterDuck::getPacketData(int pSize) {
       return packetData;
 
       } else if(len > 0 && gotLen) {
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
       msg = msg + String((char)transmission[i]);
       len--;
 
@@ -1185,7 +804,6 @@ String ClusterDuck::getPacketData(int pSize) {
       _lastPacket.topic = msg;
       Serial.println("getPacketData len0 Topic: " + _lastPacket.topic);
       msg = "";
-      Serial.println("hit3");
     }
   }
 
@@ -1322,75 +940,6 @@ void ClusterDuck::flipFlag() {
 }
 
 void ClusterDuck::flipInterrupt() {
-<<<<<<< HEAD
-  if (enableInterrupt == true) {
-    enableInterrupt = false;
-  } else {
-    enableInterrupt = true;
-  }
-}
-
-void ClusterDuck::startReceive() {
-  int state = lora.startReceive();
-
-  if (state == ERR_NONE) {
-
-  } else {
-    Serial.print("failed, code ");
-    Serial.println(state);
-    restartDuck();
-  }
-}
-
-void ClusterDuck::startTransmit() {
-  int state = lora.transmit(transmission, packetIndex);
-
-  memset(transmission, 0x00, packetIndex); //Reset transmission
-  packetIndex = 0; //Reset packetIndex
-
-  if (state == ERR_NONE) {
-    // the packet was successfully transmitted
-    Serial.println("Packet sent");
-  } else if (state == ERR_PACKET_TOO_LONG) {
-    // the supplied packet was longer than 256 bytes
-    Serial.println(" too long!");
-  } else if (state == ERR_TX_TIMEOUT) {
-    // timeout occured while transmitting packet
-    Serial.println(" timeout!");
-  } else {
-    // some other error occurred
-    Serial.print(F("failed, code "));
-    Serial.println(state);
-  }
-}
-
-void ClusterDuck::ping() {
-  couple(ping_B, "0");
-  startTransmit();
-}
-
-// Setup LED
-void ClusterDuck::setupLED() {
-  ledcAttachPin(ledR, 1); // assign RGB led pins to channels
-  ledcAttachPin(ledG, 2);
-  ledcAttachPin(ledB, 3);
-  
-// Initialize channels 
-// channels 0-15, resolution 1-16 bits, freq limits depend on resolution
-// ledcSetup(uint8_t channel, uint32_t freq, uint8_t resolution_bits);
-  ledcSetup(1, 12000, 8); // 12 kHz PWM, 8-bit resolution
-  ledcSetup(2, 12000, 8);
-  ledcSetup(3, 12000, 8);
-}
-
-void ClusterDuck::setColor(int red, int green, int blue)
-{
-  ledcWrite(1, red);
-  ledcWrite(2, green);
-  ledcWrite(3, blue);  
-||||||| merged common ancestors
-  !enableInterrupt;
-=======
   if (enableInterrupt == true) {
     enableInterrupt = false;
   } else {
@@ -1473,7 +1022,6 @@ void ClusterDuck::setColor(int red, int green, int blue)
   ledcWrite(1, red);
   ledcWrite(2, green);
   ledcWrite(3, blue);
->>>>>>> 9a6d9ca3cf53976c7e3cc827566f551f60c6b63c
 }
 
 DNSServer ClusterDuck::dnsServer;
@@ -1485,10 +1033,6 @@ float ClusterDuck::_snr;
 long ClusterDuck::_freqErr;
 int ClusterDuck::_availableBytes;
 int ClusterDuck::_packetSize = 0;
-// LED
-int ClusterDuck::ledR = 25;
-int ClusterDuck::ledG = 4;
-int ClusterDuck::ledB = 2;
 
 // LED
 int ClusterDuck::ledR = CDPCFG_PIN_RGBLED_R;
