@@ -629,6 +629,35 @@ void ClusterDuck::sendPayloadStandard(String msg, String topic, String senderId,
 
 }
 
+void ClusterDuck::sendByteStandard(byte *msg, String topic, String senderId, String messageId, String path) {
+  if(senderId == "") senderId = _deviceId;
+  if(topic == "") topic = "status";
+  Serial.println("Topic: " + topic);
+  if(messageId == "") messageId = uuidCreator();
+  if(path == "") {
+    path = _deviceId;
+  } else {
+    path = path + "," + _deviceId;
+  }
+
+  String total = senderId + messageId + path + String(msg) + topic;
+  if(total.length() + 5 > CDPCFG_CDP_BUFSIZE) {
+    Serial.println("Warning: message is too large!"); //TODO: do something
+  }
+
+  couple(senderId_B, senderId);
+  couple(messageId_B, messageId);
+  coupleByte(payload_B, 64, msg);
+  couple(path_B, path);
+  couple(topic_B, topic);
+
+  Serial.print("sendPayloadStandard packetIndex ");
+  Serial.println(packetIndex);
+
+  startTransmit();
+
+}
+
 void ClusterDuck::couple(byte byteCode, String outgoing) {
   int outgoingLen = outgoing.length() + 1;
   byte byteBuffer[outgoingLen];
@@ -642,6 +671,24 @@ void ClusterDuck::couple(byte byteCode, String outgoing) {
 
   for(int i=0; i < outgoingLen; i++) {  // add payload
     transmission[packetIndex] = byteBuffer[i];
+    packetIndex++;
+  }
+
+}
+
+void ClusterDuck::coupleByte(byte byteCode, int outgoingLen, byte *msg){
+  // int outgoingLen = outgoing.length() + 1;
+  // byte byteBuffer[outgoingLen];
+
+  // outgoing.getBytes(byteBuffer, outgoingLen);
+
+  transmission[packetIndex] = byteCode; //add byte code
+  packetIndex++;
+  transmission[packetIndex] = (byte)outgoingLen; // add payload length
+  packetIndex++;
+
+  for(int i=0; i < outgoingLen; i++) {  // add payload
+    transmission[packetIndex] = msg[i];
     packetIndex++;
   }
 
@@ -976,6 +1023,45 @@ void ClusterDuck::startTransmit() {
 
   memset(transmission, 0x00, CDPCFG_CDP_BUFSIZE); //Reset transmission
   packetIndex = 0; //Reset packetIndex
+
+  if (state == ERR_NONE) {
+    // the packet was successfully transmitted
+    Serial.println("startTransmit Packet sent");
+  } else if (state == ERR_PACKET_TOO_LONG) {
+    // the supplied packet was longer than 256 bytes
+    Serial.println("startTransmit too long!");
+  } else if (state == ERR_TX_TIMEOUT) {
+    // timeout occured while transmitting packet
+    Serial.println("startTransmit timeout!");
+  } else {
+    // some other error occurred
+    Serial.print(F("startTransmit failed, code "));
+    Serial.println(state);
+  }
+
+  if (oldEI) {
+    enableInterrupt = true;
+    startReceive();
+  }
+}
+
+void ClusterDuck::startByteTransmit(byte *msg, int msgSize) {
+  bool oldEI = enableInterrupt;
+  enableInterrupt = false;
+
+  // // dump send packet stats+data
+  // Serial.print("LORA SND");
+  // Serial.print(" millis:");
+  // Serial.print(millis());
+  // Serial.print(" size:");
+  // Serial.print(packetIndex);
+  // Serial.print(" data:");
+  // Serial.println(tohex(transmission, packetIndex));
+
+  int state = lora.transmit(msg, msgSize);
+
+  // memset(transmission, 0x00, CDPCFG_CDP_BUFSIZE); //Reset transmission
+  // packetIndex = 0; //Reset packetIndex
 
   if (state == ERR_NONE) {
     // the packet was successfully transmitted

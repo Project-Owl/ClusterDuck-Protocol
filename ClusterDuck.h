@@ -74,6 +74,7 @@ class ClusterDuck {
     static int _availableBytes;
 
     static void sendPayloadStandard(String msg = "", String topic = "", String senderId = "", String messageId = "", String path = "");
+    static void sendByteStandard(byte *msg, String ="", String topic = "", String senderId = "", String messageId = "", String path = "");
 
     static String uuidCreator();
 
@@ -82,6 +83,7 @@ class ClusterDuck {
     static bool imAlive(void *);
 
     static void couple(byte byteCode, String outgoing);
+    static void coupleByte(byte byteCode, int outgoingLen, byte *msg);
     static bool idInPath(String path);
 
     volatile bool getFlag();
@@ -94,6 +96,7 @@ class ClusterDuck {
     static int getRSSI();
     static void ping();
     static void startTransmit();
+    static void startByteTransmit(byte *msg, int msgSize);
     static void setupDetect();
     static int runDetect();
 
