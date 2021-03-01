@@ -77,7 +77,9 @@ int DuckNet::setupWebServer(bool createCaptivePortal, String html) {
           uint8_t* data, size_t len, bool final) {
         if (!index) {
 
+
           loginfo("Pause Radio and starting OTA update");
+          loginfo("UploadStart: %s\n", filename.c_str());
           duckRadio->standBy();
           content_len = request->contentLength();
 
@@ -85,8 +87,27 @@ int DuckNet::setupWebServer(bool createCaptivePortal, String html) {
           if (!Update.begin(UPDATE_SIZE_UNKNOWN, cmd)) {
 
             Update.printError(Serial);
+
+           return request->send(400, "text/plain", "OTA could not begin");
           }
         }
+
+        if(len){
+                    if (Update.write(data, len) != len) {
+                        return request->send(400, "text/plain", "OTA could not begin");
+                        loginfo("Could not begin OTA");
+                    }
+                }
+                    
+                if (final) { 
+                    if (!Update.end(true)) { 
+                        Update.printError(Serial);
+                        return request->send(400, "text/plain", "Could not end OTA");
+                        loginfo("Could not end OTA");
+                    }
+                }else{
+                    return;
+                }
 
         if (Update.write(data, len) != len) {
           Update.printError(Serial);
@@ -95,6 +116,8 @@ int DuckNet::setupWebServer(bool createCaptivePortal, String html) {
 
         if (final) {
           if (Update.end(true)) {
+
+            loginfo("REBOOT");
             ESP.restart();
             esp_task_wdt_init(1, true);
             esp_task_wdt_add(NULL);
@@ -102,6 +125,8 @@ int DuckNet::setupWebServer(bool createCaptivePortal, String html) {
               ;
           }
         }
+
+
       });
 
   // Captive Portal form submission
