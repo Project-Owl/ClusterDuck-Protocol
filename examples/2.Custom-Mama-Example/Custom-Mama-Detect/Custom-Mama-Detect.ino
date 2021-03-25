@@ -39,6 +39,9 @@ void setup() {
   std::vector<byte> devId;
   devId.insert(devId.end(), deviceId.begin(), deviceId.end());
   duck.setupWithDefaults(devId);
+  detect.setupWithDefaults(devId);
+
+  detect.onReceiveRssi(handleReceiveRssi);
 
   // Initialize the timer. The timer thread runs separately from the main loop
   // and will trigger sending a counter message.
@@ -52,12 +55,58 @@ void loop() {
   // Use the default run(). The Mama duck is designed to also forward data it receives
   // from other ducks, across the network. It has a basic routing mechanism built-in
   // to prevent messages from hoping endlessly.
+  if(detect.getDetectOn()) {
+    if(!detectOn) {
+      timer.cancel();
+      timer.every(3000,pingHandler);
+      detectOn = true;
+    }
+  } else {
+    if(detectOn) {
+      timer.cancel();
+      timer.every(INTERVAL_MS, runSensor);
+      detectOn = false;
+    }
+  }
+
   if(detectOn) {
      detect.run();
   } else {
      duck.run();
   }
   
+}
+
+void handleReceiveRssi(const int rssi) {
+  if(detectOn) {
+    showSignalQuality(rssi);
+  }
+}
+
+// Periodically sends a ping message
+bool pingHandler(void *) {
+  Serial.println("[DETECTOR] Says ping!");
+  detect.sendPing(true);
+
+  return true;
+}
+
+// This uses the serial console to output the RSSI quality
+// But you can use a display, sound or LEDs
+void showSignalQuality(int incoming) {
+  int rssi = incoming;
+  Serial.print("[DETECTOR] Rssi value: ");
+  Serial.print(rssi);
+
+  if (rssi > -95) {
+    Serial.println(" - GOOD");
+  }
+  else if (rssi <= -95 && rssi > -108) {
+    Serial.println(" - OKAY");
+  }
+  else if (rssi <= -108) {
+    Serial.println(" - BAD");
+  }
 }
 
 bool runSensor(void *) {
@@ -100,8 +149,8 @@ Add new captive portal page - DONE
 Method for turning on/off detector
 
 timer.every(INTERVAL_MS, pingHandler);
-pingHandler method
-callback for rssi
+pingHandler method done
+callback for rssi done
 showsignalquality method
 
 */

@@ -6,6 +6,7 @@
 
 #include "include/Duck.h"
 #include "include/cdpcfg.h"
+#include "include/DuckUtils.h"
 
 class DuckDetect : public Duck {
 public:
@@ -61,6 +62,8 @@ public:
    * @returns the duck type defined as DuckType
    */
   int getType() { return DuckType::DETECTOR; }
+
+  bool getDetectOn() { return duckutils::detectOn; }
 
 private:
   rssiCallback rssiCb;
