@@ -17,6 +17,7 @@
 #include <Arduino.h>
 
 #include "DuckPacket.h"
+#include "CdpPacket.h"
 #include "LoraPacket.h"
 #include "cdpcfg.h"
 
@@ -158,6 +159,9 @@ public:
    */
   int readReceivedData(std::vector<byte>* packetBytes);
 
+  void savePacketData(std::vector<byte> packetBytes);
+  CdpPacket getLastPacket();
+
   /**
    * @brief Process IRQ interrupts for the LoRa Radio.
    * 
@@ -171,6 +175,7 @@ private:
   static DuckRadio* instance;
   DuckDisplay* display = DuckDisplay::getInstance();
   int err;
+  CdpPacket packet;
 };
 
 #endif

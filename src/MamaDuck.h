@@ -13,6 +13,17 @@ public:
 
   ~MamaDuck() {}
 
+  using rxDoneCallback = void (*)(std::vector<byte> data );
+  using txDoneCallback = void (*)(void);
+
+  /**
+   * @brief Register callback for handling data received from duck devices
+   * 
+   * The callback will be invoked if the packet needs to be relayed (i.e not seen before)
+   * @param cb a callback to handle data received by the papa duck
+   */
+  void onReceiveDuckData(rxDoneCallback cb) { this->recvDataCallback = cb; }
+
   /**
    * @brief Provide the DuckLink specific implementation of the base `run()`
    * method.
@@ -47,6 +58,7 @@ public:
 
 private :
   void handleReceivedPacket();
+  rxDoneCallback recvDataCallback;
 };
 
 #endif

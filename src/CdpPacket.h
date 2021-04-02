@@ -110,6 +110,13 @@ public:
   /// Path section (48 bytes max)
   std::vector<byte> path;
 
+  // rssi
+  int rssi;
+  // snr
+  int snr;
+  // frequency error
+  int fe;
+
   CdpPacket(std::vector<byte> buffer) {
     int buffer_length = buffer.size();
     

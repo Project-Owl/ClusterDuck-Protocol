@@ -164,7 +164,23 @@ int DuckRadio::readReceivedData(std::vector<byte>* packetBytes) {
           " fe: " + String(lora.getFrequencyError(true)) +
           " size: " + String(packet_length));
 
+  //TODO: Save packet data  
+  //savePacketData(packetBytes);
+
+
   return err;
+}
+
+void DuckRadio::savePacketData(std::vector<byte> packetBytes) {
+  packet = CdpPacket(packetBytes);
+  packet.rssi = lora.getRSSI();
+  packet.snr = lora.getSNR();
+  packet.fe = lora.getFrequencyError(true);
+
+}
+
+CdpPacket DuckRadio::getLastPacket() {
+  return packet;
 }
 
 int DuckRadio::sendData(byte* data, int length) {
