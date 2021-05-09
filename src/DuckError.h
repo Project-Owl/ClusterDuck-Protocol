@@ -47,5 +47,18 @@
 #define DUCK_INTERNET_ERR_SETUP      -6000
 #define DUCK_INTERNET_ERR_SSID       -6001
 #define DUCK_INTERNET_ERR_CONNECT    -6002
+/*
+// MQTT error codes
+#define MQTT_CONNECTION_TIMEOUT     -4
+#define MQTT_CONNECTION_LOST        -3
+#define MQTT_CONNECT_FAILED         -2
+#define MQTT_DISCONNECTED           -1
+#define MQTT_CONNECTED               0
+#define MQTT_CONNECT_BAD_PROTOCOL    1
+#define MQTT_CONNECT_BAD_CLIENT_ID   2
+#define MQTT_CONNECT_UNAVAILABLE     3
+#define MQTT_CONNECT_BAD_CREDENTIALS 4
+#define MQTT_CONNECT_UNAUTHORIZED    5
 
+*/
 #endif
