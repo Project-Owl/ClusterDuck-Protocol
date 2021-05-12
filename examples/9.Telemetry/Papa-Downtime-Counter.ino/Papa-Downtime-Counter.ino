@@ -13,6 +13,7 @@
  * 
  */
 
+
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
@@ -22,6 +23,7 @@
 /* CDP Headers */
 #include <PapaDuck.h>
 #include <CdpPacket.h>
+#include <queue>
 
 #define MQTT_RETRY_DELAY_MS 500
 #define WIFI_RETRY_DELAY_MS 5000
@@ -54,8 +56,12 @@ bool use_auth_method = true;
 auto timer = timer_create_default();
 
 int disconnectTime;
-bool disconnect = false;
+bool isDisconnected;
 int failCounter = 0;
+
+int QUEUE_SIZE_MAX = 5;
+
+std::queue<std::vector<byte>> packetQueue;
 
 WiFiClientSecure wifiClient;
 PubSubClient client(server, 8883, wifiClient);
@@ -105,7 +111,7 @@ String convertToHex(byte* data, int size) {
 
 // WiFi connection retry
 bool retry = true;
-void quackJson(std::vector<byte> packetBuffer) {
+int quackJson(std::vector<byte> packetBuffer) {
 
   CdpPacket packet = CdpPacket(packetBuffer);
   const int bufferSize = 4 * JSON_OBJECT_SIZE(4);
@@ -161,12 +167,14 @@ void quackJson(std::vector<byte> packetBuffer) {
     Serial.println("");
     Serial.println("[PAPA] Publish ok");
     display->drawString(0, 60, "Publish ok");
-     display->sendBuffer();
+    display->sendBuffer();
+    return 0;
   } else {
     Serial.println("[PAPA] Publish failed");
     display->drawString(0, 60, "Publish failed");
     display->sendBuffer();
     failCounter++;
+    return -1;
   }
 }
 
@@ -175,7 +183,16 @@ void quackJson(std::vector<byte> packetBuffer) {
 void handleDuckData(std::vector<byte> packetBuffer) {
   Serial.println("[PAPA] got packet: " +
                  convertToHex(packetBuffer.data(), packetBuffer.size()));
-  quackJson(packetBuffer);
+  if(quackJson(packetBuffer) == -1) {
+    if(packetQueue.size() > QUEUE_SIZE_MAX) {
+      packetQueue.pop();
+      packetQueue.push(packetBuffer);
+    } else {
+      packetQueue.push(packetBuffer);
+    }
+    Serial.print("New size of queue: ");
+    Serial.println(packetQueue.size());
+  }
 }
 
 void setup() {
@@ -197,8 +214,6 @@ void setup() {
 
   // register a callback to handle incoming data from duck in the network
   duck.onReceiveDuckData(handleDuckData);
-  
-  timer.every(3000000, sendFailReport);
 
   Serial.println("[PAPA] Setup OK! ");
   
@@ -211,9 +226,9 @@ void setup() {
 void loop() {
 
   if (!duck.isWifiConnected() && retry) {
-    if(!disconnect) {
-      disconnectTime = millis();
-      disconnect = true;
+    if(!isDisconnected) {
+        disconnectTime = millis();
+        isDisconnected = true;
     }
 
     String ssid = duck.getSsid();
@@ -240,22 +255,29 @@ void loop() {
 void setup_mqtt(bool use_auth) {
   bool connected = client.connected();
   if (connected) {
+    if(packetQueue.size() > 0) {
+      publishQueue();
+    }
     return;
   }
 
-  if(!disconnect) {
+  if(!isDisconnected) {
     disconnectTime = millis();
-    disconnect = true;
+    isDisconnected = true;
   }
 
+  
   if (use_auth) {
     connected = client.connect(clientId, authMethod, token);
   } else {
     connected = client.connect(clientId);
   }
   if (connected) {
+    if(packetQueue.size() > 0) {
+      publishQueue();
+    }
     Serial.println("[PAPA] Mqtt client is connected!");
-    disconnect = false;
+    isDisconnected = false;
     int timeDisconnected = millis() - disconnectTime;
     timeDisconnected = timeDisconnected/1000;
     quackDownReport("Time Disconnected: " + String(timeDisconnected));
@@ -266,57 +288,52 @@ void setup_mqtt(bool use_auth) {
 }
 
 void quackDownReport(String payload) {
-  Serial.println("Send QuackDownReport");
-
-  const int bufferSize = 4 * JSON_OBJECT_SIZE(4);
-  StaticJsonDocument<bufferSize> doc;
-
-  doc["DeviceID"] = "PAPADUCK";
-  doc["MessageID"] = createUuid(4);
-  doc["Payload"].set(payload);
-  doc["path"] = "PAPADUCK";
-  doc["hops"] = "0";
-  doc["duckType"] = "1";
-    
-  std::string topic = "iot-2/evt/health/fmt/json";
-
-  String jsonstat;
-  serializeJson(doc, jsonstat);
-
-  if (client.publish(topic.c_str(), jsonstat.c_str())) {
-    Serial.println("[PAPA] Packet forwarded:");
-    serializeJsonPretty(doc, Serial);
-    Serial.println("");
-    Serial.println("[PAPA] Publish ok");
-    display->drawString(0, 60, "Publish ok");
-    display->sendBuffer();
-  } else {
-    Serial.println("[PAPA] Publish failed");
-    display->drawString(0, 60, "Publish failed");
-    display->sendBuffer();
-    failCounter++;
-  }
-
-}
-
-// Creates a unique id for the message
-String createUuid(int length) {
-  String msg = "";
-  int i;
-
-  for (i = 0; i < length; i++) {
-    byte randomValue = random(0, 36);
-    if (randomValue < 26) {
-      msg = msg + char(randomValue + 'a');
+    Serial.println("Send QuackDownReport");
+  
+    const int bufferSize = 4 * JSON_OBJECT_SIZE(4);
+    StaticJsonDocument<bufferSize> doc;
+  
+    doc["DeviceID"] = "PAPADUCK";
+    doc["MessageID"] = createUuid(4);
+    doc["Payload"].set(payload);
+    doc["path"] = "PAPADUCK";
+    doc["hops"] = "0";
+    doc["duckType"] = "1";
+  
+    std::string topic = "iot-2/evt/health/fmt/json";
+  
+    String jsonstat;
+    serializeJson(doc, jsonstat);
+  
+    if (client.publish(topic.c_str(), jsonstat.c_str())) {
+      Serial.println("[PAPA] Packet forwarded:");
+      serializeJsonPretty(doc, Serial);
+      Serial.println("");
+      Serial.println("[PAPA] Publish ok");
+      display->drawString(0, 60, "Publish ok");
+      display->sendBuffer();
     } else {
-      msg = msg + char((randomValue - 26) + '0');
+      Serial.println("[PAPA] Publish failed");
+      display->drawString(0, 60, "Publish failed");
+      display->sendBuffer();
+      failCounter++;
     }
-  }
-  return msg;
+  
 }
 
-bool sendFailReport(void*) {
-  quackDownReport(String(failCounter));
+String createUuid(int length) {
+    String msg = "";
+    int i;
+  
+    for (i = 0; i < length; i++) {
+      byte randomValue = random(0, 36);
+      if (randomValue < 26) {
+        msg = msg + char(randomValue + 'a');
+      } else {
+        msg = msg + char((randomValue - 26) + '0');
+      }
+    }
+    return msg;
 }
 
 bool enableRetry(void*) {
@@ -328,4 +345,17 @@ void retry_mqtt_connection(int delay_ms) {
   Serial.println("[PAPA] Could not connect to MQTT...............................");
   retry = false;
   timer.in(delay_ms, enableRetry);
+}
+
+
+void publishQueue() {
+  while(!packetQueue.empty()) {
+    if(quackJson(packetQueue.front()) == 0) {
+      packetQueue.pop();
+      Serial.print("Queue size: ");
+      Serial.println(packetQueue.size());
+    } else {
+      return;
+    }
+  }
 }
