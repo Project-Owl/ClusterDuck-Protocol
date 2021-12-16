@@ -96,12 +96,12 @@ void MamaDuck::handleReceivedPacket() {
       handleAck(packet);
     }
 
-    err = duckRadio.relayPacket(rxPacket);
-    if (err != DUCK_ERR_NONE) {
-      logerr("====> ERROR handleReceivedPacket failed to relay. rc = " + String(err));
-    } else {
-      loginfo("handleReceivedPacket: packet RELAY DONE");
-    }
+    // err = duckRadio.relayPacket(rxPacket);
+    // if (err != DUCK_ERR_NONE) {
+    //   logerr("====> ERROR handleReceivedPacket failed to relay. rc = " + String(err));
+    // } else {
+    //   loginfo("handleReceivedPacket: packet RELAY DONE");
+    // }
   }
 }
 
@@ -123,6 +123,7 @@ void MamaDuck::handleAck(const CdpPacket & packet) {
           loginfo("handleReceivedPacket: matched ack-MUID "
             + duckutils::toString(lastMessageMuid));
           lastMessageAck = true;
+          LFTMessageAck = true;
           break;
         }
       }
@@ -132,6 +133,14 @@ void MamaDuck::handleAck(const CdpPacket & packet) {
     //   acks. I recommend a callback specifically for acks, or
     //   similar.
   }
+}
+
+bool MamaDuck::getLFTMessageAck() {
+  return LFTMessageAck;
+}
+
+void MamaDuck::setLFTMessageAck(bool val) {
+  LFTMessageAck = val;
 }
 
 bool MamaDuck::getDetectState() { return duckutils::getDetectState(); }

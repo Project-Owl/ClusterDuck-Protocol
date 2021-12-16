@@ -74,6 +74,8 @@ enum topics {
   alert = 0x14,
   /// Device health status
   health = 0x15,
+  /// Larg file transfer
+  lft = 0x16,
   /// Max supported topics
   max_topics = 0xFF
 };

@@ -55,7 +55,13 @@ public:
    */
   int getType() {return DuckType::MAMA;}
 
+  bool LFTMessageAck = false;
+
   bool getDetectState();
+
+  bool getLFTMessageAck();
+
+  void setLFTMessageAck(bool val);
 
 private :
   rxDoneCallback recvDataCallback;
