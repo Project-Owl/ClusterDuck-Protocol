@@ -41,6 +41,64 @@ bool DuckPacket::prepareForRelaying(BloomFilter *filter, std::vector<byte> dataB
   
 }
 
+bool DuckPacket::prepareForRelaying(BloomFilter *filter, std::vector<byte> dataBuffer, int rssi) {
+
+
+  this->reset();
+
+  loginfo("prepareForRelaying: START");
+  loginfo("prepareForRelaying: Packet is built. Checking for relay...");
+
+  //TODO: Add bloom filter empty when full
+  //TODO: Add 2nd bloom filter
+  //TODO: Calculate false positive chance
+  //TODO: Add backwards compatibility
+
+  // Query the existence of strings
+  bool alreadySeen = filter->bloom_check(&dataBuffer[MUID_POS], MUID_LENGTH);
+  if (alreadySeen) {
+    logdbg("handleReceivedPacket: Packet already seen. No relay.");
+    return false;
+  } else {
+    filter->bloom_add(&dataBuffer[MUID_POS], MUID_LENGTH);
+    logdbg("handleReceivedPacket: Relaying packet: "  + duckutils::convertToHex(&dataBuffer[MUID_POS], MUID_LENGTH));
+  }
+
+  // update the rx packet internal byte buffer
+  buffer.assign(dataBuffer.begin(), dataBuffer.end());
+  int hops = buffer[HOP_COUNT_POS]++;
+  loginfo("prepareForRelaying: hops count: "+ String(hops));
+
+  if(hops <= 1) {
+    std::vector<byte> newDataBuff;
+    newDataBuff.insert(newDataBuff.begin(), dataBuffer[DATA_POS], dataBuffer.end());
+    std::vector<byte> rssiAdd;
+    byte rssiVal = rssi;
+
+    rssiAdd.insert(rssiAdd.begin(), duid.begin(), duid.end());
+    rssiAdd.push_back(rssi);
+
+    byte crc_bytes[DATA_CRC_LENGTH];
+    uint32_t value;
+
+    value = CRC32::calculate(newDataBuff.data(), newDataBuff.size());
+
+    crc_bytes[0] = (value >> 24) & 0xFF;
+    crc_bytes[1] = (value >> 16) & 0xFF;
+    crc_bytes[2] = (value >> 8) & 0xFF;
+    crc_bytes[3] = value & 0xFF;
+
+    for(int i = 0; i < 4; i++) {
+      dataBuffer[DATA_CRC_POS+i] = crc_bytes[i];
+    }
+  }
+
+
+  return true;
+  
+  
+}
+
 void DuckPacket::getUniqueMessageId(BloomFilter * filter, byte message_id[MUID_LENGTH]) {
 
   bool getNewUnique = true;
