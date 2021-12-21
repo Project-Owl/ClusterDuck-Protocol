@@ -58,6 +58,8 @@ void setup() {
    devId.insert(devId.end(), deviceId.begin(), deviceId.end());
    duck.setupWithDefaults(devId);
 
+   duck.onReceiveDuckData(handlLFTPacket);
+
    // Initialize the timer. The timer thread runs separately from the main loop
    // and will trigger sending a counter message.
    //timer.every(INTERVAL_MS, runSensor);
@@ -84,16 +86,21 @@ void loop() {
                
                if((char)piMsg == ':') {
                   std::string cmdString(piCmd.begin(), piCmd.end());
+                  Serial.println((char)piMsg);
                   Serial.println(cmdString.c_str());
-                  checkCommand(cmdString);
                   serialBytes.push_back(piMsg);
                   headerSize = headerSize + piCmd.size() + 1;
+                  Serial.print("Header size ");
+                  Serial.println(headerSize);
+                  checkCommand(cmdString);
                } else {
                   char piChar = (char)piMsg;
                   piCmd.push_back(piChar);
                   Serial.println(piChar);
                   serialBytes.push_back(piMsg);
                }
+               Serial.print("SerialBytes size A: ");
+               Serial.println(serialBytes.size());
 
             }
                break;
@@ -106,19 +113,12 @@ void loop() {
                   serialBytes.push_back(piMsg);
                   counter++;
                   if(counter == 1) {
+                  }
+                  if(counter == 1) {
                      std::string temp;
                      headerSize = headerSize + piCmd.size() + 1;
-                     for(int i = 0; i < piCmd.size(); i++) {
-                        temp = temp + piCmd[i];
-                     }
-                     int cur = atoi(temp.c_str());
-                     FileInfo.currentPacket = cur;
-                     Serial.println(cur);
-                     piCmd.clear();
-                     piCmd.shrink_to_fit();
-                  } else if(counter == 2) {
-                     std::string temp;
-                     headerSize = headerSize + piCmd.size() + 1;
+                     Serial.print("Header size ");
+                     Serial.println(headerSize);
                      for(int i = 0; i < piCmd.size(); i++) {
                         temp = temp + piCmd[i];
                      }
@@ -127,21 +127,10 @@ void loop() {
                      Serial.println(cur);
                      piCmd.clear();
                      piCmd.shrink_to_fit();
-                  }
-                  if(counter == 3) {
-                     std::string temp;
-                     headerSize = headerSize + piCmd.size() + 1;
-                     for(int i = 0; i < piCmd.size(); i++) {
-                        temp = temp + piCmd[i];
-                     }
-                     int cur = atoi(temp.c_str());
-                     FileInfo.nPackets = cur;
-                     Serial.println(cur);
-                     piCmd.clear();
-                     piCmd.shrink_to_fit();
                      Serial2.write("AK:");
                      Serial.println("Sent AK");
                      state = 'C';
+                     Serial.println("Change state B to C");
 
                      counter = 0;
                   }
@@ -149,6 +138,7 @@ void loop() {
                } else {
                   char piChar = (char)piMsg;
                   piCmd.push_back(piChar);
+                  Serial.println("Add to piCmd");
                   Serial.println(piChar);
                   serialBytes.push_back(piMsg);
                }
@@ -180,6 +170,7 @@ void loop() {
                      // Serial2.write("AK:");
                      // Serial.println("Sent AK");
                      state = 'A';
+                     Serial.println("Change state C to A");
                   }
 
                }
@@ -187,50 +178,50 @@ void loop() {
             }
                break;
 
-            case 'D':
-            {
-               if((char)piMsg == ':') {
-                  Serial.println(":");
-                  serialBytes.push_back(piMsg);
-                  counter++;
-                  if(counter == 1) {
-                     std::string temp;
-                     headerSize = headerSize + piCmd.size() + 1;
-                     for(int i = 0; i < piCmd.size(); i++) {
-                        temp = temp + piCmd[i];
-                     }
-                     int cur = atoi(temp.c_str());
-                     FileInfo.currentPacket = cur;
-                     Serial.println(cur);
-                     piCmd.clear();
-                     piCmd.shrink_to_fit();
-                  } else if(counter == 2) {
-                     std::string temp;
-                     headerSize = headerSize + piCmd.size() + 1;
-                     for(int i = 0; i < piCmd.size(); i++) {
-                        temp = temp + piCmd[i];
-                     }
-                     int cur = atoi(temp.c_str());
-                     FileInfo.packetSize = cur;
-                     Serial.println(cur);
-                     piCmd.clear();
-                     piCmd.shrink_to_fit();
-                     state = 'C';
-                     Serial.println("Change State");
+            // case 'D':
+            // {
+            //    if((char)piMsg == ':') {
+            //       Serial.println(":");
+            //       serialBytes.push_back(piMsg);
+            //       counter++;
+            //       if(counter == 1) {
+            //          std::string temp;
+            //          headerSize = headerSize + piCmd.size() + 1;
+            //          for(int i = 0; i < piCmd.size(); i++) {
+            //             temp = temp + piCmd[i];
+            //          }
+            //          int cur = atoi(temp.c_str());
+            //          FileInfo.currentPacket = cur;
+            //          Serial.println(cur);
+            //          piCmd.clear();
+            //          piCmd.shrink_to_fit();
+            //       } else if(counter == 2) {
+            //          std::string temp;
+            //          headerSize = headerSize + piCmd.size() + 1;
+            //          for(int i = 0; i < piCmd.size(); i++) {
+            //             temp = temp + piCmd[i];
+            //          }
+            //          int cur = atoi(temp.c_str());
+            //          FileInfo.packetSize = cur;
+            //          Serial.println(cur);
+            //          piCmd.clear();
+            //          piCmd.shrink_to_fit();
+            //          state = 'C';
+            //          Serial.println("Change State");
 
-                     headerSize = headerSize + 2;
+            //          headerSize = headerSize + 2;
 
-                     counter = 0;
-                  }
+            //          counter = 0;
+            //       }
                   
-               } else {
-                  char piChar = (char)piMsg;
-                  piCmd.push_back(piChar);
-                  Serial.println(piChar);
-                  serialBytes.push_back(piMsg);
-               }
-            }
-               break;
+            //    } else {
+            //       char piChar = (char)piMsg;
+            //       piCmd.push_back(piChar);
+            //       Serial.println(piChar);
+            //       serialBytes.push_back(piMsg);
+            //    }
+            // }
+            //    break;
             default:
                Serial.println(state);
                Serial.println("Invalid state");
@@ -262,11 +253,20 @@ void loop() {
   
 }
 
+void handlLFTPacket(std::vector<byte> packetBuffer) {
+   std::string cmdCB = "CB:";
+   CdpPacket packet = packetBuffer;
+   std::string payload(packet.data.begin(), packet.data.end());
+
+   if(payload == cmdCB) {
+      Serial.println("Received close bridge!!!!!!!!");
+      Serial2.write("CB:");
+   }
+}
+
 void checkCommand(std::string cmd) {
    std::string openBridge = "OB";
-   std::string firstPacket = "FP";
-   std::string nextPacket = "NP";
-   std::string lastPacket = "LP";
+   std::string packetIncoming = "PK";
    std::string ack = "AK";
 
    if(cmd == openBridge) {
@@ -275,6 +275,7 @@ void checkCommand(std::string cmd) {
       //Serial2.write("AK:");
       serialBytes.clear();
       serialBytes.shrink_to_fit();
+      headerSize = 0;
       std::vector<byte> temp = {'O','B',':'}; 
       int err = duck.sendData(topics::lft, temp);
       if(err == DUCK_ERR_NONE) {
@@ -285,43 +286,26 @@ void checkCommand(std::string cmd) {
       Serial.println("no Open bridge");
    }
 
-   if(cmd == firstPacket) {
-      Serial.println("firstPacket");
+   if(cmd == packetIncoming) {
+      Serial.println("packetIncoming");
       state = 'B';
-      Serial.println("Change state");
-      serialBytes.erase(serialBytes.begin());
+      Serial.println("Change state B");
+      //serialBytes.erase(serialBytes.begin());
       Serial.println(serialBytes.size());
       for(int i = 0; i < serialBytes.size(); i++) {
          Serial.println((char)serialBytes[i]);
       }
    } else {
-      Serial.println("no firstPacket");
-   }
-
-   if(cmd == nextPacket) {
-      Serial.println("nextPacket");
-      state = 'D';
-      Serial.println("Change state");
-      // Serial2.write("AK:");
-      // Serial.println("Sent AK");
-   } else {
-      Serial.println("no nextPacket");
-   }
-
-   if(cmd == lastPacket) {
-      Serial.println("lastPacket");
-      state = 'D';
-      Serial.println("Change state");
-      Serial2.write("AK:");
-      Serial.println("Sent AK");
-   } else {
-      Serial.println("no lastPacket");
+      Serial.println("no packetIncoming");
    }
 
    if(cmd == ack) {
       Serial.println("ack");
       serialBytes.clear();
       serialBytes.shrink_to_fit();
+      headerSize = 0;
+      Serial.print("SerialBytes size: ");
+      Serial.println(serialBytes.size());
    } else {
       Serial.println("no ack");
    }

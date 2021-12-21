@@ -223,9 +223,7 @@ void handleDuckData(std::vector<byte> packetBuffer) {
          case 'A':
          {
             std::string openBridge = "OB:";
-            std::string firstPacket = "FP:";
-            std::string nextPacket = "NP:";
-            std::string lastPacket = "LP:";
+            std::string packetIncoming = "PK:";
 
             std::string cmd;
             int len = packet.data[0];
@@ -238,26 +236,9 @@ void handleDuckData(std::vector<byte> packetBuffer) {
                Serial2.write("OB:");
             }
 
-            if(cmd == firstPacket) {
-               Serial.println("Got First Packet Request");
-               for(int i = 1; i < 4; i++) {
-                  Serial2.write(packet.data[i]);
-                  Serial.println((char)packet.data[i]);
-               }
-
-               for(int i = (int)packet.data[0] - 1; i < packet.data.size(); i++) {
-                  Serial.print((char)packet.data[i]);
-                  //Serial2.write(packet.data[i]);
-                  ackBuffer.insert(ackBuffer.end(), packet.data[i]);
-               }
-               buffLoaded = true;
-               Serial.println("");
-
-               
-            }
-
-            if(cmd == nextPacket) {
+            if(cmd == packetIncoming) {
                Serial.println("Got Next Packet Request");
+               Serial.println(packet.data.size());
                for(int i = 1; i < packet.data.size(); i++) {
                   Serial.print((char)packet.data[i]);
                   Serial2.write(packet.data[i]);
@@ -266,15 +247,6 @@ void handleDuckData(std::vector<byte> packetBuffer) {
 
             }
 
-            if(cmd == lastPacket) {
-               Serial.println("Got Last Packet Request");
-               for(int i = 1; i < packet.data.size(); i++) {
-                  Serial.print((char)packet.data[i]);
-                  Serial2.write(packet.data[i]);
-               }
-               Serial.println("");
-
-            }
          }
 
             break;
@@ -346,25 +318,28 @@ void setup() {
 
 std::vector<char> piCmd;
 std::string ackk = "AK";
+std::string closeBridge = "CB";
+std::vector<byte> closeBridgeCmd = {0x43,0x42,0x3a};
 
 void loop() {
-  if (!duck.isWifiConnected() && retry) {
-    String ssid = duck.getSsid();
-    String password = duck.getPassword();
+  // if (!duck.isWifiConnected() && retry) {
+  //   String ssid = duck.getSsid();
+  //   String password = duck.getPassword();
 
-    Serial.println("[PAPA] WiFi disconnected, reconnecting to local network: " +
-                   ssid);
+  //   Serial.println("[PAPA] WiFi disconnected, reconnecting to local network: " +
+  //                  ssid);
 
-    int err = duck.reconnectWifi(ssid, password);
+  //   int err = duck.reconnectWifi(ssid, password);
 
-    if (err != DUCK_ERR_NONE) {
-      retry = false;
-      timer.in(5000, enableRetry);
-    }
-  }
-  if (duck.isWifiConnected() && retry) {
-    setup_mqtt(use_auth_method);
-  }
+  //   if (err != DUCK_ERR_NONE) {
+  //     retry = false;
+  //     timer.in(5000, enableRetry);
+  //   }
+
+  // }
+  // if (duck.isWifiConnected() && retry) {
+  //   setup_mqtt(use_auth_method);
+  // }
    
    while(Serial2.available() > 0) {
       byte piMsg = Serial2.read();
@@ -380,6 +355,17 @@ void loop() {
                }
             }
          }
+
+          if(cmdString == closeBridge) {
+              Serial.println("Got Close Bridge Request");
+              int err = duck.sendData(topics::lft, closeBridgeCmd);
+              if(err == DUCK_ERR_NONE) {
+                Serial.println("Sent Close Bridge");
+                Serial2.write("AK:");
+              } else {
+                Serial.println(err);
+              }
+          }
 
          piCmd.clear();
          piCmd.shrink_to_fit();
