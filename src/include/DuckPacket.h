@@ -64,6 +64,17 @@ public:
      * @returns false if the packet does not need to be replayed
      */
     bool prepareForRelaying(BloomFilter *filter, std::vector<byte> dataBuffer);
+
+    /**
+     * @brief Update a received packet if it needs to be relayed in the mesh.
+     * 
+     * @param filter The bloom filter describing what packets have already been seen
+     * @param dataBuffer buffer containing the packet data
+     * @param rssi  The RSSI value of the incoming packet
+     * @returns true if the packet needs to be relayed
+     * @returns false if the packet does not need to be replayed
+     */
+    bool prepareForRelaying(BloomFilter *filter, std::vector<byte> dataBuffer, int rssi);
     
     /**
      * @brief Get the Cdp Packet byte vector.

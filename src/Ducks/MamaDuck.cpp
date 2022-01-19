@@ -74,7 +74,7 @@ void MamaDuck::handleReceivedPacket() {
   }
   logdbg("Got data from radio, prepare for relay. size: "+ String(data.size()));
 
-  relay = rxPacket->prepareForRelaying(&filter, data);
+  relay = rxPacket->prepareForRelaying(&filter, data, duckRadio.getRSSI());
   if (relay) {
     //TODO: this callback is causing an issue, needs to be fixed for mamaduck to get packet data
     //recvDataCallback(rxPacket->getBuffer());

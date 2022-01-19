@@ -8,6 +8,26 @@
 #include "include/bloomfilter.h"
 #include <string>
 
+// Function that slices vectors
+// vector slicing(vector<byte>& arr,
+//                     int X, int Y)
+// {
+ 
+//     // Starting and Ending iterators
+//     auto start = arr.begin() + X;
+//     auto end = arr.begin() + Y + 1;
+ 
+//     // To store the sliced vector
+//     vector<int> result(Y - X + 1);
+ 
+//     // Copy vector using copy function()
+//     copy(start, end, result.begin());
+ 
+//     // Return the final sliced vector
+//     return result;
+// }
+
+// vector slice(vector<byte>)
 
 bool DuckPacket::prepareForRelaying(BloomFilter *filter, std::vector<byte> dataBuffer) {
 
@@ -67,15 +87,21 @@ bool DuckPacket::prepareForRelaying(BloomFilter *filter, std::vector<byte> dataB
   // update the rx packet internal byte buffer
   buffer.assign(dataBuffer.begin(), dataBuffer.end());
   int hops = buffer[HOP_COUNT_POS]++;
-  loginfo("prepareForRelaying: hops count: "+ String(hops));
+  logdbg("prepareForRelaying: hops count: "+ String(hops));
 
   if(hops <= 1) {
+    loginfo("hops count: "+ String(hops));
+    // std::vector<byte> temp;
+    // temp = slicing(dataBuffer, DATA_POS, dataBuffer.end())
     std::vector<byte> newDataBuff;
-    newDataBuff.insert(newDataBuff.begin(), dataBuffer[DATA_POS], dataBuffer.end());
+    newDataBuff.insert(newDataBuff.end(), dataBuffer.begin(), dataBuffer.end());
     std::vector<byte> rssiAdd;
     byte rssiVal = rssi;
 
+    // Adds DUID
     rssiAdd.insert(rssiAdd.begin(), duid.begin(), duid.end());
+    
+    // Adds RSSI
     rssiAdd.push_back(rssi);
 
     byte crc_bytes[DATA_CRC_LENGTH];
@@ -91,8 +117,11 @@ bool DuckPacket::prepareForRelaying(BloomFilter *filter, std::vector<byte> dataB
     for(int i = 0; i < 4; i++) {
       dataBuffer[DATA_CRC_POS+i] = crc_bytes[i];
     }
-  }
 
+    logdbg(rssi);
+    dataBuffer.insert(dataBuffer.end(), rssiAdd.begin(), rssiAdd.end());
+    // logdbg("RSSI:      " + duckutils::convertToHex(dataBuffer.data(), dataBuffer.size()));
+  }
 
   return true;
   
