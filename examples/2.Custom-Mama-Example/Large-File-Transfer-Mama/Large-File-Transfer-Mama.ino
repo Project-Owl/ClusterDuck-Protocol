@@ -47,6 +47,8 @@ bool messageAcked = false;
 bool sendAckState = false;
 bool sendState = false;
 bool bridgeOpenState = false;
+bool bridgeOpenAck = false;
+bool missingPacket = false;
 std::vector<byte> ackBuffer;
 std::vector<byte> headerBuffer;
 bool buffLoaded = false;
@@ -117,29 +119,53 @@ void loop() {
                if((char)piMsg == ':') {
                   Serial.println(":");
                   serialBytes.push_back(piMsg);
-                  counter++;
-                  if(counter == 1) {
+                  
+                  std::string temp;
+                  headerSize = headerSize + piCmd.size() + 1;
+                  Serial.print("Header size ");
+                  Serial.println(headerSize);
+                  for(int i = 0; i < piCmd.size(); i++) {
+                     temp = temp + piCmd[i];
                   }
-                  if(counter == 1) {
-                     std::string temp;
-                     headerSize = headerSize + piCmd.size() + 1;
-                     Serial.print("Header size ");
-                     Serial.println(headerSize);
-                     for(int i = 0; i < piCmd.size(); i++) {
-                        temp = temp + piCmd[i];
+                  int cur = atoi(temp.c_str());
+                  FileInfo.packetSize = cur;
+                  Serial.println(cur);
+                  piCmd.clear();
+                  piCmd.shrink_to_fit();
+                  if(missingPacket) {
+                     serialBytes.insert(serialBytes.begin(), (byte)headerSize);
+                     headerSize = 0;
+                     int err = duck.sendData(topics::lft, serialBytes);
+                      if(err == DUCK_ERR_NONE) {
+                        serialBytes.clear();
+                        serialBytes.shrink_to_fit();
+                        //delay(10);
+                        state = 'A';
+                        Serial.println("Change state B to A");
+                        missingPacket = false;
                      }
-                     int cur = atoi(temp.c_str());
-                     FileInfo.packetSize = cur;
-                     Serial.println(cur);
-                     piCmd.clear();
-                     piCmd.shrink_to_fit();
+
+                  } else if(bridgeOpenAck) {
+                     serialBytes.insert(serialBytes.begin(), (byte)headerSize);
+                     headerSize = 0;
+                     int err = duck.sendData(topics::lft, serialBytes);
+                      if(err == DUCK_ERR_NONE) {
+                        serialBytes.clear();
+                        serialBytes.shrink_to_fit();
+                        //delay(10);
+                        state = 'A';
+                        Serial.println("Change state C to A");
+                        bridgeOpenAck = false;
+                     }
+                  } else {
                      Serial2.write("AK:");
                      Serial.println("Sent AK");
                      state = 'C';
                      Serial.println("Change state B to C");
-
-                     counter = 0;
                   }
+                  
+
+                  
                   
                } else {
                   char piChar = (char)piMsg;
@@ -173,11 +199,12 @@ void loop() {
                      Serial.print((char)serialBytes[i]);
                   }
                   Serial.println("");
+                  Serial.println((int)serialBytes[0]);
                   int err = duck.sendData(topics::lft, serialBytes);
                   if(err == DUCK_ERR_NONE) {
                      serialBytes.clear();
                      serialBytes.shrink_to_fit();
-                     delay(200);
+                     //delay(10);
                      // Serial2.write("AK:");
                      // Serial.println("Sent AK");
                      state = 'A';
@@ -199,10 +226,13 @@ void loop() {
 
    if(messageAcked) {
 
-      if(bridgeOpenState) {
+      if(bridgeOpenState && sendState) {
          Serial2.write("AK:");
-         Serial.println("message acked bridge open");
-         Serial2.write("BO:200:");
+         // Serial.println("message acked bridge open");
+         // Serial2.write("BO:200:");
+         serialBytes.clear();
+         serialBytes.shrink_to_fit();
+         messageAcked = false;
       }
 
       if(!bridgeOpenState) {
@@ -218,7 +248,7 @@ void loop() {
    }
 
    if(sendAckState) {
-      std::vector<byte> temp = {'A','K',':'}; 
+      std::vector<byte> temp = {'3','A','K',':'}; 
       int err = duck.sendData(topics::lft, temp);
       if(err == DUCK_ERR_NONE) {
          bridgeOpenState = true;
@@ -228,16 +258,21 @@ void loop() {
    if(!sendState) {
       if(buffLoaded && headerBuffer.size() > 0) {
          Serial.println("Write cmd header to pi");
+         Serial.println(headerBuffer.size());
          for(int i = 0; i < headerBuffer.size(); i++) {
             Serial2.write(headerBuffer[i]);
+            Serial.println((char)headerBuffer[i]);
          }
          headerBuffer.clear();
          headerBuffer.shrink_to_fit();
       } else if(buffLoaded && headerBuffer.size() < 1 && gotPiAck == true) {
          Serial.println("Write packet buffer to pi");
+         Serial.println(ackBuffer.size());
          for(int i = 0; i < ackBuffer.size(); i++) {
             Serial2.write(ackBuffer[i]);
+            Serial.print((char)ackBuffer[i]);
          }
+         Serial.println("");
          ackBuffer.clear();
          ackBuffer.shrink_to_fit();
          gotPiAck = false;
@@ -252,6 +287,8 @@ void handlLFTPacket(std::vector<byte> packetBuffer) {
    std::string cmdCB = "CB:";
    std::string openBridge = "OB:";
    std::string packetIncoming = "PK:";
+   std::string bridgeOpen = "BO:";
+   std::string ackMessage = "AK:";
    CdpPacket packet = packetBuffer;
    std::string payload(packet.data.begin(), packet.data.end());
 
@@ -259,35 +296,94 @@ void handlLFTPacket(std::vector<byte> packetBuffer) {
    int len = packet.data[0];
    for(int i = 1; i < 4; i++) {
       cmd = cmd + (char)packet.data[i];
+      Serial.println(cmd.c_str());
    }
 
    Serial.print("Message received: ");
    Serial.println(cmd.c_str());
 
-   if(cmd == openBridge) {
+   if(cmd == openBridge && !bridgeOpenState) {
       sendState = false;
+      bridgeOpenState = true;
       Serial.println("Got Open Bridge Request");
       Serial2.write("OB:");
+   // } else if(cmd == openBridge && bridgeOpenState) {
+   //    Serial.println("Bridge is already open");
+   //    Serial.println("Sending Ack to sender");
+   //    std::vector<byte> temp = {'3','A','K',':'}; 
+   //    int err = duck.sendData(topics::lft, temp);
+   //    if(err == DUCK_ERR_NONE) {
+   //       Serial.println("Ack sent to sender");
+   //    }
    }
 
    if(cmd == packetIncoming) {
       Serial.println("Got Next Packet Request");
       Serial.println(packet.data.size());
 
-      for(int i = 1; i < (int)packet.data[0]; i++) {
-         headerBuffer.push_back(packet.data[i]);
-      }
+      
+      headerBuffer.clear();
+      headerBuffer.shrink_to_fit();
+      ackBuffer.clear();
+      ackBuffer.shrink_to_fit();
+      
 
-      for(int i = (int)packet.data[0]; i < packet.data.size(); i++) {
-         ackBuffer.push_back(packet.data[i]);
+      Serial.print("The header size is: ");
+      int headerLen = (int)packet.data[0] + 1;
+      Serial.println(headerLen);
+
+      Serial.print("Packet size: ");
+      Serial.println(packet.data.size());
+
+      for (int i = 0; i < packet.data.size(); i++)
+      {
+         Serial.print((char)packet.data[i]);
       }
+      Serial.println();
+      
+
+      Serial.println("Setting up header buffer");
+      for(int i = 1; i < packet.data.size(); i++) {
+         if(i < headerLen) {
+            headerBuffer.push_back(packet.data[i]);
+            Serial.print((char)packet.data[i]);
+         } else if(i == headerLen) {
+            Serial.println("");
+            Serial.println("Setting up ackBuffer");
+            ackBuffer.push_back(packet.data[i]);
+            Serial.print((char)packet.data[i]);
+         } else {
+            ackBuffer.push_back(packet.data[i]);
+            Serial.print((char)packet.data[i]);
+         }
+         
+      }
+      Serial.println("");
+      
 
       buffLoaded = true;
       Serial.println("");
 
    }
 
-   if(payload == cmdCB) {
+   if(cmd == bridgeOpen) {
+      Serial.println("Bridge is now open");
+      for (int i = 1; i < packet.data.size(); i++)
+      {
+         Serial2.write((char)packet.data[i]);
+         Serial.println((char)packet.data[i]);
+      }
+      
+   }
+
+   if(cmd == ackMessage) {
+      messageAcked = true;
+      Serial.println("Got Ack for last message");
+      //Serial2.write("AK:");
+   }
+
+   if(cmd == cmdCB) {
+      bridgeOpenState = false;
       sendState = false;
       Serial.println("Received close bridge!!!!!!!!");
       Serial2.write("CB:");
@@ -297,7 +393,11 @@ void handlLFTPacket(std::vector<byte> packetBuffer) {
 void checkCommand(std::string cmd) {
    std::string openBridge = "OB";
    std::string packetIncoming = "PK";
+   std::string bridgeOpen = "BO";
    std::string ack = "AK";
+   std::string requestPacket = "RP";
+   std::string closeBridge = "CB";
+   bool recognized = false;
 
    if(cmd == openBridge) {
       Serial.println("Open bridge");
@@ -313,6 +413,7 @@ void checkCommand(std::string cmd) {
       if(err == DUCK_ERR_NONE) {
          bridgeOpenState = true;
       }
+      recognized = true;
       
    } else {
       Serial.println("no Open bridge");
@@ -326,6 +427,8 @@ void checkCommand(std::string cmd) {
       for(int i = 0; i < serialBytes.size(); i++) {
          Serial.println((char)serialBytes[i]);
       }
+
+      recognized = true;
    } else {
       Serial.println("no packetIncoming");
    }
@@ -337,23 +440,65 @@ void checkCommand(std::string cmd) {
       headerSize = 0;
       Serial.print("SerialBytes size: ");
       Serial.println(serialBytes.size());
-      if(!sendState) {
+      // if(sendState == false) {
          if(buffLoaded) {
+            Serial.println("Got Pi Ack");
             gotPiAck = true;
          } else {
-            std::vector<byte> temp = {'A','K',':'}; 
+            Serial.println("Sending Ack");
+            std::vector<byte> temp = {'3','A','K',':'}; 
             int err = duck.sendData(topics::lft, temp);
             if(err == DUCK_ERR_NONE) {
-               Serial.println("Ack sent to sender");
+               Serial.println("Ack sent");
             }
          }
-      }
+      // } else {
+      //    Serial.println("Send state true");
+      // }
+
+      recognized = true;
    } else {
       Serial.println("no ack");
    }
 
+   if(cmd == bridgeOpen) {
+      bridgeOpenAck = true;
+      
+      Serial.println("bridgeOpen");
+      state = 'B';
+      Serial.println("Change state B");
+      Serial.println(serialBytes.size());
+      for(int i = 0; i < serialBytes.size(); i++) {
+         Serial.println((char)serialBytes[i]);
+      }
+
+      recognized = true;
+   }
+
+   if(cmd == requestPacket) {
+      Serial.println("packetIncoming");
+      state = 'B';
+      missingPacket = true;
+
+      recognized = true;
+   }
+
+   if(cmd == closeBridge) {
+      Serial.println("Sending CB");
+      std::vector<byte> temp = {'3','C','B',':'}; 
+      int err = duck.sendData(topics::lft, temp);
+      if(err == DUCK_ERR_NONE) {
+         Serial.println("CB sent to sender");
+      }
+   }
+
    piCmd.clear();
    piCmd.shrink_to_fit();
+
+   if(recognized == false) {
+      serialBytes.clear();
+      serialBytes.shrink_to_fit();
+   }
  
 }
 
