@@ -322,6 +322,40 @@ void quackDownReport(String payload) {
 
 }
 
+void messageReport(String payload) {
+  Serial.println("Creating Message Report");
+
+  const int bufferSize = 4 * JSON_OBJECT_SIZE(4);
+  StaticJsonDocument<bufferSize> doc;
+
+  doc["DeviceID"] = "PAPADUCK";
+  doc["MessageID"] = createUuid(4);
+  doc["Payload"].set(payload);
+  doc["path"] = "PAPADUCK";
+  doc["hops"] = "0";
+  doc["duckType"] = "1";
+    
+  std::string topic = "iot-2/evt/health/fmt/json";
+
+  String jsonstat;
+  serializeJson(doc, jsonstat);
+
+  if (client.publish(topic.c_str(), jsonstat.c_str())) {
+    Serial.println("[PAPA] Packet forwarded:");
+    serializeJsonPretty(doc, Serial);
+    Serial.println("");
+    Serial.println("[PAPA] Publish ok");
+    display->drawString(0, 60, "Publish ok");
+    display->sendBuffer();
+  } else {
+    Serial.println("[PAPA] Publish failed");
+    display->drawString(0, 60, "Publish failed");
+    display->sendBuffer();
+    failCounter++;
+  }
+
+}
+
 // Creates a unique id for the message
 String createUuid(int length) {
   String msg = "";
@@ -340,6 +374,10 @@ String createUuid(int length) {
 
 bool sendFailReport(void*) {
   quackDownReport("Packet Fail count: " + String(failCounter));
+}
+
+bool sendMessageReport(void*) {
+  messageReport("Packet Fail count: " + String(duck.getCrcMsgCount()));
 }
 
 void publishQueue() {

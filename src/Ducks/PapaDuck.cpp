@@ -78,12 +78,13 @@ int PapaDuck::setupWithDefaults(std::vector<byte> deviceId, String ssid,
 }
 
 void PapaDuck::run() {
+
   Duck::logIfLowMemory();
 
   duckRadio.serviceInterruptFlags();
 
   handleOtaUpdate();
-  if (DuckRadio::getReceiveFlag()) {
+  if (duckRadio.getReceiveFlag()) {
     handleReceivedPacket();
     rxPacket->reset(); // TODO(rolsen): Make rxPacket local to handleReceivedPacket
   }
@@ -227,4 +228,8 @@ int PapaDuck::reconnectWifi(String ssid, String password) {
   }
   return DUCK_ERR_NONE;
 #endif
+}
+
+int PapaDuck::getCrcMsgCount() {
+  return duckRadio.getCrcMsgCount();
 }

@@ -156,6 +156,7 @@ int DuckRadio::readReceivedData(std::vector<byte>* packetBytes) {
   if (computed_data_crc != packet_data_crc) {
     logerr("ERROR data crc mismatch: received: " + String(packet_data_crc) +
            " calculated:" + String(computed_data_crc));
+    crcMsgCount++;
     return DUCKLORA_ERR_HANDLE_PACKET;
   }
   // we have a good packet

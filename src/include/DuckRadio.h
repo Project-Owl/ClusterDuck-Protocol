@@ -179,6 +179,13 @@ private:
 
   int getChannel() { return channel; }
 
+  /**
+   * @brief Get the CRC message count.
+   *
+   * @returns An integer representing amount of CRC messages seen.
+   */
+  int getCrcMsgCount() { return crcMsgCount; }
+
 private:
   static volatile uint16_t interruptFlags;
   void serviceInterruptFlags();
@@ -193,7 +200,10 @@ private:
 
   DuckDisplay* display = DuckDisplay::getInstance();
   int err;
-  int channel;  
+  int channel; 
+
+public:
+  int crcMsgCount;
 };
 
 #endif
