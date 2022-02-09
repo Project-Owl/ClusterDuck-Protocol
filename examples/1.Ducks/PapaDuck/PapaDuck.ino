@@ -254,8 +254,6 @@ void setup() {
   display->showDefaultScreen();
 }
 
-
-
 void loop() {
   if (!duck.isWifiConnected() && retry) {
     String ssid = duck.getSsid();

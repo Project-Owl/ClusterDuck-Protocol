@@ -24,6 +24,40 @@
 #include <CdpPacket.h>
 #include <queue>
 
+//Uncomment CA_CERT if you want to use the certificate auth method
+//#define CA_CERT
+#ifdef CA_CERT
+const char* example_root_ca = \
+  "-----BEGIN CERTIFICATE-----\n" \
+  "MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh\n" \
+  "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\n" \
+  "d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD\n" \
+  "QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT\n" \
+  "MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j\n" \
+  "b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG\n" \
+  "9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB\n" \
+  "CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97\n" \
+  "nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt\n" \
+  "43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P\n" \
+  "T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4\n" \
+  "gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO\n" \
+  "BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR\n" \
+  "TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw\n" \
+  "DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr\n" \
+  "hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg\n" \
+  "06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF\n" \
+  "PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls\n" \
+  "YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk\n" \
+  "CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=\n" \
+  "-----END CERTIFICATE-----\n";
+  // This is the DigiCert Global Root CA, which is the root CA cert for
+  // https://internetofthings.ibmcloud.com/
+  // It expires November 9, 2031.
+  // To connect to a different cloud provider or server, you may need to use a
+  // different cert. For details, see
+  // https://github.com/espressif/arduino-esp32/tree/master/libraries/WiFiClientSecure
+#endif
+
 #define MQTT_RETRY_DELAY_MS 500
 #define WIFI_RETRY_DELAY_MS 5000
 
@@ -214,13 +248,22 @@ void setup() {
   //Send report on how many disconnects in a period
   timer.every(3000000, sendFailReport);
 
+  //Send report on how many disconnects in a period
+  timer.every(60000, sendMessageReport);
+
+  #ifdef CA_CERT
+  Serial.println("[PAPA] Using root CA cert");
+  wifiClient.setCACert(example_root_ca);
+  #else
+  Serial.println("[PAPA] Using insecure TLS");
+  wifiClient.setInsecure();
+  #endif
+
   Serial.println("[PAPA] Setup OK! ");
   
   // we are done
   display->showDefaultScreen();
 }
-
-
 
 void loop() {
 
@@ -319,7 +362,6 @@ void quackDownReport(String payload) {
     display->sendBuffer();
     failCounter++;
   }
-
 }
 
 void messageReport(String payload) {
@@ -339,7 +381,7 @@ void messageReport(String payload) {
 
   String jsonstat;
   serializeJson(doc, jsonstat);
-
+  Serial.println("Uploading Message Report");
   if (client.publish(topic.c_str(), jsonstat.c_str())) {
     Serial.println("[PAPA] Packet forwarded:");
     serializeJsonPretty(doc, Serial);
@@ -351,9 +393,7 @@ void messageReport(String payload) {
     Serial.println("[PAPA] Publish failed");
     display->drawString(0, 60, "Publish failed");
     display->sendBuffer();
-    failCounter++;
   }
-
 }
 
 // Creates a unique id for the message
@@ -377,7 +417,7 @@ bool sendFailReport(void*) {
 }
 
 bool sendMessageReport(void*) {
-  messageReport("Packet Fail count: " + String(duck.getCrcMsgCount()));
+  messageReport(String(duck.getTotalMsgCount()) + "/" + String(duck.getCrcMsgCount()));
 }
 
 void publishQueue() {

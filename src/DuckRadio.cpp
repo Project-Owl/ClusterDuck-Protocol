@@ -105,6 +105,8 @@ void DuckRadio::setSyncWord(byte syncWord) {
 
 int DuckRadio::readReceivedData(std::vector<byte>* packetBytes) {
 
+  totalMsgCount++;
+
   int packet_length = 0;
   int err = DUCK_ERR_NONE;
 

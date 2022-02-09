@@ -184,6 +184,13 @@ private:
    *
    * @returns An integer representing amount of CRC messages seen.
    */
+  int getTotalMsgCount() { return totalMsgCount; }
+
+  /**
+   * @brief Get the CRC message count.
+   *
+   * @returns An integer representing amount of CRC messages seen.
+   */
   int getCrcMsgCount() { return crcMsgCount; }
 
 private:
@@ -203,6 +210,7 @@ private:
   int channel; 
 
 public:
+  int totalMsgCount;
   int crcMsgCount;
 };
 

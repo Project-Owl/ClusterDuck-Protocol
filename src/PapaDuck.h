@@ -79,6 +79,16 @@ public:
   void enableAcks(bool enable);
 
   /**
+   * @brief Get the total number of messages it seen
+   *
+   * The PapaDuck can send acknowledgements for each packet received. See
+   * `reservedTopic::ack`. By default, the PapaDuck will not send acks.
+   *
+   * @param 
+   */
+  int getTotalMsgCount();
+
+  /**
    * @brief Get the number of CRC errors it seen
    *
    * The PapaDuck can send acknowledgements for each packet received. See

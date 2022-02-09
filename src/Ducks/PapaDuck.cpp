@@ -233,3 +233,7 @@ int PapaDuck::reconnectWifi(String ssid, String password) {
 int PapaDuck::getCrcMsgCount() {
   return duckRadio.getCrcMsgCount();
 }
+
+int PapaDuck::getTotalMsgCount() {
+  return duckRadio.getTotalMsgCount();
+}
