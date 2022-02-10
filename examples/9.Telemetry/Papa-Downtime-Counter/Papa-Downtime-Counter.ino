@@ -417,7 +417,7 @@ bool sendFailReport(void*) {
 }
 
 bool sendMessageReport(void*) {
-  messageReport(String(duck.getTotalMsgCount()) + "/" + String(duck.getCrcMsgCount()));
+  messageReport(String(duck.getTotalMsgCount()) + "/" + String(duck.getCrcMsgCount()) + "/" + String(failCounter));
 }
 
 void publishQueue() {
