@@ -109,6 +109,11 @@ void PapaDuck::handleReceivedPacket() {
   }
   // ignore pings
   if (data[TOPIC_POS] == reservedTopic::ping) {
+    loginfo("ping received");
+    err = sendPong();
+    if (err != DUCK_ERR_NONE) {
+      logerr("ERROR failed to send pong message. rc = " + String(err));
+    }
     rxPacket->reset();
     return;
   }
