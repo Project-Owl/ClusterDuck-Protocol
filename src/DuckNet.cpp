@@ -136,6 +136,10 @@ int DuckNet::setupWebServer(bool createCaptivePortal, String html) {
     request->send(200, "text/html", message_board);
   });
 
+  webServer.on("/debug-log", HTTP_GET, [&](AsyncWebServerRequest* request) {
+    request->send(200, "text/html", message_board);
+  });
+
   webServer.on("/main", HTTP_GET, [&](AsyncWebServerRequest* request) {
     request->send(200, "text/html", MAIN_page);
   });
@@ -298,6 +302,12 @@ int DuckNet::setupWebServer(bool createCaptivePortal, String html) {
 
   webServer.on("/messageHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
     std::string response = DuckNet::retrieveMessageHistory();
+    const char *cstr = response.c_str();
+    request->send(200, "text/json", cstr);
+  });
+
+  webServer.on("/debugHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
+    std::string response = Duck::retrieveDebugHistory();
     const char *cstr = response.c_str();
     request->send(200, "text/json", cstr);
   });
