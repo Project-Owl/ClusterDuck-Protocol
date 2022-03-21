@@ -25,6 +25,7 @@ enum muidStatus {
 #include "DuckRadio.h"
 #include "DuckTypes.h"
 #include "DuckUtils.h"
+#include "circularBufferString.h"
 
 class Duck {
 
@@ -74,6 +75,10 @@ public:
    * @param baudRate default: 115200
    */
   int setupSerial(int baudRate = 115200);
+
+  std::string retrieveDebugHistory();
+
+  void pushToDebug(std::string debugMsg);
 
   /**
    * @brief Setup the radio component

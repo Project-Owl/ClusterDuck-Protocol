@@ -5,7 +5,7 @@ const char debug_log[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Message Board</title>
+        <title>Debug Log</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
 
@@ -27,7 +27,7 @@ const char debug_log[] PROGMEM = R"=====(
                 
             }
 
-            function requestLogHistory(){
+            function requestDebugHistory(){
                     var req = new XMLHttpRequest();
                     req.addEventListener("load", debugLogListener);
                     req.open("GET", "/debugHistory");
@@ -53,7 +53,7 @@ const char debug_log[] PROGMEM = R"=====(
                 }, false);
             }
             
-            requestMessageHistory();
+            requestDebugHistory();
         </script>
     </body>
 </html>

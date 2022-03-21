@@ -35,6 +35,8 @@ Duck::~Duck() {
   delete duckNet;
 }
 
+CircularBufferString debugBuffer = CircularBufferString(50);
+
 void Duck::setEncrypt(bool state) {
   duckcrypto::setEncrypt(state);
 }
@@ -110,6 +112,38 @@ int Duck::setupSerial(int baudRate) {
   loginfo("setupSerial rc = " + String(DUCK_ERR_NONE));
   loginfo("Running CDP Version: " + String(getCDPVersion().c_str()));
   return DUCK_ERR_NONE;
+}
+
+std::string Duck::retrieveDebugHistory() {
+
+  int tail = debugBuffer.getTail();
+  std::string json = "{\"posts\":[";
+  bool firstMessage = true;
+
+  while(tail != debugBuffer.getHead()){
+    if(firstMessage){
+      firstMessage = false;
+    } else{
+      json = json + ", ";
+    }
+
+    std::string debugMessage = debugBuffer.getMessage(tail);
+
+    json = json + "{\"body\":\"" + debugMessage + "\"}";
+
+    tail++;
+    if(tail == debugBuffer.getBufferEnd()){
+      tail = 0;
+    }
+  }
+  json = json + "]}";
+  Serial.print(json.c_str());
+  return json;
+}
+
+void Duck::pushToDebug(std::string debugMsg) {
+  debugBuffer.push(debugMsg);
+  duckNet->updateDebugBuffer();
 }
 
 // TODO: use LoraConfigParams directly as argument to setupRadio
@@ -191,11 +225,14 @@ int Duck::setupDns() {
 }
 
 int Duck::setupInternet(String ssid, String password) {
+  pushToDebug("Setting up internet");
   int err = duckNet->setupInternet(ssid, password);
   if (err != DUCK_ERR_NONE) {
     logerr("ERROR setupInternet rc = " + String(err));
+    pushToDebug("error setting up internet");
   } else {
     loginfo("setupInternet OK");
+    pushToDebug("Internet OK");
   }
   return err;
 }
@@ -443,6 +480,7 @@ bool Duck::isWifiConnected() {
 }
 
 bool Duck::ssidAvailable(String ssid) {
+
   return duckNet->ssidAvailable(ssid);
 }
 

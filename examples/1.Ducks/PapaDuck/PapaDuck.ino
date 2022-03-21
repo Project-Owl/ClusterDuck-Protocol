@@ -307,6 +307,7 @@ void loop() {
 
    if (!client.loop()) {
      if(duck.isWifiConnected()) {
+        duck.pushToDebug("Trying to connect to mqtt");
         mqttConnect();
      }
       
@@ -371,7 +372,7 @@ void gotMsg(char* topic, byte* payload, unsigned int payloadLength) {
 
 void wifiConnect() {
  Serial.print("Connecting to "); Serial.print(SSID);
- WiFi.begin(SSID, PASSWORD);
+ duck.setupInternet(SSID, PASSWORD);
  while (WiFi.status() != WL_CONNECTED) {
    delay(500);
    Serial.print(".");
@@ -381,11 +382,15 @@ void wifiConnect() {
 
 void mqttConnect() {
    if (!!!client.connected()) {
+      duck.pushToDebug("Connecting to MQTT server");
       Serial.print("Reconnecting MQTT client to "); Serial.println(server);
       if(!!!client.connect(clientId, authMethod, token) && retry) {
+        duck.pushToDebug("Connection failed to MQTT server");        
          Serial.print("Connection failed, retry in 5 seconds");
          retry = false;
          timer.in(5000, enableRetry);
+      } else {
+        duck.pushToDebug("Connected to MQTT server");
       }
       Serial.println();
    } else {
@@ -402,7 +407,9 @@ void subscribeTo(const char* topic) {
  Serial.print("subscribe to "); Serial.print(topic);
  if (client.subscribe(topic)) {
    Serial.println(" OK");
+   duck.pushToDebug("Connected to command topic");
  } else {
+   duck.pushToDebug("Couldn't connect to command topic");
    Serial.println(" FAILED");
  }
 }

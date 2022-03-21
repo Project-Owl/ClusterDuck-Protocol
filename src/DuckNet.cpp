@@ -79,6 +79,10 @@ void DuckNet::addMessageToBuffer(CdpPacket message)
   messageBuffer.push(message);
   events.send("refresh" ,"refreshPage",millis());
 }
+void DuckNet::updateDebugBuffer()
+{
+  events.send("refresh" ,"refreshPage",millis());
+}
 std::string DuckNet::retrieveMessageHistory(){
   int tail = messageBuffer.getTail();
   std::string json = "{\"posts\":[";
@@ -136,8 +140,9 @@ int DuckNet::setupWebServer(bool createCaptivePortal, String html) {
     request->send(200, "text/html", message_board);
   });
 
-  webServer.on("/debug-log", HTTP_GET, [&](AsyncWebServerRequest* request) {
-    request->send(200, "text/html", message_board);
+  webServer.on("/debug", HTTP_GET, [&](AsyncWebServerRequest* request) {
+    Serial.println("Opening debug panel");
+    request->send(200, "text/html", debug_log);
   });
 
   webServer.on("/main", HTTP_GET, [&](AsyncWebServerRequest* request) {
@@ -151,30 +156,7 @@ int DuckNet::setupWebServer(bool createCaptivePortal, String html) {
   // This will serve as an easy to access "control panel" to change settings of devices easily
   // TODO: Need to be able to turn off this feature from the application layer for security
   // TODO: Can we limit controls depending on the duck?
-  webServer.on("/controlpanel", HTTP_GET, [&](AsyncWebServerRequest* request) {
-    // if(controlSsid == "" || controlPassword == "") {
-    //   int empty = loadControlCredentials();
-    //   Serial.println("Empty: " + empty);
-    //   if(empty) {
-    //     Serial.println(control_username);
-    //     Serial.println(control_password);
-    //     if (!request->authenticate(control_username, control_password))
-    //   return request->requestAuthentication();
-    //   } else {
-    //     Serial.println(controlSsid);
-    //     Serial.println(controlPassword);
-    //     if (!request->authenticate(controlSsid, controlPassword))
-    //   return request->requestAuthentication();
-    //   }
-
-    // } else {
-    //   Serial.println('ELSE');
-    //   Serial.println(controlSsid);
-    //   Serial.println(controlPassword);
-    //   if (!request->authenticate(controlSsid, controlPassword))
-    //   return request->requestAuthentication();
-    // }
-    
+  webServer.on("/controlpanel", HTTP_GET, [&](AsyncWebServerRequest* request) {    
     AsyncWebServerResponse* response =
     request->beginResponse(200, "text/html", controlPanel);
 
@@ -207,39 +189,6 @@ int DuckNet::setupWebServer(bool createCaptivePortal, String html) {
 
     request->send(200, "text/plain", "Success");
   });
-
-  // webServer.on("/changeControlPassword", HTTP_POST, [&](AsyncWebServerRequest* request) {
-  //   int paramsNumber = request->params();
-  //   String val = "";
-  //   String ssid = "";
-  //   String password = "";
-  //   String newSsid = "";
-  //   String newPassword = "";
-
-  //   for (int i = 0; i < paramsNumber; i++) {
-  //     AsyncWebParameter* p = request->getParam(i);
-
-  //     String name = String(p->name());
-  //     String value = String(p->value());
-
-  //     if (name == "ssid") {
-  //       ssid = String(p->value());
-  //     } else if (name == "pass") {
-  //       password = String(p->value());
-  //     } else if (name == "newSsid") {
-  //       newSsid = String(p->value());
-  //     } else if (name == "newPassword") {
-  //       newPassword = String(p->value());
-  //     }
-  //   }
-
-  //   if (ssid == controlSsid && password == controlPassword && newSsid != "" && newPassword != "") {
-  //     saveControlCredentials(newSsid, newPassword);
-  //     request->send(200, "text/plain", "Success");
-  //   } else {
-  //     request->send(500, "text/plain", "There was an error");
-  //   }
-  // });
 
   // Update Firmware OTA
   webServer.on("/update", HTTP_GET, [&](AsyncWebServerRequest* request) {
@@ -307,7 +256,7 @@ int DuckNet::setupWebServer(bool createCaptivePortal, String html) {
   });
 
   webServer.on("/debugHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
-    std::string response = Duck::retrieveDebugHistory();
+    std::string response = duck->retrieveDebugHistory();
     const char *cstr = response.c_str();
     request->send(200, "text/json", cstr);
   });
@@ -380,6 +329,7 @@ int DuckNet::setupWebServer(bool createCaptivePortal, String html) {
  });
 
   webServer.on("/changeSSID", HTTP_POST, [&](AsyncWebServerRequest* request) {
+    duck->pushToDebug("Recieved new WiFi credentials. Saving now...");
     int paramsNumber = request->params();
     String val = "";
     String ssid = "";
@@ -491,6 +441,7 @@ int DuckNet::setupInternet(String ssid, String password) {
 
 
   //  Connect to Access Point
+  duck->pushToDebug("Connecting to network...");
   logdbg("setupInternet: connecting to WiFi access point SSID: " + ssid);
   WiFi.begin(ssid.c_str(), password.c_str());
   // We need to wait here for the connection to estanlish. Otherwise the WiFi.status() may return a false negative
@@ -499,10 +450,13 @@ int DuckNet::setupInternet(String ssid, String password) {
 
   //TODO: Handle bad password better
   if(WiFi.status() != WL_CONNECTED) {
+    duck->pushToDebug("Failed to connect to");
+    duck->pushToDebug(ssid.c_str());
     logerr("ERROR setupInternet: failed to connect to " + ssid);
     return DUCK_INTERNET_ERR_CONNECT;
   }
 
+  duck->pushToDebug("Duck connected to internet!");
   loginfo("Duck connected to internet!");
 
   return DUCK_ERR_NONE;
@@ -522,12 +476,14 @@ bool DuckNet::ssidAvailable(String val) {
     for (int i = 0; i < n; ++i) {
       if (WiFi.SSID(i) == val.c_str()) {
         logdbg("Given ssid is available!");
+        duck->pushToDebug("Given ssid is available!");
         return true;
       }
       delay(AP_SCAN_INTERVAL_MS);
     }
   }
   loginfo("No ssid available");
+  duck->pushToDebug("Given ssid is not available!");
 
   return false;
 }

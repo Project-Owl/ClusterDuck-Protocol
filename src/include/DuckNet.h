@@ -46,6 +46,7 @@ class DuckNet;
 #include "papaHome.h"
 #include "messageBoard.h"
 #include "circularBuffer.h"
+#include "debugLog.h"
 
 #endif
 
@@ -111,6 +112,8 @@ public:
    * @param message the packet to add to the buffer
    */
   void addMessageToBuffer(CdpPacket message);
+
+  void updateDebugBuffer();
   
   /**
    * @brief retrieve all messages from from message circular buffer
