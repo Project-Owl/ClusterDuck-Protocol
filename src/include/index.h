@@ -149,7 +149,7 @@ const char MAIN_page[] PROGMEM = R"=====(
                 <h6 style="font-size: 10px; text-align: center;margin-top: 24px;">Powered by the ClusterDuck Protocol</h6>
             </div>
         </div>
-        <div id="mainSent" class="=main off sent">
+        <div id="mainSent" class="main off sent">
             <div class="updateBox">
                 <div class="gps"><h4>Message Sent</h4><h5 id="dateNow">March 13, 2019 @ 1:00 PM</h5><p>Your message ID#: XXXXXX</p></div>
                 <p class="disclaimer">If your situation changes, please send another update.</p>
