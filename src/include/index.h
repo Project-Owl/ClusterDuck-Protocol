@@ -206,6 +206,7 @@ const char MAIN_page[] PROGMEM = R"=====(
                 var showSentMessage = function(commentsInput) {
                     var lastMessageField = document.getElementById('lastMessageField');
                     lastMessageField.innerHTML = commentsInput.value;
+                    
                     // TODO: Create a new DOM view so multiple messages can be shown
                     var msgSection = document.getElementById('lastMessageSection');
                     msgSection.classList.remove("hidden");
@@ -223,6 +224,9 @@ const char MAIN_page[] PROGMEM = R"=====(
                         req.open("POST", "/formSubmit.json?" + params.toString());
                         req.send();
                         showSentMessage(commentsInput);
+
+                        // Reseting the value
+                        document.getElementById('commentsInput').value = '';
                     },
                     saveLastMuid: function(muid) { <!-- for checking if message was acked on duk, needs fixed -->
                         document.getElementById('lastMessageMuid').innerHTML = muid;
