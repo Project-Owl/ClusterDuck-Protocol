@@ -63,8 +63,10 @@ Data Section of a duck command (max 229 bytes):
 +-+-----+-...
 |N| VAL
 +-+-----+-...
+
 N:              1  byte                - Command lookup value
 VAL:          228  bytes               - Value to set for command
+
 */
 
 // header + 1 hop + 1 byte data
