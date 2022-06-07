@@ -137,47 +137,24 @@ const char MAIN_page[] PROGMEM = R"=====(
         <div class="content body" id="formContent">
             <h3>Fill out the form below to submit information to the ClusterDuck network.</h3>
         <div id="form">
-                <form>
+               <form action="/formSubmit" method="post">
+                
+                    <label for="name">Name: </label>
+                    <input type="text" id="name" name="name"><br />
+                    
+                    <label for="email">Email: </label>
+                    <input type="email" id="email" name="email"><br />
+                    
+                    <label for="status">Interest: </label>
+                    <select id="interest" name="interest"><br />
+                        <option>General</option>
+                        <option>Partnership</option>
+                        <option>Sales</option>
+                        <option>Investing</option>
+                        <option>Other</option>
+                    </select>
 
-                    <label for="firstName">First Name / नाम </label><br>
-                    <input class="textbox textbox-full" id="clientId" name="clientId" type="text" placeholder="Arun" /><br><br>
-                    
-                    <label for="lastName">Surname(s) / उपनाम</label><br>
-                    <input class="textbox textbox-full" name="lastName" id="lastName" type="text" placeholder="Rana" /> <br /><br>
-                    
-                    <label for="streetAddress">Location of Disaster / Emergency <br>आपदा / आपात स्थिति का स्थान</label>
-                    <input class="textbox textbox-full" name="streetAddress" id="streetAddress" type="text" placeholder="Jutogh" /> <br /> <br />
-                    
-                    <label for="city">City / शहर</label><br>
-                    <input class="textbox textbox-full" name="city" type="text" placeholder="Shimla" /><br><br>
-                    
-                    <label for="zipcode">Pincode / पिन कोड</label><br>
-                    <input class="textbox textbox-full" name="zipcode" type="number" placeholder="171011" /> <br /> <br />
-                    
-                    <label for="phone">Phone / फ़ोन नंबर </label><br />
-                    <input class="textbox textbox-full" name="phone" id="phoneNumber" type="tel" placeholder="787-123-1234" />
-                    <br /> <br />
-                    
-                    <label for="status">Current Status / वर्तमान स्थिति</label><br />
-                    <input name="status" id="currentStatusSos" type="radio" value="sos" /> I'm in danger (SOS)/ ख़तरे में
-
-                    <br><input name="status" id="currentStatusOk" type="radio" value="ok" /> OK <br />
-                    
-                    <br />
-                    <label for="status">Needs / ज़रूरत</label><br />
-                    <input type="checkbox" name="water" id="waterNeed" type="radio" value="water" /> Water
-                    <input name="transportation" id="transportationNeed" type="checkbox" value="transportation" /> Transportation <br />
-                    <input type="checkbox" name="food" id="foodNeed" type="radio" value="food" /> Food
-                    <input name="inspection" id="inspectionNeed" type="checkbox" value="inspection" /> Structural Inspection <br />
-                    <input type="checkbox" name="firstaid" id="firstAidNeed" type="radio" value="firstaid" /> First Aid
-                    <input name="shelter" type="checkbox" id="shelterNeed" value="shelter" /> Shelter <br />
-                    <br />
-                    <label for="status">How many people are with you?<br> आपके साथ कितने लोग हैं?</label><br />
-                    <span>Adults </span><input class="textbox textbox-small" name="adults" id="adultsInput" type="number" placeholder="2" />
-                    <span>Children </span><input class="textbox textbox-small" name="children" id="childrenInput" type="number" placeholder="2" />
-                    <span>Elderly </span><input class="textbox textbox-small" name="elderly" id="elderlyInput" type="number" placeholder="2"/>
-                    <textarea class="textbox comments textbox-full" name="message" id="commentsInput" cols="30" rows="2"></textarea>
-                    <input type="submit" id="sendBtn" class="sendReportBtn">Send</button>
+                    <button type="submit" id="sendBtn" class="sendReportBtn">Send</button>
                     <p id="makeshiftErrorOutput" class="hidden"></p>
                 </form>
                 <h6 style="font-size: 10px; text-align: center;margin-top: 24px;">Powered by the ClusterDuck Protocol</h6>

@@ -73,7 +73,7 @@ int DuckNet::setupWebServer(bool createCaptivePortal, String html) {
 
   if (html == "") {
     logdbg("Web Server using main page");
-    portal = home_page;
+    portal = MAIN_page;
   } else {
     logdbg("Web Server using custom main page");
     portal = html;
