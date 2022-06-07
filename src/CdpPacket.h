@@ -93,9 +93,21 @@ enum topics {
   alert = 0x14,
   /// Device health status
   health = 0x15,
-  // Send commands
-  cmdd = 0x16,
-  /// Max supported topics
+  // Send duck commands
+  dcmd = 0x16,
+  // MQ7 Gas Sensor
+  mq7 = 0xEF,
+  // GP2Y Dust Sensor
+  gp2y = 0xFA,
+  // bmp280
+  bmp280 = 0xFB,
+  // DHT11 sensor
+  dht11 = 0xFC,
+  // ir sensor
+  pir = 0xFD,
+  // bmp180 
+  bmp180 = 0xFE,
+  // Max supported topics
   max_topics = 0xFF
 };
 
