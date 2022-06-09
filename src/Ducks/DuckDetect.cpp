@@ -2,7 +2,13 @@
 
 int DuckDetect::setupWithDefaults(std::vector<byte> deviceId, String ssid,
                                   String password) {
-  int err = setDeviceId(deviceId);
+  int err = Duck::setupWithDefaults(deviceId, ssid, password);
+  if (err != DUCK_ERR_NONE) {
+    logerr("ERROR setupWithDefaults rc = " + String(err));
+    return err;
+  }
+  
+  err = setDeviceId(deviceId);
   if (err != DUCK_ERR_NONE) {
     logerr("ERROR setupWithDefaults rc = " + String(err));
     return err;
