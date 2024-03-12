@@ -88,7 +88,9 @@ static void smartDelay(unsigned long ms)
 
 bool runSensor(void *) {
   
+  Serial.println("[MAMA] WAKING UP!")
   duck.standBy();
+  
   // Creating a boolean to store the result
   bool result;
   
@@ -114,6 +116,7 @@ bool runSensor(void *) {
 
   duck.sleep();
   
+  Serial.println("[MAMA] ENTERING SLEEP MODE!")
   // Return result
   return result;
 }
@@ -205,7 +208,9 @@ String getBatteryData() {
   " Volts:" +
   String(batteryVoltage) + 
   " Temp:" +
-  String(getTemp);
+  String(getTemp) +
+  " Battery Percentage:" +
+  String(battPercentage);
 
   return sensorVal;
 }
