@@ -160,6 +160,14 @@ void Duck::setChannel(int channelNum) {
   duckRadio.setChannel(channelNum);
 }
 
+void Duck::standBy() {
+  duckRadio.standBy();
+}
+
+void Duck::sleep() {
+  duckRadio.sleep();
+}
+
 int Duck::setupWebServer(bool createCaptivePortal, std::string html) {
   int err = DUCK_ERR_NONE;
   duckNet->setDeviceId(duid);

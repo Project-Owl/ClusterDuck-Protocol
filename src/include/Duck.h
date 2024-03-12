@@ -104,6 +104,10 @@ public:
    */
   void setChannel(int channelNum);
 
+  void standBy();
+
+  void sleep();
+
   /**
    * @brief Setup WiFi access point.
    *

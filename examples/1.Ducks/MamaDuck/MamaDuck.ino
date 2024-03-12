@@ -17,11 +17,13 @@ bool runSensor(void *);
 // create a built-in mama duck
 MamaDuck duck;
 
+DuckRadio radio;
+
 // create a timer with default settings
 auto timer = timer_create_default();
 
 // for sending the counter message
-const int INTERVAL_MS = 60000;
+const int INTERVAL_MS = 10000;
 int counter = 1;
 bool setupOK = false;
 
@@ -71,6 +73,9 @@ void loop() {
 }
 
 bool runSensor(void *) {
+  
+  duck.standBy();
+  
   bool result;
   
   String message = String("Counter:") + String(counter)+ " " +String("Free Memory:") + String(freeMemory());
@@ -80,10 +85,13 @@ bool runSensor(void *) {
 
   result = sendData(stringToByteVector(message));
   if (result) {
-     Serial.println("[MAMA] runSensor ok.");
+    Serial.println("[MAMA] runSensor ok.");
   } else {
-     Serial.println("[MAMA] runSensor failed.");
+    Serial.println("[MAMA] runSensor failed.");
   }
+
+  duck.sleep(); 
+  
   return result;
 }
 
