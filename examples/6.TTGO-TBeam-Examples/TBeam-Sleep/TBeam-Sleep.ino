@@ -13,11 +13,20 @@
 #include <arduino-timer.h>
 #include <MamaDuck.h>
 #include <MemoryFree.h>
+#include "FastLED.h"
 
 #ifdef SERIAL_PORT_USBVIRTUAL
 #define Serial SERIAL_PORT_USBVIRTUAL
 #endif
 
+// Setup for W2812 (LED)
+#define LED_TYPE WS2812
+#define DATA_PIN 4
+#define NUM_LEDS 1
+#define COLOR_ORDER GRB
+#define BRIGHTNESS  128
+#include <pixeltypes.h>
+CRGB leds[NUM_LEDS];  
 
 //GPS
 #include <TinyGPS++.h>
@@ -63,7 +72,16 @@ void setup() {
 
   // initialize the timer. The timer thread runs separately from the main loop
   // and will trigger sending a counter message.
-  timer.every(INTERVAL_MS, runSensor);
+  timer.every(INTERVAL_MS, sendQuack);
+
+  // LED
+  FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalSMD5050 );
+  FastLED.setBrightness(  BRIGHTNESS );
+
+  timer.delay(10000);
+
+  FastLED.clear();
+
 }
 
 void loop() {
@@ -86,11 +104,25 @@ static void smartDelay(unsigned long ms)
   } while (millis() - start < ms);
 }
 
-bool runSensor(void *) {
-  
+bool sendQuack(void *) {
   Serial.println("[MAMA] WAKING UP!")
-  duck.standBy();
   
+  duck.standBy();
+
+  runSensor();
+
+  timer.delay(10000);
+
+  runSensor();
+
+  duck.sleep();
+  
+  Serial.println("[MAMA] ENTERING SLEEP MODE!")
+  // Return result
+}
+
+bool runSensor(void *) {
+
   // Creating a boolean to store the result
   bool result;
   
@@ -114,10 +146,6 @@ bool runSensor(void *) {
      Serial.println("[MAMA] runSensor failed.");
   }
 
-  duck.sleep();
-  
-  Serial.println("[MAMA] ENTERING SLEEP MODE!")
-  // Return result
   return result;
 }
 
