@@ -87,8 +87,7 @@ static void smartDelay(unsigned long ms)
 }
 
 bool runSensor(void *) {
-  
-  duck.standBy();
+    
   // Creating a boolean to store the result
   bool result;
   
@@ -111,9 +110,6 @@ bool runSensor(void *) {
   } else {
      Serial.println("[MAMA] runSensor failed.");
   }
-
-  duck.sleep();
-  
   // Return result
   return result;
 }
