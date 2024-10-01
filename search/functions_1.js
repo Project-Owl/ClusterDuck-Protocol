@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['duck_185',['Duck',['../class_duck.html#a65753b7b6eb80c4639f6bf165b8db9a6',1,'Duck::Duck()'],['../class_duck.html#a53c9e7278c98060cc03c7d9efd402df8',1,'Duck::Duck(String id)']]]
+  ['converttohex_280',['convertToHex',['../namespaceduckutils.html#a7af6fab5b312e69d35f62c81150eb752',1,'duckutils']]],
+  ['createuuid_281',['createUuid',['../namespaceduckutils.html#aff2e7f9ce8df861a748df8a3f84be721',1,'duckutils']]]
 ];

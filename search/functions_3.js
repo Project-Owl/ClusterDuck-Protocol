@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['handleotaupdate_200',['handleOtaUpdate',['../class_duck.html#ac9407d040d345391b1aecfb18404542f',1,'Duck']]],
-  ['handlepacket_201',['handlePacket',['../class_duck_lora.html#a498cb19262425f8dd564da347bbb6b55',1,'DuckLora']]]
+  ['encrypt_287',['encrypt',['../class_duck.html#aaaaaaf1cb10424e8ef7f10f3eab6fb13',1,'Duck']]],
+  ['encryptdata_288',['encryptData',['../namespaceduckcrypto.html#a7c685b6ac22984a00ce51c16f29e3303',1,'duckcrypto']]]
 ];
