@@ -29,6 +29,7 @@
 #include "DuckRadio.h"
 #include "bloomfilter.h"
 #include "DuckPacket.h"
+#include "CircularBuffer.h"
 
 #ifdef CDPCFG_WIFI_NONE
 #pragma info "WARNING: WiFi is disabled. DuckNet will not be available."
@@ -117,6 +118,14 @@ public:
     return DUCK_ERR_NONE;
   }
 
+   void addToAtakBuffer(DuckPacket message) {
+    logwarn_ln("WARNING addToAtakBuffer skipped, device has no WiFi.");
+  }
+  std::string retrieveAtakHistory(CircularBuffer* buffer) {
+      logwarn_ln("WARNING retrieveAtakHistory skipped, device has no WiFi.");
+      return "";
+  }
+
   void saveChannel(int val) {
     logwarn_ln("WARNING saveChannel skipped, device has no WiFi.");
   }
@@ -195,6 +204,17 @@ public:
    * @return DUCK_ERR_NONE if successful, an error code otherwise.
    */
   int loadWiFiCredentials();
+
+  /**
+   * @brief add ATAK message to history buffer
+  */
+  void addToAtakBuffer(CdpPacket message);
+
+   /**
+   * @brief retrieve all messages from from message circular buffer
+   * @returns a json array of messages with a title, body, and messageAge
+   */
+  std::string retrieveAtakHistory(CircularBuffer* buffer);
 
   /**
    * @brief Set the WiFi network ssid.

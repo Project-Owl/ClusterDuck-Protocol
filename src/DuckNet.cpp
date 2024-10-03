@@ -3,6 +3,8 @@
 DuckNet::DuckNet(BloomFilter *filter): bloomFilter(filter) {
 }
 
+CircularBuffer atakBuffer = CircularBuffer(CDPCFG_CDP_CHATBUF_SIZE);
+
 #ifndef CDPCFG_WIFI_NONE
 
 IPAddress apIP(CDPCFG_AP_IP1, CDPCFG_AP_IP2, CDPCFG_AP_IP3, CDPCFG_AP_IP4);
@@ -143,6 +145,47 @@ int DuckNet::setupWebServer(bool createCaptivePortal, std::string html) {
       request->send(500, "text/html", "Oops! Unknown error.");
       break;
     }
+  });
+
+  webServer.on("/sendAtakMessage.json", HTTP_POST, [&](AsyncWebServerRequest* request) {
+    int err = DUCK_ERR_NONE;
+
+    std::vector<byte> message;
+    std::string clientId = "";
+
+    AsyncWebParameter* p = request->getParam(0);
+    std::string msg = p->value().c_str();
+    message.insert(message.end(), msg.begin(), msg.end());
+    std::vector<byte> muid;
+
+    txPacket->prepareForSending(bloomFilter, BROADCAST_DUID, DuckType::UNKNOWN, topics::achat, message);
+    auto atakPacket = txPacket->getBuffer(); //TODO: no auto
+
+    addToAtakBuffer(CdpPacket(atakPacket));
+    err = duckRadio.sendData(atakPacket);
+
+    switch (err) {
+      case DUCK_ERR_NONE:
+      {
+        request->send(200, "text/html", "OK.");
+      }
+      break;
+      case DUCKLORA_ERR_MSG_TOO_LARGE:
+      request->send(413, "text/html", "Message payload too big!");
+      break;
+      case DUCKLORA_ERR_HANDLE_PACKET:
+      request->send(400, "text/html", "BadRequest");
+      break;
+      default:
+      request->send(500, "text/html", "Oops! Unknown error.");
+      break;
+    }
+  });
+
+  webServer.on("/atakHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
+      std::string response = DuckNet::retrieveAtakHistory(&atakBuffer);
+      const char* res = response.c_str();
+      request->send(200, "text/json", res);
   });
 
   webServer.on("/id", HTTP_GET, [&](AsyncWebServerRequest* request) {
@@ -292,6 +335,42 @@ int DuckNet::setupInternet(std::string ssid, std::string password)
   return rc;
 
 }
+
+  void DuckNet::addToAtakBuffer(CdpPacket message) {
+    message.timeReceived = millis();
+    atakBuffer.push(message);
+  }
+
+  std::string DuckNet::retrieveAtakHistory(CircularBuffer* buffer) {
+    int tail = buffer->getTail();
+    std::string json = "{";
+    json = json + " \"posts\":[";
+    bool firstMessage = true;
+
+    while(tail != buffer->getHead()){
+      if(firstMessage){
+        firstMessage = false;
+      } else{
+        json = json + ", ";
+      }
+
+      CdpPacket packet = buffer->getMessage(tail);
+      unsigned long messageAge = millis() - packet.timeReceived;
+      std::string messageAgeString = String(messageAge).c_str();
+      std::string messageBody(packet.data.begin(),packet.data.end());
+      std::string sduid(packet.sduid.begin(), packet.sduid.end());
+      std::string muid(packet.muid.begin(), packet.muid.end());
+
+      json = json + "{\"sduid\":\"" + sduid + "\", \"muid\":\"" + muid +  "\" , \"title\":\"PLACEHOLDER TITLE\", \"body\":" + messageBody + ", \"messageAge\":\"" + messageAgeString + "\"}";
+      tail++;
+      if(tail == buffer->getBufferEnd()){
+        tail = 0;
+      }
+    }
+    json = json + "]}";
+    return json;
+
+  }
 
 void DuckNet::saveChannel(int val){
 
