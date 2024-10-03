@@ -52,6 +52,9 @@ int DuckNet::setupWebServer(bool createCaptivePortal, std::string html) {
   webServer.on("/main", HTTP_GET, [&](AsyncWebServerRequest* request) {
     request->send(200, "text/html", MAIN_page);
   });
+  webServer.on("/atakChatPage", HTTP_GET, [&](AsyncWebServerRequest* request) {
+    request->send(200, "text/html", chat_page);
+  });
 
   webServer.on("/papamain", HTTP_GET, [&](AsyncWebServerRequest* request) {
     request->send(200, "text/html", papa_page);

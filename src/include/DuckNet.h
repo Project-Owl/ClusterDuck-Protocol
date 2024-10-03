@@ -46,6 +46,7 @@
 #include "index.h"
 #include "wifiCredentials.h"
 #include "controlPanel.h"
+#include "chatPage.h"
 #include "cdpHome.h"
 #include "papaHome.h"
 

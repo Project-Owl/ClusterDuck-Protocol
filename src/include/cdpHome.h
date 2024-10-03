@@ -17,6 +17,7 @@ const char home_page[] PROGMEM = R"=====(
     <a href="/restart">Reboot your Duck &#x1F504</a>
     <a href="/mac">See Mac Address &#x1F5A5</a>
     <a href="/controlpanel">Control Panel</a>
+    <a href="/atakChatPage">ATAK CHAT &#x2699</a>
 </div>
 </body>
 </html>
