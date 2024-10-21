@@ -156,7 +156,7 @@ int DuckNet::setupWebServer(bool createCaptivePortal, std::string html) {
     std::vector<byte> message;
     std::string clientId = "";
 
-    AsyncWebParameter* p = request->getParam(0);
+    const AsyncWebParameter* p = request->getParam(0);
     std::string msg = p->value().c_str();
     message.insert(message.end(), msg.begin(), msg.end());
     std::vector<byte> muid;
