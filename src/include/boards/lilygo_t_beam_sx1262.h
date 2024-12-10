@@ -29,3 +29,4 @@
 // Oled Display settings
 #define CDPCFG_OLED_NONE
 #endif
+#define CDPCFG_WIFI_NONE
