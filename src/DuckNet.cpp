@@ -340,8 +340,10 @@ int DuckNet::setupInternet(std::string ssid, std::string password)
 }
 
   void DuckNet::addToAtakBuffer(CdpPacket message) {
-    message.timeReceived = millis();
-    atakBuffer.push(message);
+    if(atakBuffer.findMuid(message.muid) < 0){
+      message.timeReceived = millis();
+      atakBuffer.push(message);
+    }
   }
 
   std::string DuckNet::retrieveAtakHistory(CircularBuffer* buffer) {

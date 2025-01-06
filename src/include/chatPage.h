@@ -38,15 +38,16 @@ const char chat_page[] PROGMEM = R"=====(
         } else {
             card.classList.add("received-message-card");
         }
+        // console.log(newMessage)
         card.innerHTML = newMessage.body.body + '</p><span class="duid">FROM DUCKID: '
-        + newMessage.sduid + '</span></p><span class="name">' 
-        + newMessage.body.username + '</span>';
+        + newMessage.sduid + '</span></p><span class="name">';
 
         document.getElementById('message-container').prepend(card);
     }
 
     function chatHistoryListener() {
         var data = JSON.parse(this.responseText);
+        console.log(data);
         clearMessages();
         data.posts.forEach(item => {
             let sent = sduid == item.sduid ? true : false;
@@ -124,7 +125,7 @@ const char chat_page[] PROGMEM = R"=====(
         req.addEventListener("error", errorListener);
         req.open("POST", "/sendAtakMessage.json?" + messageParams.toString());
         req.send();
-        displayNewMessage({message: {body: messageBody, username: username}, sduid: sduid}, true);
+        displayNewMessage({body: {body: messageBody, username: username}, sduid: sduid}, true);
 
         document.getElementById('chatMessage').value = "";
     }
