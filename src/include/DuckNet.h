@@ -122,7 +122,11 @@ public:
    void addToAtakBuffer(DuckPacket message) {
     logwarn_ln("WARNING addToAtakBuffer skipped, device has no WiFi.");
   }
-  std::string retrieveAtakHistory(CircularBuffer* buffer) {
+  std::string serializeAtakHistoryToJSON(CircularBuffer* buffer) {
+      logwarn_ln("WARNING retrieveAtakHistory skipped, device has no WiFi.");
+      return "";
+  }
+  std::vector<byte> serializeAtakHistoryToBytes(CircularBuffer* buffer) {
       logwarn_ln("WARNING retrieveAtakHistory skipped, device has no WiFi.");
       return "";
   }
@@ -215,7 +219,13 @@ public:
    * @brief retrieve all messages from from message circular buffer
    * @returns a json array of messages with a title, body, and messageAge
    */
-  std::string retrieveAtakHistory(CircularBuffer* buffer);
+  std::string serializeAtakHistoryToJSON(CircularBuffer* buffer);
+  
+   /**
+   * @brief retrieve all messages from from message circular buffer
+   * @returns a byte array of messages with only the body
+   */
+  std::vector<byte> serializeAtakHistoryToBytes(CircularBuffer* buffer);
 
   /**
    * @brief Set the WiFi network ssid.

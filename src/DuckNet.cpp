@@ -339,43 +339,52 @@ int DuckNet::setupInternet(std::string ssid, std::string password)
 
 }
 
-  void DuckNet::addToAtakBuffer(CdpPacket message) {
-    if(atakBuffer.findMuid(message.muid) < 0){
-      message.timeReceived = millis();
-      atakBuffer.push(message);
+void DuckNet::addToAtakBuffer(CdpPacket message) {
+  if(atakBuffer.findMuid(message.muid) < 0){
+    message.timeReceived = millis();
+    atakBuffer.push(message);
+  }
+}
+
+std::string DuckNet::serializeAtakHistoryToJSON(CircularBuffer* buffer) {
+  int tail = buffer->getTail();
+  std::string json = "{";
+  json = json + " \"posts\":[";
+  bool firstMessage = true;
+
+  while(tail != buffer->getHead()){
+    if(firstMessage){
+      firstMessage = false;
+    } else{
+      json = json + ", ";
+    }
+
+    CdpPacket packet = buffer->getMessage(tail);
+    unsigned long messageAge = millis() - packet.timeReceived;
+    std::string messageAgeString = String(messageAge).c_str();
+    std::string messageBody(packet.data.begin(),packet.data.end());
+    std::string sduid(packet.sduid.begin(), packet.sduid.end());
+    std::string muid(packet.muid.begin(), packet.muid.end());
+
+    json = json + "{\"sduid\":\"" + sduid + "\", \"muid\":\"" + muid +  "\" , \"title\":\"PLACEHOLDER TITLE\", \"body\":" + messageBody + ", \"messageAge\":\"" + messageAgeString + "\"}";
+    tail++;
+    if(tail == buffer->getBufferEnd()){
+      tail = 0;
     }
   }
+  json = json + "]}";
+  return json;
 
-  std::string DuckNet::retrieveAtakHistory(CircularBuffer* buffer) {
-    int tail = buffer->getTail();
-    std::string json = "{";
-    json = json + " \"posts\":[";
-    bool firstMessage = true;
-
-    while(tail != buffer->getHead()){
-      if(firstMessage){
-        firstMessage = false;
-      } else{
-        json = json + ", ";
-      }
-
-      CdpPacket packet = buffer->getMessage(tail);
-      unsigned long messageAge = millis() - packet.timeReceived;
-      std::string messageAgeString = String(messageAge).c_str();
-      std::string messageBody(packet.data.begin(),packet.data.end());
-      std::string sduid(packet.sduid.begin(), packet.sduid.end());
-      std::string muid(packet.muid.begin(), packet.muid.end());
-
-      json = json + "{\"sduid\":\"" + sduid + "\", \"muid\":\"" + muid +  "\" , \"title\":\"PLACEHOLDER TITLE\", \"body\":" + messageBody + ", \"messageAge\":\"" + messageAgeString + "\"}";
-      tail++;
-      if(tail == buffer->getBufferEnd()){
-        tail = 0;
-      }
-    }
-    json = json + "]}";
-    return json;
-
+}
+std::vector<byte> DuckNet::serializeAtakHistoryToBytes(CircularBuffer* buffer){
+  int tail = buffer->getTail();
+  std::vector<byte> atakBytes;
+  while(tail != buffer->getHead()){
+    CdpPacket packet = buffer->getMessage(tail);
+    atakBytes.insert(atakBytes.end(), packet.data.begin(),packet.data.end());
+    return atakBytes;
   }
+}
 
 void DuckNet::saveChannel(int val){
 
