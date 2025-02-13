@@ -3,6 +3,8 @@
 //
 
 #include "DuckGPS.h"
+#include <string>
+
 void DuckGPS::readData(unsigned long ms) {
     unsigned long start = millis();
     do

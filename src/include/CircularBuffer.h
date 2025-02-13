@@ -60,7 +60,7 @@ public:
      * @returns the index of the message, or -1 if it does not exist in the buffer
      */
 
-    int findMuid(std::vector<byte> muid);
+    int findMuid(Muid muid);
 
     /**
      * @brief replaces the muid of a message in the buffer, used for message resending
@@ -72,7 +72,7 @@ public:
      * @returns 1 if the muid was updated successfully, 0 if failed 
      */
 
-    int updateMuid(std::vector<byte> oldMuid, std::vector<byte> newMuid);
+    int updateMuid(Muid oldMuid, Muid newMuid);
 
     /**
      * @brief sets the acked field on the packet to true
@@ -82,7 +82,7 @@ public:
      * @returns 1 if the acked field was set successfully, 0 if failed
      */
 
-    int ackMessage(std::vector<byte> muid);
+    int ackMessage(Muid muid);
 
 };
 
