@@ -126,7 +126,7 @@ public:
       logwarn_ln("WARNING retrieveAtakHistory skipped, device has no WiFi.");
       return "";
   }
-  std::vector<byte> serializeAtakHistoryToBytes(CircularBuffer* buffer) {
+  uint8_t* serializeAtakHistoryToBytes(CircularBuffer* buffer) {
       logwarn_ln("WARNING retrieveAtakHistory skipped, device has no WiFi.");
       return "";
   }
@@ -225,7 +225,7 @@ public:
    * @brief retrieve all messages from from message circular buffer
    * @returns a byte array of messages with only the body
    */
-  std::vector<byte> serializeAtakHistoryToBytes(CircularBuffer* buffer);
+  uint8_t* serializeAtakHistoryToBytes(CircularBuffer* buffer);
 
   /**
    * @brief Set the WiFi network ssid.

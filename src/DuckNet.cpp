@@ -1,4 +1,5 @@
 #include "include/DuckNet.h"
+#include <cstring>
 
 DuckNet::DuckNet(BloomFilter *filter): bloomFilter(filter) {
 }
@@ -186,7 +187,15 @@ int DuckNet::setupWebServer(bool createCaptivePortal, std::string html) {
   });
 
   webServer.on("/atakHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
-      std::string response = DuckNet::retrieveAtakHistory(&atakBuffer);
+     const uint8_t* atakBytes = DuckNet::serializeAtakHistoryToBytes(&atakBuffer);
+     size_t atakSize = 229 * CDPCFG_CDP_CHATBUF_SIZE;
+     const char* atakType = "application/octet-stream";
+     AsyncWebServerResponse *response = request->beginResponse_P(200, atakType, atakBytes, atakSize);
+     delete[] atakBytes;
+      
+  });
+  webServer.on("/atakChatHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
+      std::string response = DuckNet::serializeAtakHistoryToJSON(&atakBuffer);
       const char* res = response.c_str();
       request->send(200, "text/json", res);
   });
@@ -376,14 +385,20 @@ std::string DuckNet::serializeAtakHistoryToJSON(CircularBuffer* buffer) {
   return json;
 
 }
-std::vector<byte> DuckNet::serializeAtakHistoryToBytes(CircularBuffer* buffer){
+uint8_t* DuckNet::serializeAtakHistoryToBytes(CircularBuffer* buffer){
   int tail = buffer->getTail();
-  std::vector<byte> atakBytes;
+  uint8_t* atakBytes = new uint8_t[229 * CDPCFG_CDP_CHATBUF_SIZE];
+  int offset = 0;
   while(tail != buffer->getHead()){
     CdpPacket packet = buffer->getMessage(tail);
-    atakBytes.insert(atakBytes.end(), packet.data.begin(),packet.data.end());
-    return atakBytes;
+    std::memcpy(atakBytes + offset, packet.data.data(), packet.data.size());  // Copy the packet data into atakBytes
+    offset += packet.data.size();  // Move the offset forward by the size of the current packet
+    tail++;
+    if(tail == buffer->getBufferEnd()){
+      tail = 0;
+    }
   }
+  return atakBytes;
 }
 
 void DuckNet::saveChannel(int val){
