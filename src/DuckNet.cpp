@@ -188,10 +188,11 @@ int DuckNet::setupWebServer(bool createCaptivePortal, std::string html) {
 
   webServer.on("/atakHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
      const uint8_t* atakBytes = DuckNet::serializeAtakHistoryToBytes(&atakBuffer);
-     size_t atakSize = 229 * CDPCFG_CDP_CHATBUF_SIZE;
+     size_t atakSize = 229 * CDPCFG_CDP_CHATBUF_SIZE + 4;
      const char* atakType = "application/octet-stream";
      AsyncWebServerResponse *response = request->beginResponse_P(200, atakType, atakBytes, atakSize);
-     delete[] atakBytes;
+     request->send(response);
+     delete[] atakBytes; //this needs to be fixed bc async
       
   });
   webServer.on("/atakChatHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
@@ -387,7 +388,7 @@ std::string DuckNet::serializeAtakHistoryToJSON(CircularBuffer* buffer) {
 }
 uint8_t* DuckNet::serializeAtakHistoryToBytes(CircularBuffer* buffer){
   int tail = buffer->getTail();
-  uint8_t* atakBytes = new uint8_t[229 * CDPCFG_CDP_CHATBUF_SIZE];
+  uint8_t* atakBytes = new uint8_t[229 * CDPCFG_CDP_CHATBUF_SIZE + 4];
   int offset = 0;
   while(tail != buffer->getHead()){
     CdpPacket packet = buffer->getMessage(tail);
@@ -397,6 +398,7 @@ uint8_t* DuckNet::serializeAtakHistoryToBytes(CircularBuffer* buffer){
     if(tail == buffer->getBufferEnd()){
       tail = 0;
     }
+    atakBytes[offset++] = 'duck';
   }
   return atakBytes;
 }
