@@ -33,6 +33,14 @@ CdpPacket CircularBuffer::getMessage(int index)
     return buffer[index];
 }
 
+int CircularBuffer::getCount() {
+    if (head >= tail) {
+        return head - tail;
+    } else {
+        return buffer_end - tail + head;
+    }
+}
+
 int CircularBuffer::findMuid(Muid muid){
     for (int i = 0; i < (head); i++) {
         if(buffer[i].muid == muid){

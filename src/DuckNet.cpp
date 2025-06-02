@@ -186,15 +186,24 @@ int DuckNet::setupWebServer(bool createCaptivePortal, std::string html) {
     }
   });
 
-  webServer.on("/atakHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
-     const uint8_t* atakBytes = DuckNet::serializeAtakHistoryToBytes(&atakBuffer);
-     size_t atakSize = 229 * CDPCFG_CDP_CHATBUF_SIZE + 4;
-     const char* atakType = "application/octet-stream";
-     AsyncWebServerResponse *response = request->beginResponse_P(200, atakType, atakBytes, atakSize);
-     request->send(response);
-     delete[] atakBytes; //this needs to be fixed bc async
-      
-  });
+  webServer.on("/atakHistory", HTTP_GET, [&](AsyncWebServerRequest* request) {
+    uint8_t* atakBytes = DuckNet::serializeAtakHistoryToBytes(&atakBuffer);
+    size_t atakSize = sizeof(atakBytes);
+    // Use shared_ptr for safe cleanup
+    std::shared_ptr<uint8_t> atakData(atakBytes, [](uint8_t* p) { delete[] p; });
+
+    AsyncWebServerResponse* response = request->beginResponse("application/octet-stream", atakSize,
+        [atakData, atakSize](uint8_t* buffer, size_t maxLen, size_t alreadySent) -> size_t {
+            size_t remaining = atakSize - alreadySent;
+            size_t toSend = remaining < maxLen ? remaining : maxLen;
+            memcpy(buffer, atakData.get() + alreadySent, toSend);
+            return toSend;
+        });
+
+    response->addHeader("Content-Disposition", "attachment; filename=\"atakHistory.bin\"");
+    request->send(response);
+});
+
   webServer.on("/atakChatHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
       std::string response = DuckNet::serializeAtakHistoryToJSON(&atakBuffer);
       const char* res = response.c_str();
@@ -386,21 +395,29 @@ std::string DuckNet::serializeAtakHistoryToJSON(CircularBuffer* buffer) {
   return json;
 
 }
-uint8_t* DuckNet::serializeAtakHistoryToBytes(CircularBuffer* buffer){
+
+uint8_t* DuckNet::serializeAtakHistoryToBytes(CircularBuffer* buffer) {
+  int atakBytes = buffer->getCount();
+  size_t dataSize = atakBytes * sizeof(CdpPacket);
+  // outSize = dataSize + sizeof(uint32_t); 
+
+  uint8_t* result = new uint8_t[dataSize];
+
+  // // First 4 bytes = count (little endian)
+  // result[0] = atakBytes & 0xFF;
+  // result[1] = (atakBytes >> 8) & 0xFF;
+  // result[2] = (atakBytes >> 16) & 0xFF;
+  // result[3] = (atakBytes >> 24) & 0xFF;
+
+  // Serialize packets
   int tail = buffer->getTail();
-  uint8_t* atakBytes = new uint8_t[229 * CDPCFG_CDP_CHATBUF_SIZE + 4];
-  int offset = 0;
-  while(tail != buffer->getHead()){
-    CdpPacket packet = buffer->getMessage(tail);
-    std::memcpy(atakBytes + offset, packet.data.data(), packet.data.size());  // Copy the packet data into atakBytes
-    offset += packet.data.size();  // Move the offset forward by the size of the current packet
-    tail++;
-    if(tail == buffer->getBufferEnd()){
-      tail = 0;
-    }
-    atakBytes[offset++] = 'duck';
+  for (int i = 0; i < atakBytes; i++) {
+      CdpPacket packet = buffer->getMessage(tail);
+      memcpy(result + 4 + i * sizeof(CdpPacket), &packet, sizeof(CdpPacket));
+      tail = (tail + 1) % buffer->getBufferEnd();
   }
-  return atakBytes;
+
+  return result;
 }
 
 void DuckNet::saveChannel(int val){

@@ -43,6 +43,13 @@ public:
    */
     int getBufferEnd();
 
+    /**
+   * @brief retrieve the number of messages in the buffer
+   * 
+   * @returns current number of messages
+   */
+    int getCount();
+
    /**
    * @brief retrieve a specific message from the buffer
    *
