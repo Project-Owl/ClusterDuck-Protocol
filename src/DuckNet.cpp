@@ -171,6 +171,7 @@ int DuckNet::setupWebServer(bool createCaptivePortal, std::string html) {
     switch (err) {
       case DUCK_ERR_NONE:
       {
+        loginfo_ln("success sending packer");
         request->send(200, "text/html", "OK.");
       }
       break;
@@ -187,19 +188,21 @@ int DuckNet::setupWebServer(bool createCaptivePortal, std::string html) {
   });
 
   webServer.on("/atakHistory", HTTP_GET, [&](AsyncWebServerRequest* request) {
-    uint8_t* atakBytes = DuckNet::serializeAtakHistoryToBytes(&atakBuffer);
-    size_t atakSize = sizeof(atakBytes);
-    // Use shared_ptr for safe cleanup
-    std::shared_ptr<uint8_t> atakData(atakBytes, [](uint8_t* p) { delete[] p; });
+    size_t atakSize;
 
-    AsyncWebServerResponse* response = request->beginResponse("application/octet-stream", atakSize,???
-        });
+    uint8_t* atakBytes = DuckNet::serializeAtakHistoryToBytes(&atakBuffer, &atakSize);
 
-    response->addHeader("Content-Disposition", "attachment; filename=\"atakHistory.bin\"");
+    // std::shared_ptr<uint8_t> atakData(atakBytes, [](uint8_t* p) { delete[] p; });
+
+    AsyncWebServerResponse *response = request->beginResponse_P(200, "application/octet-stream", atakBytes, atakSize);
+
+    loginfo_ln("sending atak history");
+    // response->addHeader("Content-Disposition", "attachment; filename=\"atakHistory.bin\"");
     request->send(response);
 });
 
   webServer.on("/atakChatHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
+      loginfo_ln("this is what should be called in captive portal");
       std::string response = DuckNet::serializeAtakHistoryToJSON(&atakBuffer);
       const char* res = response.c_str();
       request->send(200, "text/json", res);
@@ -357,6 +360,7 @@ void DuckNet::addToAtakBuffer(CdpPacket message) {
   if(atakBuffer.findMuid(message.muid) < 0){
     message.timeReceived = millis();
     atakBuffer.push(message);
+    loginfo_ln("pushed new packet to buffer");
   }
 }
 
@@ -391,38 +395,28 @@ std::string DuckNet::serializeAtakHistoryToJSON(CircularBuffer* buffer) {
 
 }
 
-uint8_t* DuckNet::serializeAtakHistoryToBytes(CircularBuffer* buffer) {
+uint8_t* DuckNet::serializeAtakHistoryToBytes(CircularBuffer* buffer, size_t* totalAtakBytes) {
   // int atakBytes = buffer->getCount();
   // size_t dataSize = atakBytes * sizeof(CdpPacket);
-  // outSize = dataSize + sizeof(uint32_t); 
-
-  uint8_t* result = new uint8_t[dataSize];
-
-  // // First 4 bytes = count (little endian)
-  // result[0] = atakBytes & 0xFF;
-  // result[1] = (atakBytes >> 8) & 0xFF;
-  // result[2] = (atakBytes >> 16) & 0xFF;
-  // result[3] = (atakBytes >> 24) & 0xFF;
+  // totalAtakBytes = dataSize + sizeof(uint32_t); 
+  std::vector<byte> packetArr;
 
   // Serialize packets
   int tail = buffer->getTail();
-  // for (int i = 0; i < atakBytes; i++) {
-  //     CdpPacket packet = buffer->getMessage(tail);
-  //     memcpy(result + 4 + i * sizeof(CdpPacket), &packet, sizeof(CdpPacket));
-  //     tail = (tail + 1) % buffer->getBufferEnd();
-  // }
 
   while(tail != buffer->getHead()){
     CdpPacket packet = buffer->getMessage(tail);
-    //get the size of this specific packet
-    //copy the bytes into result
-    memcpy(result + 4 + i * sizeof(CdpPacket), &packet, sizeof(CdpPacket));
+    packetArr.insert(packetArr.end(), packet.muid.begin(), packet.muid.end());
+    packetArr.insert(packetArr.end(), packet.data.begin(), packet.data.end());
     tail++;
     if(tail == buffer->getBufferEnd()){
       tail = 0;
     }
   }
-
+  *totalAtakBytes = packetArr.size();
+  uint8_t* result = new uint8_t[*totalAtakBytes];
+  memcpy(result, packetArr.data(), *totalAtakBytes);
+  loginfo_ln("complete serialize");
   return result;
 }
 

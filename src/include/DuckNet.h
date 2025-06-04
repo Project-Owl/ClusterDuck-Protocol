@@ -225,7 +225,7 @@ public:
    * @brief retrieve all messages from from message circular buffer
    * @returns a byte array of messages with only the body
    */
-  uint8_t* serializeAtakHistoryToBytes(CircularBuffer* buffer);
+  uint8_t* serializeAtakHistoryToBytes(CircularBuffer* buffer, size_t* totalAtakBytes);
 
   /**
    * @brief Set the WiFi network ssid.

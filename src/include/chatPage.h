@@ -69,7 +69,7 @@ const char chat_page[] PROGMEM = R"=====(
         var req = new XMLHttpRequest();
         req.addEventListener("load", chatHistoryListener);
         req.addEventListener("error", errorListener);
-        req.open("GET", "/atakHistory");
+        req.open("GET", "/atakChatHistory");
         req.send();
     }
 
