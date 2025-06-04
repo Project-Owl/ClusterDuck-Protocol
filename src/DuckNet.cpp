@@ -1,5 +1,6 @@
 #include "include/DuckNet.h"
 #include <cstring>
+#include <ArduinoJson.h>
 
 DuckNet::DuckNet(BloomFilter *filter): bloomFilter(filter) {
 }
@@ -407,7 +408,28 @@ uint8_t* DuckNet::serializeAtakHistoryToBytes(CircularBuffer* buffer, size_t* to
   while(tail != buffer->getHead()){
     CdpPacket packet = buffer->getMessage(tail);
     packetArr.insert(packetArr.end(), packet.muid.begin(), packet.muid.end());
-    packetArr.insert(packetArr.end(), packet.data.begin(), packet.data.end());
+    // packetArr.insert(packetArr.end(), packet.data.begin(), packet.data.end());
+
+    // Decode JSON from packet.data
+    DynamicJsonDocument doc(256);
+    DeserializationError err = deserializeJson(doc, packet.data.data(), packet.data.size());
+    if (err) {
+      logerr_ln("JSON parse error in packet.data");
+    } else {
+      // Extract fields
+      const char* body = doc["body"] | "";
+      const char* username = doc["username"] | "";
+
+      // Manually encode: [len][data]
+      uint8_t bodyLen = strlen(body);
+      packetArr.push_back(bodyLen);
+      packetArr.insert(packetArr.end(), body, body + bodyLen);
+
+      uint8_t usernameLen = strlen(username);
+      packetArr.push_back(usernameLen);
+      packetArr.insert(packetArr.end(), username, username + usernameLen);
+    }
+
     tail++;
     if(tail == buffer->getBufferEnd()){
       tail = 0;
