@@ -192,12 +192,7 @@ int DuckNet::setupWebServer(bool createCaptivePortal, std::string html) {
     // Use shared_ptr for safe cleanup
     std::shared_ptr<uint8_t> atakData(atakBytes, [](uint8_t* p) { delete[] p; });
 
-    AsyncWebServerResponse* response = request->beginResponse("application/octet-stream", atakSize,
-        [atakData, atakSize](uint8_t* buffer, size_t maxLen, size_t alreadySent) -> size_t {
-            size_t remaining = atakSize - alreadySent;
-            size_t toSend = remaining < maxLen ? remaining : maxLen;
-            memcpy(buffer, atakData.get() + alreadySent, toSend);
-            return toSend;
+    AsyncWebServerResponse* response = request->beginResponse("application/octet-stream", atakSize,???
         });
 
     response->addHeader("Content-Disposition", "attachment; filename=\"atakHistory.bin\"");
@@ -397,8 +392,8 @@ std::string DuckNet::serializeAtakHistoryToJSON(CircularBuffer* buffer) {
 }
 
 uint8_t* DuckNet::serializeAtakHistoryToBytes(CircularBuffer* buffer) {
-  int atakBytes = buffer->getCount();
-  size_t dataSize = atakBytes * sizeof(CdpPacket);
+  // int atakBytes = buffer->getCount();
+  // size_t dataSize = atakBytes * sizeof(CdpPacket);
   // outSize = dataSize + sizeof(uint32_t); 
 
   uint8_t* result = new uint8_t[dataSize];
@@ -411,10 +406,21 @@ uint8_t* DuckNet::serializeAtakHistoryToBytes(CircularBuffer* buffer) {
 
   // Serialize packets
   int tail = buffer->getTail();
-  for (int i = 0; i < atakBytes; i++) {
-      CdpPacket packet = buffer->getMessage(tail);
-      memcpy(result + 4 + i * sizeof(CdpPacket), &packet, sizeof(CdpPacket));
-      tail = (tail + 1) % buffer->getBufferEnd();
+  // for (int i = 0; i < atakBytes; i++) {
+  //     CdpPacket packet = buffer->getMessage(tail);
+  //     memcpy(result + 4 + i * sizeof(CdpPacket), &packet, sizeof(CdpPacket));
+  //     tail = (tail + 1) % buffer->getBufferEnd();
+  // }
+
+  while(tail != buffer->getHead()){
+    CdpPacket packet = buffer->getMessage(tail);
+    //get the size of this specific packet
+    //copy the bytes into result
+    memcpy(result + 4 + i * sizeof(CdpPacket), &packet, sizeof(CdpPacket));
+    tail++;
+    if(tail == buffer->getBufferEnd()){
+      tail = 0;
+    }
   }
 
   return result;
