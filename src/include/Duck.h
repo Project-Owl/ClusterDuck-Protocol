@@ -28,6 +28,7 @@ public:
   virtual ~Duck();
 
   std::string getCDPVersion() { return duckutils::getCDPVersion(); }
+  void storeSensorData(std::vector<byte> sensorData);
 
   /**
    * @brief Set the Device Name object

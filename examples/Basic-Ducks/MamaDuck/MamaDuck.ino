@@ -8,12 +8,25 @@
 #include <arduino-timer.h>
 #include <CDP.h>
 
+// GPS Setup
+#include <TinyGPS++.h>
+TinyGPSPlus tgps;
+HardwareSerial GPS(1);
+
+// // Setup BMP180
+// #include <Adafruit_BMP085_U.h>
+// Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
+
 #ifdef SERIAL_PORT_USBVIRTUAL
 #define Serial SERIAL_PORT_USBVIRTUAL
 #endif
 
 bool sendData(std::vector<byte> message);
 bool runSensor(void *);
+
+static void smartDelay(unsigned long ms);
+String getGPSData();
+// String getBMPData();
 
 // create a built-in mama duck
 MamaDuck duck;
@@ -25,6 +38,19 @@ auto timer = timer_create_default();
 const int INTERVAL_MS = 60000;
 int counter = 1;
 bool setupOK = false;
+
+std::string arduinoStringFromHex(byte* data, int size) 
+{
+  std::string buf = "";
+  buf.reserve(size * 2); // 2 digit hex
+  const char* cs = "0123456789ABCDEF";
+  for (int i = 0; i < size; i++) {
+    byte val = data[i];
+    buf += cs[(val >> 4) & 0x0F];
+    buf += cs[val & 0x0F];
+  }
+  return buf;
+}
 
 void setup() {
   // We are using a hardcoded device id here, but it should be retrieved or
@@ -38,8 +64,20 @@ void setup() {
     Serial.println("[MAMA] Failed to setup MamaDuck");
     return;
   }
-
   setupOK = true;
+
+  GPS.begin(9600, SERIAL_8N1, 34, 12);  
+
+  // // BMP setup
+  // if (!bmp.begin()) {
+  //   /* There was a problem detecting the BMP085 ... check your connections */
+  //   Serial.print(
+  //       "Ooops, no BMP085 detected ... Check your wiring or I2C ADDR!");
+  //   while (1)
+  //     ;
+  // } else {
+  //   Serial.println("BMP on");
+  // }
 
   // Initialize the timer. The timer thread runs separately from the main loop
   // and will trigger sending a counter message.
@@ -72,19 +110,74 @@ void loop() {
 
 bool runSensor(void *) {
   bool result;
-  
-  std::string message = std::string("Counter:") + std::to_string(counter) + " " + std::string("Free Memory:") + std::to_string(freeMemory());
+
+  // String bmpData = getBMPData();
+  String gpsData = getGPSData();
+
+  String message = "\"" + String("GPS: ") + gpsData + "\"";
+  // String message = "\"" + String("BMP: ") + bmpData + "\"";
   Serial.print("[MAMA] sensor data: ");
   Serial.println(message.c_str());
 
-  result = sendData(stringToByteVector(message));
-  if (result) {
-     Serial.println("[MAMA] runSensor ok.");
-  } else {
-     Serial.println("[MAMA] runSensor failed.");
-  }
-  return result;
+  duck.storeSensorData(stringToByteVector(message.c_str()));
+  return true;
 }
+
+static void smartDelay(unsigned long ms)
+{
+  unsigned long start = millis();
+  do
+  {
+    while (GPS.available())
+      tgps.encode(GPS.read());
+  } while (millis() - start < ms);
+}
+
+// Getting GPS data
+String getGPSData() {
+
+  // Encoding the GPS
+  smartDelay(5000);
+  
+  // Printing the GPS data
+  Serial.println("--- GPS ---");
+  Serial.print("Latitude  : ");
+  Serial.println(tgps.location.lat(), 5);  
+  Serial.print("Longitude : ");
+  Serial.println(tgps.location.lng(), 4);
+  Serial.print("Altitude  : ");
+  Serial.print(tgps.altitude.feet() / 3.2808);
+  Serial.println("M");
+  Serial.print("Satellites: ");
+  Serial.println(tgps.satellites.value());
+  Serial.println("**********************");
+
+  // Creating a message of the Latitude and Longitude
+  String sensorVal = "Lat:" + String(tgps.location.lat(), 5) + " Lng:" + String(tgps.location.lng(), 4);
+
+  // Check to see if GPS data is being received
+  if (millis() > 5000 && tgps.charsProcessed() < 10)
+  {
+    Serial.println(F("No GPS data received: check wiring"));
+  }
+
+  return sensorVal;
+}
+
+// String getBMPData() {
+  
+//   float T, P;
+
+//   bmp.getTemperature(&T);
+//   Serial.println(T);
+//   bmp.getPressure(&P);
+//   Serial.println(P);
+
+//   String sensorVal = "Temp:" + String(T) + " Pres:" + String(P);
+
+
+//   return sensorVal;
+// }
 
 bool sendData(std::vector<byte> message) {
   bool sentOk = false;

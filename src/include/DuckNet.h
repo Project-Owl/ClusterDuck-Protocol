@@ -119,7 +119,7 @@ public:
     return DUCK_ERR_NONE;
   }
 
-   void addToAtakBuffer(DuckPacket message) {
+   void addToAtakBuffer(DuckPacket std::vector<byte>) {
     logwarn_ln("WARNING addToAtakBuffer skipped, device has no WiFi.");
   }
   std::string serializeAtakHistoryToJSON(CircularBuffer* buffer) {
@@ -213,7 +213,7 @@ public:
   /**
    * @brief add ATAK message to history buffer
   */
-  void addToAtakBuffer(CdpPacket message);
+  void addToAtakBuffer(std::vector<byte> message);
 
    /**
    * @brief retrieve all messages from from message circular buffer

@@ -5,7 +5,7 @@
 DuckNet::DuckNet(BloomFilter *filter): bloomFilter(filter) {
 }
 
-CircularBuffer atakBuffer = CircularBuffer(CDPCFG_CDP_CHATBUF_SIZE);
+CircularBuffer atakMessageBuffer = CircularBuffer(CDPCFG_CDP_CHATBUF_SIZE);
 
 #ifndef CDPCFG_WIFI_NONE
 
@@ -152,46 +152,46 @@ int DuckNet::setupWebServer(bool createCaptivePortal, std::string html) {
     }
   });
 
-  webServer.on("/sendAtakMessage.json", HTTP_POST, [&](AsyncWebServerRequest* request) {
-    int err = DUCK_ERR_NONE;
+  // webServer.on("/sendAtakMessage.json", HTTP_POST, [&](AsyncWebServerRequest* request) {
+  //   int err = DUCK_ERR_NONE;
 
-    std::vector<byte> message;
-    std::string clientId = "";
+  //   std::vector<byte> message;
+  //   std::string clientId = "";
 
-    const AsyncWebParameter* p = request->getParam(0);
-    std::string msg = p->value().c_str();
-    message.insert(message.end(), msg.begin(), msg.end());
-    std::vector<byte> muid;
+  //   const AsyncWebParameter* p = request->getParam(0);
+  //   std::string msg = p->value().c_str();
+  //   message.insert(message.end(), msg.begin(), msg.end());
+  //   std::vector<byte> muid;
 
-    txPacket->prepareForSending(bloomFilter, BROADCAST_DUID, DuckType::UNKNOWN, topics::achat, message);
-    auto atakPacket = txPacket->getBuffer(); //TODO: no auto
+  //   txPacket->prepareForSending(bloomFilter, BROADCAST_DUID, DuckType::UNKNOWN, topics::achat, message);
+  //   auto atakPacket = txPacket->getBuffer(); //TODO: no auto
 
-    addToAtakBuffer(CdpPacket(atakPacket));
-    err = duckRadio.sendData(atakPacket);
+  //   addToAtakBuffer(CdpPacket(atakPacket));
+  //   err = duckRadio.sendData(atakPacket);
 
-    switch (err) {
-      case DUCK_ERR_NONE:
-      {
-        loginfo_ln("success sending packer");
-        request->send(200, "text/html", "OK.");
-      }
-      break;
-      case DUCKLORA_ERR_MSG_TOO_LARGE:
-      request->send(413, "text/html", "Message payload too big!");
-      break;
-      case DUCKLORA_ERR_HANDLE_PACKET:
-      request->send(400, "text/html", "BadRequest");
-      break;
-      default:
-      request->send(500, "text/html", "Oops! Unknown error.");
-      break;
-    }
-  });
+  //   switch (err) {
+  //     case DUCK_ERR_NONE:
+  //     {
+  //       loginfo_ln("success sending packer");
+  //       request->send(200, "text/html", "OK.");
+  //     }
+  //     break;
+  //     case DUCKLORA_ERR_MSG_TOO_LARGE:
+  //     request->send(413, "text/html", "Message payload too big!");
+  //     break;
+  //     case DUCKLORA_ERR_HANDLE_PACKET:
+  //     request->send(400, "text/html", "BadRequest");
+  //     break;
+  //     default:
+  //     request->send(500, "text/html", "Oops! Unknown error.");
+  //     break;
+  //   }
+  // });
 
   webServer.on("/atakHistory", HTTP_GET, [&](AsyncWebServerRequest* request) {
     size_t atakSize;
 
-    uint8_t* atakBytes = DuckNet::serializeAtakHistoryToBytes(&atakBuffer, &atakSize);
+    uint8_t* atakBytes = DuckNet::serializeAtakHistoryToBytes(&atakMessageBuffer, &atakSize);
 
     // std::shared_ptr<uint8_t> atakData(atakBytes, [](uint8_t* p) { delete[] p; });
 
@@ -203,8 +203,7 @@ int DuckNet::setupWebServer(bool createCaptivePortal, std::string html) {
 });
 
   webServer.on("/atakChatHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
-      loginfo_ln("this is what should be called in captive portal");
-      std::string response = DuckNet::serializeAtakHistoryToJSON(&atakBuffer);
+      std::string response = DuckNet::serializeAtakHistoryToJSON(&atakMessageBuffer);
       const char* res = response.c_str();
       request->send(200, "text/json", res);
   });
@@ -357,10 +356,14 @@ int DuckNet::setupInternet(std::string ssid, std::string password)
 
 }
 
-void DuckNet::addToAtakBuffer(CdpPacket message) {
-  if(atakBuffer.findMuid(message.muid) < 0){
-    message.timeReceived = millis();
-    atakBuffer.push(message);
+void DuckNet::addToAtakBuffer(std::vector<byte> message) {
+  txPacket->prepareForSending(bloomFilter, BROADCAST_DUID, DuckType::UNKNOWN, topics::achat, message);
+  auto atakBuffer = txPacket->getBuffer(); //TODO: no auto
+  CdpPacket atakPacket(atakBuffer);
+
+  if(atakMessageBuffer.findMuid(atakPacket.muid) < 0){
+    atakPacket.timeReceived = millis();
+    atakMessageBuffer.push(atakPacket);
     loginfo_ln("pushed new packet to buffer");
   }
 }

@@ -107,22 +107,22 @@ void MamaDuck::handleReceivedPacket() {
             loginfo_ln("handleReceivedPacket: packet RELAY DONE");
           }
         break;
-        case topics::achat:{
-          packet.timeReceived = millis();
-          duckNet->addToAtakBuffer(packet);
+        // case topics::achat:{
+        //   packet.timeReceived = millis();
+        //   duckNet->addToAtakBuffer(packet);
 
-          std::vector<byte> data;
-          byte numPairs = 1;
-          data.insert(data.end(), numPairs);
-          data.insert(data.end(), packet.muid.begin(), packet.muid.end());
+        //   std::vector<byte> data;
+        //   byte numPairs = 1;
+        //   data.insert(data.end(), numPairs);
+        //   data.insert(data.end(), packet.muid.begin(), packet.muid.end());
 
-          err = duckRadio.relayPacket(rxPacket);
-          if (err != DUCK_ERR_NONE) {
-            logerr_ln("====> ERROR handleReceivedPacket failed to relay. rc = %d",err);
-          } else {
-            loginfo_ln("handleReceivedPacket: packet RELAY DONE");
-          }
-        }
+        //   err = duckRadio.relayPacket(rxPacket);
+        //   if (err != DUCK_ERR_NONE) {
+        //     logerr_ln("====> ERROR handleReceivedPacket failed to relay. rc = %d",err);
+        //   } else {
+        //     loginfo_ln("handleReceivedPacket: packet RELAY DONE");
+        //   }
+        // }
         break;
         default:
           err = duckRadio.relayPacket(rxPacket);

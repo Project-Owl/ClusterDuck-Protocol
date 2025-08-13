@@ -28,6 +28,10 @@ Duck::~Duck() {
   delete duckNet;
 }
 
+void Duck::storeSensorData(std::vector<byte> sensorData){
+  duckNet->addToAtakBuffer(sensorData);
+}
+
 void Duck::setEncrypt(bool state) {
   duckcrypto::setEncrypt(state);
 }
