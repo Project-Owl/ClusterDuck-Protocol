@@ -81,7 +81,11 @@ void loop() {
     String data = Serial1.readStringUntil('\n'); 
     if ((data.indexOf("DuckGPS:") >= 0) || (data.indexOf("DuckBMP:") >= 0)) {
       Serial.println("[MAMA]: DETECTION -> " + data);
-      duck.storeSensorData(stringToByteVector(data.c_str()));
+
+      String smsg = data.substring(9);
+      std::string msg = smsg.c_str();
+      msg = "\"" + msg + "\""; 
+      duck.storeSensorData(stringToByteVector(msg));
     }
 
   }

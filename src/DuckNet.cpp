@@ -1,6 +1,7 @@
 #include "include/DuckNet.h"
 #include <cstring>
 #include <ArduinoJson.h>
+#include <regex>
 
 DuckNet::DuckNet(BloomFilter *filter): bloomFilter(filter) {
 }
@@ -188,21 +189,21 @@ int DuckNet::setupWebServer(bool createCaptivePortal, std::string html) {
   //   }
   // });
 
-  webServer.on("/atakHistory", HTTP_GET, [&](AsyncWebServerRequest* request) {
-    size_t atakSize;
+//   webServer.on("/atakHistory", HTTP_GET, [&](AsyncWebServerRequest* request) {
+//     size_t atakSize;
 
-    uint8_t* atakBytes = DuckNet::serializeAtakHistoryToBytes(&atakMessageBuffer, &atakSize);
+//     uint8_t* atakBytes = DuckNet::serializeAtakHistoryToBytes(&atakMessageBuffer, &atakSize);
 
-    // std::shared_ptr<uint8_t> atakData(atakBytes, [](uint8_t* p) { delete[] p; });
+//     // std::shared_ptr<uint8_t> atakData(atakBytes, [](uint8_t* p) { delete[] p; });
 
-    AsyncWebServerResponse *response = request->beginResponse_P(200, "application/octet-stream", atakBytes, atakSize);
+//     AsyncWebServerResponse *response = request->beginResponse_P(200, "application/octet-stream", atakBytes, atakSize);
 
-    loginfo_ln("sending atak history");
-    // response->addHeader("Content-Disposition", "attachment; filename=\"atakHistory.bin\"");
-    request->send(response);
-});
+//     loginfo_ln("sending atak history");
+//     // response->addHeader("Content-Disposition", "attachment; filename=\"atakHistory.bin\"");
+//     request->send(response);
+// });
 
-  webServer.on("/atakChatHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
+  webServer.on("/atakHistory", HTTP_GET, [&](AsyncWebServerRequest* request){
       std::string response = DuckNet::serializeAtakHistoryToJSON(&atakMessageBuffer);
       const char* res = response.c_str();
       request->send(200, "text/json", res);
@@ -358,7 +359,7 @@ int DuckNet::setupInternet(std::string ssid, std::string password)
 
 void DuckNet::addToAtakBuffer(std::vector<byte> message) {
   txPacket->prepareForSending(bloomFilter, BROADCAST_DUID, DuckType::UNKNOWN, topics::achat, message);
-  auto atakBuffer = txPacket->getBuffer(); //TODO: no auto
+  auto atakBuffer = txPacket->getBuffer();
   CdpPacket atakPacket(atakBuffer);
 
   if(atakMessageBuffer.findMuid(atakPacket.muid) < 0){
@@ -384,9 +385,27 @@ std::string DuckNet::serializeAtakHistoryToJSON(CircularBuffer* buffer) {
     CdpPacket packet = buffer->getMessage(tail);
     unsigned long messageAge = millis() - packet.timeReceived;
     std::string messageAgeString = String(messageAge).c_str();
-    std::string messageBody(packet.data.begin(),packet.data.end());
     std::string sduid(packet.sduid.begin(), packet.sduid.end());
     std::string muid(packet.muid.begin(), packet.muid.end());
+
+    //fill in placeholder body info
+    std::string rawBody(packet.data.begin(),packet.data.end());
+
+    // Default placeholders
+    std::string LAT = "0.0000";
+    std::string LNG = "0.0000";
+
+    // Extract lat/lng from format: "Lat: <val>, Lng: <val>"
+    std::regex coordRegex(R"(Lat:\s*([-+]?\d*\.\d+|\d+),\s*Lng:\s*([-+]?\d*\.\d+|\d+))");
+    std::smatch match;
+    if (std::regex_search(rawBody, match, coordRegex)) {
+        if (match.size() >= 3) {
+            LAT = match[1].str();
+            LNG = match[2].str();
+        }
+    }
+
+    std::string messageBody = "{\"body\":\"i: 14GU t: 1 s: 0 r: t b: TEST,TEST," + LAT + "," + LNG + "," + "a-n-G,TEST,All,-2`&\",\"username\":\"GRAND SLAM CTL\"}";
 
     json = json + "{\"sduid\":\"" + sduid + "\", \"muid\":\"" + muid +  "\" , \"title\":\"PLACEHOLDER TITLE\", \"body\":" + messageBody + ", \"messageAge\":\"" + messageAgeString + "\"}";
     tail++;

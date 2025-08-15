@@ -116,12 +116,18 @@ bool runSensor(void *) {
   // String bmpData = getBMPData();
   String gpsData = getGPSData();
 
-  String message = "\"" + String("DuckGPS: ") + gpsData + "\"";
-  // String message = "\"" + String("DuckBMP: ") + bmpData + "\"";
+  String message = "DuckGPS: " + gpsData;
+  // String message = "DuckBMP: " + bmpData;
   Serial.print("[MAMA] sensor data: ");
   Serial.println(message.c_str());
   Serial1.println(message.c_str());
-  duck.storeSensorData(stringToByteVector(message.c_str()));
+
+  //comment out, this is just for testing
+  String smsg = message.substring(9);
+  std::string msg = smsg.c_str();
+  msg = "\"" + msg + "\""; 
+  duck.storeSensorData(stringToByteVector(msg));
+
   return true;
 }
 
