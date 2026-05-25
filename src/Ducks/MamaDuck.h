@@ -54,6 +54,14 @@ private :
         this->router.getFilter().bloom_add(rxPacket.muid.data(), MUID_LENGTH);
     }
 
+    /**
+     * @brief Handles packets that are meant for broadcasing (i.e RREQ, PING, CMD, etc).
+     * Overrides the pure virtual function in Duck base class.
+     * Only responds to neighbors to decrease strain on the network.
+     * @param rxPacket the received packet to be processed by the mama duck if it's a broadcast packet (RREQ, PING, CMD, etc).
+     * If it's a RREQ with hop count > 0, it will send a response.
+     * If it's a PING, a PONG will be sent back. If it's a CMD, it will be relayed.
+     */
     void ifBroadcast(CdpPacket rxPacket) {
         int err = DUCK_ERR_NONE;
         switch(rxPacket.topic) {
@@ -118,6 +126,14 @@ private :
         }
     }
 
+    /**
+     * @brief Handles packets that are meant for specific targets (i.e RREP, PONG, etc).
+     * If the RREQ is not meant for the mama duck but is still a directed packet, it will be relayed; otherwise, sends RREP.
+     * If the packet is a RREP meant for the mama duck, it will update the routing table with the path information; otherwise, it will be relayed to the next hop.
+     * Overrides the pure virtual function in Duck base class.
+     * @param rxPacket
+     * @param relay
+     */
     void ifNotBroadcast(CdpPacket rxPacket, bool relay = false) {
         int err;
         switch(rxPacket.topic) {
