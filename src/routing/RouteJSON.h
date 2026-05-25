@@ -243,11 +243,12 @@ class RouteJSON {
 
         void updateJsonPath(){
             JsonArray path = json["path"].to<JsonArray>();
-            path.clear();
 
             for (const auto& s : objPath) {
-                path.add(s);
+                if (!path.add(s))
+                    logerr_ln("Failed to add %s to JSON path array; No more memory in JSON Document", s);
             }
+            json["path"] = path;
         }
   };
 
