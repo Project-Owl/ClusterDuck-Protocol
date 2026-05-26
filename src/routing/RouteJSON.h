@@ -19,7 +19,7 @@
 class RouteJSON {
     public:
         /**
-         * @brief Construct a new Route JSON object
+         * @brief Construct a new Route JSON object. Duid is a typedef of std::array<uint8_t,8>
          *
          * @param targetDevice the destination device DUID
          * @param sourceDevice the source device DUID
@@ -70,9 +70,11 @@ class RouteJSON {
             json["origin"] = origin;
             json["destination"] = destination;
 
+#ifdef CDP_LOG_DEBUG
             std::string log;
             serializeJson(json, log);
-
+            logdbg_ln("RREP: %s",log);
+#endif
             return asString();
         }
         Duid getOrigin(){ return fromText(origin); }
@@ -111,7 +113,7 @@ class RouteJSON {
 #ifdef CDP_LOG_DEBUG
             std::string log;
             serializeJson(json, log);
-            logdbg_ln("RREQ: %s", log.c_str());
+            logdbg_ln("RREQ: %s", log);
 #endif
             return asString();
             //add rssi snr
@@ -145,11 +147,11 @@ class RouteJSON {
         }
         objPath.pop_back();
         updateJsonPath();
-
+#ifdef CDP_LOG_DEBUG
         std::string log;
         serializeJson(json, log);
-        logdbg_ln("Packet: %s", log.c_str());
-
+        logdbg_ln("Packet: %s", log);
+#endif
         return asString();
     }
 
@@ -227,8 +229,11 @@ class RouteJSON {
                 objPath.push_back(entry);
             }
 
-            const std::string serialized = asString();
-            logdbg_ln("Built RouteJSON from packet data: %s", serialized.c_str());
+#ifdef CDP_LOG_DEBUG
+            std::string log;
+            serializeJson(json, log);
+            logdbg_ln("Built RouteJSON from packet data: %s",log);
+#endif
             return true;
         }
 
