@@ -241,14 +241,19 @@ class RouteJSON {
         std::string origin;
         std::string destination;
 
+        /**
+         * @brief update the JSON document's path field with the current objPath vector. The JsonArray path variable is
+         * a reference that points to a JsonDocument, so there is only need to manipulate the underlying memory.
+         * see https://arduinojson.org/v7/api/jsonarray/
+         */
         void updateJsonPath(){
             JsonArray path = json["path"].to<JsonArray>();
+            path.clear(); //clear the path array in the doc so we can update it with the new path vector
 
             for (const auto& s : objPath) {
                 if (!path.add(s))
                     logerr_ln("Failed to add %s to JSON path array; No more memory in JSON Document", s);
             }
-            json["path"] = path;
         }
   };
 
