@@ -9,6 +9,11 @@ void DuckRouter::insertIntoRoutingTable(Duid deviceID, Duid nextHop, SignalScore
     Neighbor entry(deviceID, nextHop, signal, heardAt);
     const auto key = duckutils::duidToString(deviceID);
     auto& candidates = routingTable[key];
+    if (candidates.empty()) {
+        logdbg_ln("Adding new neighbor record to routing table for deviceID: %s", key);
+    } else {
+        logdbg_ln("Updating existing neighbor record in routing table for deviceID: %s", key);
+    }
     // Replace only this next hop, even within the same millisecond.
     candidates.remove_if([&](const Neighbor& n) { return n.getNextHop() == nextHop; });
     candidates.push_back(entry);
@@ -19,8 +24,13 @@ void DuckRouter::insertIntoRoutingTable(Duid deviceID, Duid nextHop, SignalScore
 
 std::optional<Duid> DuckRouter::getBestNextHop(Duid target) {
     cullRoutingTable();
-    const auto it = routingTable.find(duckutils::duidToString(target));
-    if (it == routingTable.end() || it->second.empty()) return std::nullopt;
+    const auto key = duckutils::duidToString(target);
+    logdbg_ln("Searching for best next hop for target device ID: %s", key);
+    const auto it = routingTable.find(key);
+    if (it == routingTable.end() || it->second.empty()) {
+        logdbg_ln("No routing entry found for target device ID: %s", key);
+        return std::nullopt;
+    }
     return it->second.front().getNextHop();
 }
 
