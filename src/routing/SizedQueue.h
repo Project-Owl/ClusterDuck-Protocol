@@ -12,7 +12,7 @@ class SizedQueue{
     if (packetQueue.size() < maxSize){
       packetQueue.push(packet);
     }else{
-     loginfo_ln("[ROUTER] rx packet queue max size exceeded");
+     loginfo_ln("[ROUTER] packet queue max size exceeded");
     }
     loginfo_ln("[ROUTER] queue size: %d", packetQueue.size());
   }

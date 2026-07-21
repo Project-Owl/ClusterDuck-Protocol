@@ -75,8 +75,10 @@ class Duck {
         } else{
             std::optional<CdpPacket> txPacket = reqQueue.dequeue();
             if(txPacket.has_value()){
-              Serial.println("process next rreq");
-              this->sendToRadio(txPacket.value());
+              if((millis() - this->lastPacketTx) > CDPCFG_MAX_PACKET_SEND_RATE){
+                Serial.println("process next rreq");
+                this->sendToRadio(txPacket.value());
+              }
             }
             attemptNetworkJoin();
             if(router.getNetworkState() == NetworkState::SEARCHING && (millis() > (NET_JOIN_DELAY * 3 + 5000L))){
@@ -594,11 +596,11 @@ class Duck {
       if((router.getNetworkState() == NetworkState::PUBLIC) || ((router.getNetworkState() == NetworkState::SEARCHING) && (topic == reservedTopic::rreq))){
         CdpPacket txPacket = CdpPacket(targetDevice, topic, data, this->duid, this->getType());
         router.getFilter().assignUniqueMessageId(txPacket);
-        err = txPacket.prepareForSending();
-        if (err != DUCK_ERR_NONE) {
-          logerr_ln("ERROR Failed to build packet: %s err = %i",getDuckErrorString(err), err);
-          return err;
-        }
+        // err = txPacket.prepareForSending(); //this is already in sendTpRadio
+        // if (err != DUCK_ERR_NONE) {
+        //   logerr_ln("ERROR Failed to build packet: %s err = %i",getDuckErrorString(err), err);
+        //   return err;
+        // }
         if (topic == reservedTopic::rreq){
           reqQueue.enqueue(txPacket);
         } else{

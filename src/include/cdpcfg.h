@@ -49,7 +49,7 @@
 
 //Max TX and RX packet queue size
 #define CDPCFG_MAX_QUEUE_SIZE 10
-#define CDPCFG_MAX_PACKET_SEND_RATE 5000
+#define CDPCFG_MAX_PACKET_SEND_RATE 3000
 
 // Access point IP adress
 
