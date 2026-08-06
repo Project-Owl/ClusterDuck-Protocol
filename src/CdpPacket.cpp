@@ -1,7 +1,8 @@
 #include "CdpPacket.h"
 
 int CdpPacket::prepareForSending() {
-    uint8_t data_length = data.size();
+    const size_t timestamp_length = timestampPresent ? PAYLOAD_TIMESTAMP_LENGTH : 0;
+    const size_t data_length = data.size() + timestamp_length;
     buffer.clear();
 
     if ( data.empty() || data_length > MAX_DATA_LENGTH) {
@@ -46,8 +47,19 @@ int CdpPacket::prepareForSending() {
     buffer.insert(buffer.end(), this->hopCount);
     logdbg_ln("hop count: %s", std::to_string(this->hopCount).c_str());
 
+    std::vector<uint8_t> wireData;
+    wireData.reserve(data_length);
+    if (timestampPresent) {
+        wireData.push_back(PAYLOAD_TIMESTAMP_MAGIC);
+        wireData.push_back((timestamp >> 24) & 0xFF);
+        wireData.push_back((timestamp >> 16) & 0xFF);
+        wireData.push_back((timestamp >> 8) & 0xFF);
+        wireData.push_back(timestamp & 0xFF);
+    }
+    wireData.insert(wireData.end(), data.begin(), data.end());
+
     std::array<uint8_t,DATA_CRC_LENGTH> crc_bytes; //could this belong elsewhere? like in duckradio??
-    uint32_t value = CRC32::calculate(data.data(), data.size());
+    uint32_t value = CRC32::calculate(wireData.data(), wireData.size());
     crc_bytes[0] = (value >> 24) & 0xFF;
     crc_bytes[1] = (value >> 16) & 0xFF;
     crc_bytes[2] = (value >> 8) & 0xFF;
@@ -56,7 +68,7 @@ int CdpPacket::prepareForSending() {
     // data crc
     buffer.insert(buffer.end(), crc_bytes.begin(), crc_bytes.end());
 
-    buffer.insert(buffer.end(), this->data.begin(), this->data.end());
+    buffer.insert(buffer.end(), wireData.begin(), wireData.end());
     //convert the data to string for logging
     logdbg_ln("Data (HEX): %s", duckutils::convertToHex(this->data.data(), this->data.size()).c_str());
 
@@ -65,4 +77,3 @@ int CdpPacket::prepareForSending() {
 
     return DUCK_ERR_NONE;
 }
-

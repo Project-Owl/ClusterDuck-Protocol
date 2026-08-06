@@ -697,6 +697,13 @@ class Duck {
      * @return DUCK_ERR_NONE if the data was sent successfully, an error code otherwise.
      */
     int sendToRadio(CdpPacket& txPacket) {
+      // Stamp only packets originating at this Duck. A received packet has
+      // timestampPresent set by CdpPacket's decoder, so relays preserve the
+      // original sender's timestamp instead of replacing it with relay time.
+      if (!txPacket.timestampPresent) {
+        txPacket.timestamp = static_cast<uint32_t>(this->rtc.getEpoch());
+        txPacket.timestampPresent = true;
+      }
       int err = txPacket.prepareForSending();
       if (err != DUCK_ERR_NONE) {
         logerr_ln("ERROR Failed to build ping packet: %s, err = %i",getDuckErrorString(err), err);

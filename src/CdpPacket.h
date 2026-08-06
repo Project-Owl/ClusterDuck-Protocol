@@ -19,6 +19,11 @@
 #define DATA_CRC_LENGTH 4
 #define HEADER_LENGTH 27
 
+// Timestamp metadata stored at the beginning of the wire payload. The magic
+// byte lets receivers continue to accept packets from older Ducks.
+#define PAYLOAD_TIMESTAMP_MAGIC 0xC7
+#define PAYLOAD_TIMESTAMP_LENGTH 5
+
 // field/section offsets
 #define SDUID_POS 0
 #define DDUID_POS 8
@@ -195,6 +200,8 @@ class CdpPacket {
             hopCount = 0;
             dcrc = 0;
             timeReceived = 0;
+            timestamp = 0;
+            timestampPresent = false;
             buffer.reserve(256);
         }
 
@@ -218,8 +225,18 @@ class CdpPacket {
             hopCount = buffer[HOP_COUNT_POS];
             // data crc
             dcrc = duckutils::toUint32(&buffer[DATA_CRC_POS]);
-            // data section
+            // data section. New packets carry a magic byte followed by a
+            // big-endian Unix epoch before the application payload.
             data.assign(&buffer[DATA_POS], &buffer[buffer_length]);
+            if (data.size() >= PAYLOAD_TIMESTAMP_LENGTH &&
+                data[0] == PAYLOAD_TIMESTAMP_MAGIC) {
+                timestamp = (static_cast<uint32_t>(data[1]) << 24) |
+                            (static_cast<uint32_t>(data[2]) << 16) |
+                            (static_cast<uint32_t>(data[3]) << 8) |
+                            static_cast<uint32_t>(data[4]);
+                timestampPresent = true;
+                data.erase(data.begin(), data.begin() + PAYLOAD_TIMESTAMP_LENGTH);
+            }
             //need to figure out how to deal with timeReceived
         }
 
@@ -234,6 +251,8 @@ class CdpPacket {
             this->duckType = duckType;
             this->hopCount = 0;
             this->timeReceived = -1;
+            this->timestamp = 0;
+            this->timestampPresent = false;
             this->data = data;
             buffer.reserve(256);
 
@@ -259,6 +278,10 @@ class CdpPacket {
         std::vector<uint8_t> data;
         //time received
         unsigned long timeReceived;
+        /// Unix epoch timestamp associated with the packet payload
+        uint32_t timestamp;
+        /// True when timestamp metadata should be written to the wire payload
+        bool timestampPresent;
 
 
         /**
