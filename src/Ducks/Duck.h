@@ -11,7 +11,6 @@
 #include "DuckTypes.h"
 #include "../utils/DuckUtils.h"
 #include <cassert>
-#include <ctime>
 #include "../CdpPacket.h"
 #include "../DuckEsp.h"
 #include "../wifi/DuckWifiNone.h"
@@ -702,14 +701,9 @@ class Duck {
       // timestampPresent set by CdpPacket's decoder, so relays preserve the
       // original sender's timestamp instead of replacing it with relay time.
       if (!txPacket.timestampPresent) {
-        // Use the ESP32 system epoch. The application synchronizes this clock
-        // from GPS or cmd_time; do not use the separate ESP32Time instance,
-        // which can lag behind the system clock.
-        const std::time_t systemEpoch = std::time(nullptr);
-        if (systemEpoch >= static_cast<std::time_t>(1700000000)) {
-          txPacket.timestamp = static_cast<uint32_t>(systemEpoch);
-          txPacket.timestampPresent = true;
-        }
+        txPacket.uptimeMs = millis();
+        txPacket.timestamp = static_cast<uint32_t>(this->rtc.getEpoch());
+        txPacket.timestampPresent = true;
       }
       int err = txPacket.prepareForSending();
       if (err != DUCK_ERR_NONE) {

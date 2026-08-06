@@ -50,7 +50,11 @@ int CdpPacket::prepareForSending() {
     std::vector<uint8_t> wireData;
     wireData.reserve(data_length);
     if (timestampPresent) {
-        wireData.push_back(PAYLOAD_TIMESTAMP_MAGIC);
+        wireData.push_back(PAYLOAD_TIMESTAMP_V2_MAGIC);
+        wireData.push_back((uptimeMs >> 24) & 0xFF);
+        wireData.push_back((uptimeMs >> 16) & 0xFF);
+        wireData.push_back((uptimeMs >> 8) & 0xFF);
+        wireData.push_back(uptimeMs & 0xFF);
         wireData.push_back((timestamp >> 24) & 0xFF);
         wireData.push_back((timestamp >> 16) & 0xFF);
         wireData.push_back((timestamp >> 8) & 0xFF);

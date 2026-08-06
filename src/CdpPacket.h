@@ -22,7 +22,9 @@
 // Timestamp metadata stored at the beginning of the wire payload. The magic
 // byte lets receivers continue to accept packets from older Ducks.
 #define PAYLOAD_TIMESTAMP_MAGIC 0xC7
-#define PAYLOAD_TIMESTAMP_LENGTH 5
+#define PAYLOAD_TIMESTAMP_V2_MAGIC 0xC8
+#define PAYLOAD_TIMESTAMP_LENGTH 9 // magic + uptime-ms + RTC epoch
+#define PAYLOAD_TIMESTAMP_V1_LENGTH 5 // magic + RTC epoch
 
 // field/section offsets
 #define SDUID_POS 0
@@ -201,6 +203,7 @@ class CdpPacket {
             dcrc = 0;
             timeReceived = 0;
             timestamp = 0;
+            uptimeMs = 0;
             timestampPresent = false;
             buffer.reserve(256);
         }
@@ -210,6 +213,9 @@ class CdpPacket {
          */
         CdpPacket(std::vector<uint8_t> rxBuffer) {
             buffer = rxBuffer;
+            timestamp = 0;
+            uptimeMs = 0;
+            timestampPresent = false;
             int buffer_length = buffer.size();
             // sduid
             std::copy(&buffer[SDUID_POS], &buffer[DDUID_POS], sduid.begin());
@@ -225,17 +231,30 @@ class CdpPacket {
             hopCount = buffer[HOP_COUNT_POS];
             // data crc
             dcrc = duckutils::toUint32(&buffer[DATA_CRC_POS]);
-            // data section. New packets carry a magic byte followed by a
-            // big-endian Unix epoch before the application payload.
+            // data section. Timestamped packets carry metadata before the
+            // application payload. V2 includes both uptime and RTC epoch;
+            // V1 is retained for backwards compatibility.
             data.assign(&buffer[DATA_POS], &buffer[buffer_length]);
             if (data.size() >= PAYLOAD_TIMESTAMP_LENGTH &&
-                data[0] == PAYLOAD_TIMESTAMP_MAGIC) {
+                data[0] == PAYLOAD_TIMESTAMP_V2_MAGIC) {
+                uptimeMs = (static_cast<uint32_t>(data[1]) << 24) |
+                           (static_cast<uint32_t>(data[2]) << 16) |
+                           (static_cast<uint32_t>(data[3]) << 8) |
+                           static_cast<uint32_t>(data[4]);
+                timestamp = (static_cast<uint32_t>(data[5]) << 24) |
+                            (static_cast<uint32_t>(data[6]) << 16) |
+                            (static_cast<uint32_t>(data[7]) << 8) |
+                            static_cast<uint32_t>(data[8]);
+                timestampPresent = true;
+                data.erase(data.begin(), data.begin() + PAYLOAD_TIMESTAMP_LENGTH);
+            } else if (data.size() >= PAYLOAD_TIMESTAMP_V1_LENGTH &&
+                       data[0] == PAYLOAD_TIMESTAMP_MAGIC) {
                 timestamp = (static_cast<uint32_t>(data[1]) << 24) |
                             (static_cast<uint32_t>(data[2]) << 16) |
                             (static_cast<uint32_t>(data[3]) << 8) |
                             static_cast<uint32_t>(data[4]);
                 timestampPresent = true;
-                data.erase(data.begin(), data.begin() + PAYLOAD_TIMESTAMP_LENGTH);
+                data.erase(data.begin(), data.begin() + PAYLOAD_TIMESTAMP_V1_LENGTH);
             }
             //need to figure out how to deal with timeReceived
         }
@@ -252,6 +271,7 @@ class CdpPacket {
             this->hopCount = 0;
             this->timeReceived = -1;
             this->timestamp = 0;
+            this->uptimeMs = 0;
             this->timestampPresent = false;
             this->data = data;
             buffer.reserve(256);
@@ -280,6 +300,8 @@ class CdpPacket {
         unsigned long timeReceived;
         /// Unix epoch timestamp associated with the packet payload
         uint32_t timestamp;
+        /// Sender uptime in milliseconds when the packet was transmitted
+        uint32_t uptimeMs;
         /// True when timestamp metadata should be written to the wire payload
         bool timestampPresent;
 
