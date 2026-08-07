@@ -88,6 +88,7 @@ int quackJson(CdpPacket packet) {
   loginfo("[PAPA] data:    %s\n" , payload.c_str());
   loginfo("[PAPA] hops:    %s\n", std::to_string(packet.hopCount).c_str());
   loginfo("[PAPA] duck:    %s\n" , std::to_string(packet.duckType).c_str());
+  loginfo("[PAPA] uptime:  %lu ms\n", static_cast<unsigned long>(packet.uptimeMs));
 
   doc["DeviceID"] = sduid;
   doc["MessageID"] = muid;

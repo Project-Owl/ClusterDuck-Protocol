@@ -150,8 +150,19 @@ class Duck {
         return DUCKPACKET_ERR_TOPIC_INVALID;
       }
       if(router.getNetworkState() == NetworkState::PUBLIC){
+        // Add sender uptime to JSON application payloads before creating the
+        // CDP packet. Non-JSON payloads are left unchanged.
+        std::string payload = data;
+        JsonDocument payloadDoc;
+        DeserializationError payloadError = deserializeJson(payloadDoc, payload);
+        if (!payloadError && payloadDoc.is<JsonObject>()) {
+          payloadDoc["uptime"] = millis();
+          payload.clear();
+          serializeJson(payloadDoc, payload);
+        }
+
         std::vector<uint8_t> app_data;
-        app_data.insert(app_data.end(), data.begin(), data.end());
+        app_data.insert(app_data.end(), payload.begin(), payload.end());
         CdpPacket txPacket = CdpPacket(targetDevice, topic, app_data, this->duid, this->getType());
 
         std::optional<Duid> nextHop = router.getBestNextHop(txPacket.dduid);
@@ -455,6 +466,7 @@ class Duck {
       // Compact wire keys are documented in docs/HEALTH_PACKET.md.
       doc["C"] = duckInstance->counter;
       doc["M"] = freeMemory();
+      doc["uptime"] = millis();
       doc["RT"] = radio.rxTotal - base.rxTotal;
       doc["RV"] = radio.rxValid - base.rxValid;
       doc["RC"] = radio.rxCrcErrors - base.rxCrcErrors;

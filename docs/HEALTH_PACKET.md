@@ -3,10 +3,17 @@
 Health packets use the CDP `health` topic and contain compact JSON keys so the
 payload fits within the CDP maximum packet size.
 
+JSON application payloads sent through `sendData()` receive an `uptime` field
+immediately before packet creation. The value is the sender's elapsed time
+since boot in milliseconds. Every originating CDP packet also carries the
+same value as wire metadata; relayed packets retain the original sender's
+wire-level value.
+
 | Key | Meaning | Lifetime |
 | --- | --- | --- |
 | `C` | Successful packets sent | Cumulative for the Duck's lifetime |
 | `M` | Free memory | Point-in-time |
+| `uptime` | Sender uptime in milliseconds | Point-in-time |
 | `RT` | Received radio frames, including CRC failures | Since the last successfully sent health packet |
 | `RV` | Valid received CDP packets | Since the last successfully sent health packet |
 | `RC` | CRC failures at the radio or CDP layer | Since the last successfully sent health packet |
