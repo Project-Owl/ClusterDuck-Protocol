@@ -26,6 +26,10 @@ class SizedQueue{
       return std::nullopt;
     }
   }
+
+  void clear(){
+    packetQueue = std::queue<CdpPacket>{};
+  }
   
 private:
   int maxSize;
