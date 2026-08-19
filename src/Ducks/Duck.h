@@ -36,55 +36,63 @@ class Duck {
     void run(){
       duckRadio.serviceInterruptFlags();
       Duck::logIfLowMemory();
-      if(router.getNetworkState() == NetworkState::PUBLIC) {
-        if (duckRadio.getReceiveFlag()){
-          if(this->getType() == DuckType::DETECTOR){ //maybe we should have an alternate run for detector>?
-            std::optional<std::vector<uint8_t>> rxData = this->duckRadio.readReceivedData();
-            if (!rxData.has_value()) {
-              logerr_ln("ERROR failed to get data from DuckRadio.");
-              return;
-            }
-            CdpPacket rxPacket(rxData.value());
-            logdbg_ln("Got data from radio. size: %d",rxPacket.size());
-            handleReceivedPacket(rxPacket);
-          } else{ 
-            queueReceivedPacket(); 
-          }
-        } else{
-            std::optional<CdpPacket> rxPacket = rxQueue.dequeue();
-            if(rxPacket.has_value()){
-              Serial.println("process next queued RX packet");
-              handleReceivedPacket(rxPacket.value());
-            }
-      
-            //routeProtocol.processPacket(rxQueue.dequeu())
-            //semd a txPacket if any -- hopefully doing both doesnt take too much time
-            if((millis() - this->lastPacketTx) > CDPCFG_MAX_PACKET_SEND_RATE){
-                std::optional<CdpPacket> txPacket = txQueue.dequeue(); 
-              if(txPacket.has_value()){
-                Serial.println("send a queued packet");
-                this->lastPacketTx = millis();
-                this->sendToRadio(txPacket.value());
+
+      switch(router.getNetworkState()){
+        case NetworkState::PUBLIC:  {
+          if (duckRadio.getReceiveFlag()){
+            if(this->getType() == DuckType::DETECTOR){ //maybe we should have an alternate run for detector>?
+              std::optional<std::vector<uint8_t>> rxData = this->duckRadio.readReceivedData();
+              if (!rxData.has_value()) {
+                logerr_ln("ERROR failed to get data from DuckRadio.");
+                return;
               }
+              CdpPacket rxPacket(rxData.value());
+              logdbg_ln("Got data from radio. size: %d",rxPacket.size());
+              handleReceivedPacket(rxPacket);
+            } else{ 
+              queueReceivedPacket(); 
             }
-        }
-      } else {
-        if(this->getType() == DuckType::DETECTOR){
-          loginfo_ln("Detector duck -- bypassing network search.");
-          router.setNetworkState(NetworkState::PUBLIC);
-        } else{
-            std::optional<CdpPacket> txPacket = reqQueue.dequeue();
-            if(txPacket.has_value()){
+          } else{
+              std::optional<CdpPacket> rxPacket = rxQueue.dequeue();
+              if(rxPacket.has_value()){
+                Serial.println("process next queued RX packet");
+                handleReceivedPacket(rxPacket.value());
+              }
+        
+              //routeProtocol.processPacket(rxQueue.dequeu())
+              //semd a txPacket if any -- hopefully doing both doesnt take too much time
               if((millis() - this->lastPacketTx) > CDPCFG_MAX_PACKET_SEND_RATE){
-                Serial.println("process next rreq");
-                this->sendToRadio(txPacket.value());
+                  std::optional<CdpPacket> txPacket = txQueue.dequeue(); 
+                if(txPacket.has_value()){
+                  Serial.println("send a queued packet");
+                  this->lastPacketTx = millis();
+                  this->sendToRadio(txPacket.value());
+                }
               }
-            }
-            attemptNetworkJoin();
-            if(router.getNetworkState() == NetworkState::SEARCHING && (millis() > (NET_JOIN_DELAY * 3 + 5000L))){
-              loginfo_ln("No existing network found, creating new CDP network...");
-              router.setNetworkState(NetworkState::PUBLIC);
-            }
+          }
+          break;
+        }
+        
+        case NetworkState::SEARCHING: {
+          if(this->getType() == DuckType::DETECTOR){
+            loginfo_ln("Detector duck -- bypassing network search.");
+            router.setNetworkState(NetworkState::PUBLIC);
+          } else{
+              std::optional<CdpPacket> txPacket = reqQueue.dequeue();
+              if(txPacket.has_value()){
+                if((millis() - this->lastPacketTx) > CDPCFG_MAX_PACKET_SEND_RATE){
+                  Serial.println("process next rreq");
+                  this->sendToRadio(txPacket.value());
+                }
+              }
+              attemptNetworkJoin();
+              if(router.getNetworkState() == NetworkState::SEARCHING && (millis() > (NET_JOIN_DELAY * 3 + 5000L))){
+                loginfo_ln("No existing network found, creating new CDP network...");
+                reqQueue.clear();
+                router.setNetworkState(NetworkState::PUBLIC);
+              }
+          }
+          break;
         }
       }
       duckTimer.tick();
@@ -373,6 +381,7 @@ class Duck {
         } else{
           router.insertIntoRoutingTable(cdpNode->sduid, cdpNode->sduid, this->getSignalScore()); //should signal score be stored on cdp packet?
         }
+        reqQueue.clear();
         router.setNetworkState(NetworkState::PUBLIC);
       } else {
         if((millis() - this->lastRreqTime) > NET_JOIN_DELAY){
@@ -593,21 +602,16 @@ class Duck {
      */
     int sendReservedTopicData(Duid targetDevice, reservedTopic topic, std::vector<uint8_t> data){
       int err = DUCK_ERR_NONE;
-      if((router.getNetworkState() == NetworkState::PUBLIC) || ((router.getNetworkState() == NetworkState::SEARCHING) && (topic == reservedTopic::rreq))){
+      if(router.getNetworkState() == NetworkState::PUBLIC){
         CdpPacket txPacket = CdpPacket(targetDevice, topic, data, this->duid, this->getType());
         router.getFilter().assignUniqueMessageId(txPacket);
-        // err = txPacket.prepareForSending(); //this is already in sendTpRadio
-        // if (err != DUCK_ERR_NONE) {
-        //   logerr_ln("ERROR Failed to build packet: %s err = %i",getDuckErrorString(err), err);
-        //   return err;
-        // }
-        if (topic == reservedTopic::rreq){
-          reqQueue.enqueue(txPacket);
-        } else{
-          txQueue.enqueue(txPacket);
-        }
+        txQueue.enqueue(txPacket);
+      } else if((router.getNetworkState() == NetworkState::SEARCHING) && (topic == reservedTopic::rreq)){
+        CdpPacket txPacket = CdpPacket(targetDevice, topic, data, this->duid, this->getType());
+        router.getFilter().assignUniqueMessageId(txPacket);
+        reqQueue.enqueue(txPacket);
+      }
         
-      } 
       return err;
     }
 
