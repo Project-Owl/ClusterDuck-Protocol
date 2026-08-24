@@ -62,19 +62,18 @@ void DuckRouter::cullRoutingTable(size_t maxSize) {
                 ++entry;
             }
         }
-        
+        //check to make sure entries per destination doesn't exceed max
+        neighborList.sort(std::greater<>()); // remove this when you add sorting to routing table insert?
+        while (neighborList.size() > maxSize) {
+            loginfo_ln("[ROUTER] culling route that exceeded max neighbors");
+            neighborList.pop_back();
+        }
+
+        //empty check needs to go last so that neighborList isn't deleted
         if (neighborList.empty()) {
             neighborIndex = routingTable.erase(neighborIndex);
         } else {
             ++neighborIndex;
-        }
-        //check to make sure entries per destination doesn't exceed max
-        std::size_t size = routingTable.size();
-        while (size > maxSize) {
-            auto it = std::prev(routingTable.end(),1); // Get iterator to the last element
-            loginfo_ln("[ROUTER] culling route that exceeded max entries");
-            routingTable.erase(it);
-            size = routingTable.size(); // Update size after erasure
         }
     }
 };
