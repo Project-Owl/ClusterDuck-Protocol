@@ -48,6 +48,7 @@ class Duck {
               }
               CdpPacket rxPacket(rxData.value());
               logdbg_ln("Got data from radio. size: %d",rxPacket.size());
+              refreshNeighborRoute(rxPacket);
               handleReceivedPacket(rxPacket);
             } else{ 
               queueReceivedPacket(); 
@@ -56,6 +57,7 @@ class Duck {
               std::optional<CdpPacket> rxPacket = rxQueue.dequeue();
               if(rxPacket.has_value()){
                 Serial.println("process next queued RX packet");
+                refreshNeighborRoute(rxPacket.value());
                 handleReceivedPacket(rxPacket.value());
               }
         
@@ -137,6 +139,7 @@ class Duck {
       } else{
         duckTimer.every(HEALTH_INTERVAL, sendHealth, this);
         duckTimer.every(SIGNAL_INTERVAL, sendSignalData, this);
+        duckTimer.every(CDPCFG_ROUTE_KEEPALIVE_MS, sendRouteKeepalive, this);
       }
       return err;
     }
@@ -447,6 +450,58 @@ class Duck {
     }
 
     /**
+     * @brief Refresh the routing entry for a directly-heard neighbour.
+     *
+     * Routes are otherwise only inserted on RREQ/RREP, so a duck that is actively
+     * sending data still ages out of its neighbours' tables and every later send
+     * has to rediscover it with an RREQ. A packet with hopCount 0 has not been
+     * relayed, so its originator is provably one hop away and reachable right now.
+     */
+    void refreshNeighborRoute(const CdpPacket& rxPacket) {
+      if (rxPacket.hopCount != 0) {
+        return; // relayed: sduid is the originator, not the duck we actually heard
+      }
+      if (rxPacket.topic == reservedTopic::rreq) {
+        return; // the rreq handler already inserts, and also answers with an rrep
+      }
+      if (rxPacket.duckType == DuckType::PAPA) {
+        router.insertIntoRoutingTable(PAPADUCK_DUID, PAPADUCK_DUID, this->getSignalScore());
+      } else {
+        router.insertIntoRoutingTable(rxPacket.sduid, rxPacket.sduid, this->getSignalScore());
+      }
+    }
+
+    /**
+     * @brief Periodically broadcast an RREQ so neighbours refresh our entry in
+     * their routing table and their RREPs refresh theirs in ours.
+     *
+     * Without this a duck that has nothing to say ages out of every table after
+     * CDPCFG_ROUTE_TTL_MS even though it is still reachable -- which is why the
+     * TTL previously had to be set longer than the slowest telemetry beacon.
+     * @returns true so the timer stays armed.
+     */
+    static bool sendRouteKeepalive(void* p){
+      Duck* duckInstance = static_cast<Duck*>(p);
+      if (duckInstance->getType() == DuckType::PAPA) {
+        return false; // papa is the root, it does not need a route to itself
+      }
+      if (duckInstance->getType() == DuckType::DETECTOR) {
+        return false; // detector does not participate in routing
+      }
+      if (duckInstance->router.getNetworkState() != NetworkState::PUBLIC) {
+        return true;  // still joining; attemptNetworkJoin() is already sending RREQs
+      }
+
+      RouteJSON rreqDoc = RouteJSON(BROADCAST_DUID, duckInstance->duid);
+      rreqDoc.addToPath(duckInstance->duid);
+      int err = duckInstance->sendRouteRequest(BROADCAST_DUID, rreqDoc);
+      if (err != DUCK_ERR_NONE) {
+        logdbg_ln("[DUCK] route keepalive failed to send. rc = %d", err);
+      }
+      return true;
+    }
+
+    /**
      * @brief sendData that allows sending for signal info for DMS mapping on an internal timer
      * @returns DUCK_ERR_NONE if the data was sent successfully, an error code otherwise.
      */
@@ -610,8 +665,14 @@ class Duck {
         CdpPacket txPacket = CdpPacket(targetDevice, topic, data, this->duid, this->getType());
         router.getFilter().assignUniqueMessageId(txPacket);
         reqQueue.enqueue(txPacket);
+      } else {
+        // Nothing was built and nothing was queued. Returning DUCK_ERR_NONE here
+        // told the caller the packet was on its way, which is how reserved-topic
+        // sends were disappearing without a trace.
+        logerr_ln("[DUCK] reserved topic %d not sendable in current network state", topic);
+        err = DUCK_ERR_NOT_SUPPORTED;
       }
-        
+
       return err;
     }
 
