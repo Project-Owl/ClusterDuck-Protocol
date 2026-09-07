@@ -57,9 +57,9 @@ int DuckWifi::saveWifiCredentials(std::string ssid, std::string password) {
 
 std::optional<std::string> DuckWifi::loadWifiSsid() {
   if(initCredentialStorage()){
-    String pass = wifi_eeprom.getString("wifi_pass", "");
+    String ssid = wifi_eeprom.getString("wifi_ssid", "");
     wifi_eeprom.end();
-    return std::string(pass.c_str());
+    return std::string(ssid.c_str());
   } else{
     logerr_ln("failed to load credentials -- eeprom preferences error");
     return std::nullopt;
@@ -69,9 +69,9 @@ std::optional<std::string> DuckWifi::loadWifiSsid() {
   
 std::optional<std::string> DuckWifi::loadWifiPassword() {
   if(initCredentialStorage()){
-    String ssid = wifi_eeprom.getString("wifi_ssid", "");
+    String pass = wifi_eeprom.getString("wifi_pass", "");
     wifi_eeprom.end();
-    return std::string(ssid.c_str());
+    return std::string(pass.c_str());
   } else{
     logerr_ln("failed to load credentials -- eeprom preferences error");
     return std::nullopt;
