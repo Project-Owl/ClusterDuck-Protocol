@@ -95,7 +95,7 @@ private :
                 
                 //what is the min and max possible voltages
                 if ((battery_min < BAT_V_EMPTY || battery_min > BAT_V_FULL) || (battery_max < BAT_V_EMPTY || battery_max > BAT_V_FULL)) {
-                logerr_ln("Invalid argument -- battery threshold min: %i , battery threshold max %i", battery_min, battery_max);
+                logerr_ln("Invalid argument -- battery threshold min: %.3f , battery threshold max %.3f", battery_min, battery_max);
                 err = DUCK_ERR_INVALID_ARGUMENT;
                 break;
                 }
@@ -267,15 +267,30 @@ private :
             case reservedTopic::pong:
                 loginfo_ln("PONG received. Ignoring!");
                 break;
-            case topics::cmd_tx:
+            case topics::cmd_tx: {
+                // Targeted cmd_tx used to log and do nothing, so a command aimed at a
+                // single duck was silently dropped. Apply the same update as the
+                // broadcast case; deliberately no relay, since this one is addressed
+                // to us.
+                ArduinoJson::JsonDocument json;
+                std::string packetStr(rxPacket.data.begin(), rxPacket.data.end());
+                DeserializationError error = deserializeJson(json, packetStr);
+                if (error) {
+                    logerr_ln("Duck Command cmd_tx deserialization failed: %s", error.c_str());
+                    break;
+                }
                 loginfo_ln("Command received, updating transmission power");
-                // err = this->broadcastPacket(rxPacket);// send ack only not broadcast
-                // if (err != DUCK_ERR_NONE) {
-                //   logerr_ln("====> ERROR handleReceivedPacket failed to relay. rc = %d",err);
-                //   } else {
-                //       loginfo_ln("handleReceivedPacket: packet RELAY DONE");
-                //   }
+
+                int txPwr = json["txPwr"];
+                if (txPwr < 14 || txPwr > 22) {
+                    logerr_ln("Invalid argument -- tx power: %i", txPwr);
+                    err = DUCK_ERR_INVALID_ARGUMENT;
+                    break;
+                }
+                this->eeprom_preferences.putInt("txPwr", txPwr);
+                loginfo_ln("updating tx power to value : %i", txPwr);
                 break;
+            }
             default:
                 if(relay){
                     this->forwardPacket(rxPacket); 
