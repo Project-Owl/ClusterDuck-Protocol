@@ -172,11 +172,11 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
         int err = DUCK_ERR_NONE;
           switch(rxPacket.topic) {
               case reservedTopic::rreq: {
-                  RouteJSON rreqDoc = RouteJSON(rxPacket.data);
-                  if (!rreqDoc.isValid()) {
-                      logerr_ln("handleReceivedPacket: dropping malformed RREQ");
-                      break;
+                  auto parsedRreq = RouteJSON::fromPacketData(rxPacket.data);
+                  if (!parsedRreq) {
+                      break; // fromPacketData() logged why it was rejected
                   }
+                  RouteJSON& rreqDoc = *parsedRreq;
                   if(!relay) {
                       loginfo_ln("handleReceivedPacket: Sending RREP");
                       std::optional<Duid> last = rreqDoc.getlastInPath();
@@ -193,11 +193,11 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
                 break;
               case reservedTopic::rrep: {
                   //we still need to recieve rreps in case of ttl expiry
-                  RouteJSON rrepDoc = RouteJSON(rxPacket.data);
-                  if (!rrepDoc.isValid()) {
-                      logerr_ln("handleReceivedPacket: dropping malformed RREP");
-                      break;
+                  auto parsedRrep = RouteJSON::fromPacketData(rxPacket.data);
+                  if (!parsedRrep) {
+                      break; // fromPacketData() logged why it was rejected
                   }
+                  RouteJSON& rrepDoc = *parsedRrep;
                   std::string sourceDuid(rxPacket.sduid.begin(), rxPacket.sduid.end());
                   loginfo_ln("Received Route Response from DUID: %s", sourceDuid.c_str());
                   //destination = sender of the rrep -> the last hop to current duck

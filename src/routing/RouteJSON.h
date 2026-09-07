@@ -11,6 +11,7 @@
 #define RouteJSON_H
 
 #include <ArduinoJson.h>
+#include <optional>
 #include "../utils/DuckUtils.h"
 #include "../CdpPacket.h"
 
@@ -28,60 +29,30 @@ class RouteJSON {
             json["origin"] = origin;
             json["destination"] = destination;
             json["path"].as<ArduinoJson::JsonArray>();
-            valid = true;
 
             std::string log;
             serializeJson(json, log);
             loginfo_ln("RouteDoc: %s", log.c_str());
         }
 
-        //Create JSON from rxPacket
         /**
-         * @brief Construct a new Route JSON object from received packet data
-         * check isValid() before using the parsed values
+         * @brief Parse route JSON out of received packet data.
+         *
+         * This is the only way to build a RouteJSON from over-the-air data. It
+         * returns nullopt and logs the specific reason when the payload is
+         * malformed, so a caller cannot end up holding a half-parsed document --
+         * there is no validity flag left to forget to check.
          *
          * @param packetData the received packet data as a byte vector
+         * @returns the parsed document, or nullopt if the payload is not usable
          */
-        RouteJSON(std::vector<uint8_t> packetData) {
-            std::string packetStr(packetData.begin(), packetData.end());
-            DeserializationError error = deserializeJson(json, packetStr);
-            if (error) {
-                logerr_ln("RouteJSON deserialization failed: %s", error.c_str());
-                return;
+        static std::optional<RouteJSON> fromPacketData(const std::vector<uint8_t>& packetData) {
+            RouteJSON doc;
+            if (!doc.parsePacketData(packetData)) {
+                return std::nullopt;
             }
-
-            const char* originPtr = json["origin"].as<const char*>();
-            const char* destinationPtr = json["destination"].as<const char*>();
-            if (originPtr == nullptr || destinationPtr == nullptr) {
-                logerr_ln("RouteJSON missing origin/destination");
-                return;
-            }
-            origin = originPtr;
-            destination = destinationPtr;
-            if (origin.size() != DUID_LENGTH || destination.size() != DUID_LENGTH) {
-                logerr_ln("RouteJSON origin/destination length invalid (%d/%d)",
-                          (int)origin.size(), (int)destination.size());
-                return;
-            }
-
-            for (JsonVariant value : json["path"].as<JsonArray>()) {
-                std::string entry = value.as<std::string>();
-                if (entry.size() != DUID_LENGTH) {
-                    logerr_ln("RouteJSON path entry length invalid (%d)", (int)entry.size());
-                    return;
-                }
-                objPath.push_back(entry);
-            }
-
-            valid = true;
-            const std::string serialized = asString();
-            logdbg_ln("Built RouteJSON from packet data: %s", serialized.c_str());
+            return doc;
         }
-
-        /**
-         * @brief returns false if the packet data could not be parsed
-         */
-        bool isValid() const { return valid; }
 
         std::string asString(){
             std::string out;
@@ -177,11 +148,58 @@ class RouteJSON {
     }
 
   private:
+        /// Only fromPacketData() may build an unpopulated document.
+        RouteJSON() = default;
+
+        /**
+         * @brief Populate this document from received packet data.
+         *
+         * Every field that is later copied into a fixed-size Duid is length
+         * checked here, so getOrigin()/getDestination()/getlastInPath() cannot
+         * over-run their destination buffers with attacker-shaped JSON.
+         *
+         * @returns false if the payload is malformed; the reason is logged.
+         */
+        bool parsePacketData(const std::vector<uint8_t>& packetData) {
+            std::string packetStr(packetData.begin(), packetData.end());
+            DeserializationError error = deserializeJson(json, packetStr);
+            if (error) {
+                logerr_ln("RouteJSON deserialization failed: %s", error.c_str());
+                return false;
+            }
+
+            const char* originPtr = json["origin"].as<const char*>();
+            const char* destinationPtr = json["destination"].as<const char*>();
+            if (originPtr == nullptr || destinationPtr == nullptr) {
+                logerr_ln("RouteJSON missing origin/destination");
+                return false;
+            }
+            origin = originPtr;
+            destination = destinationPtr;
+            if (origin.size() != DUID_LENGTH || destination.size() != DUID_LENGTH) {
+                logerr_ln("RouteJSON origin/destination length invalid (%d/%d)",
+                          (int)origin.size(), (int)destination.size());
+                return false;
+            }
+
+            for (JsonVariant value : json["path"].as<JsonArray>()) {
+                std::string entry = value.as<std::string>();
+                if (entry.size() != DUID_LENGTH) {
+                    logerr_ln("RouteJSON path entry length invalid (%d)", (int)entry.size());
+                    return false;
+                }
+                objPath.push_back(entry);
+            }
+
+            const std::string serialized = asString();
+            logdbg_ln("Built RouteJSON from packet data: %s", serialized.c_str());
+            return true;
+        }
+
         ArduinoJson::JsonDocument json;
         std::vector<std::string> objPath;
         std::string origin;
         std::string destination;
-        bool valid = false;
 
         void updateJsonPath(){
             JsonArray path = json["path"].to<JsonArray>();
