@@ -194,11 +194,11 @@ private :
         int err;
         switch(rxPacket.topic) {
             case reservedTopic::rreq: {
-                RouteJSON rreqDoc = RouteJSON(rxPacket.data);
-                if (!rreqDoc.isValid()) {
-                    logerr_ln("handleReceivedPacket: dropping malformed RREQ");
-                    break;
+                auto parsedRreq = RouteJSON::fromPacketData(rxPacket.data);
+                if (!parsedRreq) {
+                    break; // fromPacketData() logged why it was rejected
                 }
+                RouteJSON& rreqDoc = *parsedRreq;
                 //route requests are just forwarded so we can use the sduid as the origin
                 std::optional<Duid> last = rreqDoc.getlastInPath();
                 Duid lastInPath = last.has_value() ? last.value() : rxPacket.sduid;
@@ -220,11 +220,11 @@ private :
           
             case reservedTopic::rrep: {
                 //we still need to recieve rreps in case of ttl expiry
-                RouteJSON rrepDoc = RouteJSON(rxPacket.data);
-                if (!rrepDoc.isValid()) {
-                    logerr_ln("handleReceivedPacket: dropping malformed RREP");
-                    break;
+                auto parsedRrep = RouteJSON::fromPacketData(rxPacket.data);
+                if (!parsedRrep) {
+                    break; // fromPacketData() logged why it was rejected
                 }
+                RouteJSON& rrepDoc = *parsedRrep;
                 std::optional<Duid> last = rrepDoc.getlastInPath();
                 Duid lastInPath = last.has_value() ? last.value() : rxPacket.sduid;
                 std::string sourceDuid(rxPacket.sduid.begin(), rxPacket.sduid.end());
