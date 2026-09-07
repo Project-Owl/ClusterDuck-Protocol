@@ -1,5 +1,7 @@
 #include "DuckRouter.h"
 #include <ArduinoJson.h>
+#include <algorithm>
+#include <vector>
 
 void DuckRouter::insertIntoRoutingTable(Duid deviceID, Duid nextHop, SignalScore signalInfo) {
 
@@ -79,31 +81,54 @@ void DuckRouter::cullRoutingTable(size_t maxSize) {
 };
 
 std::optional<std::string> DuckRouter::getEntriesFor(Duid targetDuid, Duid thisDuck){
-    auto target = routingTable.find(duckutils::hexToString(duckutils::duidAsString(targetDuid)));
-    JsonDocument doc;
+    // targetDuid is retained for API compatibility but no longer filters. It used
+    // to look up only the papa key, so the signal-health payload reported papa as
+    // the single "neighbour" on every node and the real per-neighbour rssi/snr --
+    // which is already in the table under each sender's own duid -- was never read.
+    (void)targetDuid;
 
-    if (target == routingTable.end()) {
+    std::vector<Neighbor> direct;
+    for (const auto& record : routingTable) {
+        for (const auto& entry : record.second) {
+            if (entry.isDirectNeighbor()) {
+                direct.push_back(entry);
+            }
+        }
+    }
+
+    if (direct.empty()) {
         return std::nullopt;
     }
-    std::string strSourceDuid = duckutils::hexToString(duckutils::duidAsString(thisDuck));
 
-    Serial.printf("text = [%s]\n", strSourceDuid.c_str());
+    // Best signal first, so if the payload has to be truncated we keep the links
+    // that matter.
+    std::sort(direct.begin(), direct.end(),
+              [](const Neighbor& a, const Neighbor& b) { return a > b; });
 
-    doc["s"] = strSourceDuid;
+    const size_t reported = std::min(direct.size(), (size_t)CDPCFG_SIGNAL_MAX_NEIGHBORS);
+    if (direct.size() > reported) {
+        loginfo_ln("[ROUTER] signal health reporting %u of %u neighbors (payload cap)",
+                   (unsigned)reported, (unsigned)direct.size());
+    }
 
+    JsonDocument doc;
+    doc["s"] = duckutils::hexToString(duckutils::duidAsString(thisDuck));
     JsonArray neighborsArr = doc["n"].to<JsonArray>();
 
-    auto entry = target->second.begin();
-    while(entry != target->second.end()){
+    for (size_t i = 0; i < reported; i++) {
         JsonArray node = neighborsArr.createNestedArray();
-        node.add(duckutils::hexToString(duckutils::duidAsString(entry->getDuid())));
-        node.add(entry->getRssi());
-        node.add(entry->getSnr());
-        entry++;
+        node.add(duckutils::hexToString(duckutils::duidAsString(direct[i].getDuid())));
+        node.add(direct[i].getRssi());
+        node.add(direct[i].getSnr());
     }
 
     std::string jsonString;
     serializeJson(doc, jsonString);
+
+    if (jsonString.size() > MAX_DATA_LENGTH) {
+        logerr_ln("[ROUTER] signal health payload %u bytes exceeds %u; lower CDPCFG_SIGNAL_MAX_NEIGHBORS",
+                  (unsigned)jsonString.size(), (unsigned)MAX_DATA_LENGTH);
+    }
 
     return jsonString;
 }

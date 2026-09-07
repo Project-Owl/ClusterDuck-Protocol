@@ -60,6 +60,13 @@
 #define CDPCFG_ROUTE_TTL_MS (1000UL * 60UL * 30UL)   // 30 minutes
 #endif
 
+// Most neighbours reported in one signal-health payload. The data section is
+// MAX_DATA_LENGTH (229) bytes and each entry costs roughly 26, so 6 leaves margin.
+// Entries are sorted best-signal-first and any truncation is logged.
+#ifndef CDPCFG_SIGNAL_MAX_NEIGHBORS
+#define CDPCFG_SIGNAL_MAX_NEIGHBORS 6
+#endif
+
 // How often a duck broadcasts a route keepalive (an RREQ for the papa route).
 // Neighbours that hear it refresh our entry in their table and answer with an
 // RREP, which refreshes theirs in ours. Keep it well under CDPCFG_ROUTE_TTL_MS.
