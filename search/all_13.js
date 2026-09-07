@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['_7ebloomfilter_232',['~BloomFilter',['../class_bloom_filter.html#a27358192f6e0d7aba2b24be36c5d3580',1,'BloomFilter']]],
-  ['_7educk_233',['~Duck',['../class_duck.html#a702222da0aa85e48b6ef945e9c53e68d',1,'Duck']]],
-  ['_7educkpacket_234',['~DuckPacket',['../class_duck_packet.html#a1a656a9aeb29eda2d42e962fd2d33b6c',1,'DuckPacket']]]
+  ['value_0',['value',['../structtinyformat_1_1detail_1_1is__convertible.html#a399ca4333bd68f88a5d5a2430f804df2',1,'tinyformat::detail::is_convertible']]],
+  ['vformat_1',['vformat',['../classtinyformat_1_1_format_list.html#a105eb7b498f1353f8da108bd7284af58',1,'tinyformat::FormatList::vformat'],['../namespacetinyformat.html#a86ed74eb3ed66a662e96220d877da964',1,'tinyformat::vformat()']]]
 ];

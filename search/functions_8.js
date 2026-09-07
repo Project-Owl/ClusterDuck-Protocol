@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['oninterrupt_323',['onInterrupt',['../class_duck_radio.html#abba2a46b2ec298d1fe8136ccbf33baf7',1,'DuckRadio']]],
-  ['operator_3d_324',['operator=',['../class_duck.html#aaa676acc8bd171a20c18d74aaa5fd111',1,'Duck']]]
+  ['joinnetwork_0',['joinnetwork',['../class_duck_wifi.html#a616a5bd75a73e0b85fc52d9721f6a321',1,'DuckWifi::joinNetwork()'],['../class_duck_wifi_none.html#aa1b654b5073e08c9120ec5a6e7bfa90a',1,'DuckWifiNone::joinNetwork()']]],
+  ['joinwifinetwork_1',['joinWifiNetwork',['../class_duck.html#a4bc8893bfa0778cac8e00ec0c15fa92d',1,'Duck']]]
 ];

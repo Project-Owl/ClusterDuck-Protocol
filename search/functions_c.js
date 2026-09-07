@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['tostring_368',['toString',['../namespaceduckutils.html#a232773eaac919a424cf6c8737c6843f0',1,'duckutils']]],
-  ['touint32_369',['toUint32',['../namespaceduckutils.html#a3dc52038752191518492e540418c195b',1,'duckutils']]],
-  ['touppercase_370',['toUpperCase',['../namespaceduckutils.html#a0a51e5d45425646f2d70f63c3de51faa',1,'duckutils']]]
+  ['onreceiveduckdata_0',['onreceiveduckdata',['../class_mama_duck.html#aef110680be5a8b247280205885de76be',1,'MamaDuck::onReceiveDuckData()'],['../class_papa_duck.html#a84b029fbf4e44bf52975bb59730ac389',1,'PapaDuck::onReceiveDuckData()']]],
+  ['onreceiverssi_1',['onReceiveRssi',['../class_detector_duck.html#a683aee47db8411055e847861d2223749',1,'DetectorDuck']]],
+  ['operator_3d_2',['operator=',['../class_duck_lo_ra.html#a6de392fa3dccf2bc9283e6f79ba4340f',1,'DuckLoRa']]],
+  ['operator_3e_3',['operator&gt;',['../class_neighbor.html#a36209f783e33de23835ba0f520f68f93',1,'Neighbor']]]
 ];

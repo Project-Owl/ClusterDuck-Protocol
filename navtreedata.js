@@ -25,36 +25,39 @@
 var NAVTREE =
 [
   [ "ClusterDuck Protocol", "index.html", [
-    [ "ClusterDuck Protocol Info", "index.html", [
-      [ "About", "index.html#autotoc_md1", null ],
-      [ "Origin Story", "index.html#autotoc_md2", null ],
-      [ "How It Works", "index.html#autotoc_md3", null ],
-      [ "Getting Started", "index.html#autotoc_md4", null ],
-      [ "How to Contribute", "index.html#autotoc_md5", null ],
-      [ "Join the Conversation", "index.html#autotoc_md6", null ]
+    [ "ClusterDuck Protocol Info", "index.html", "index" ],
+    [ "Adding Your Own Board", "md__2home_2runner_2work_2_cluster_duck-_protocol_2_cluster_duck-_protocol_2src_2include_2boards_2_r_e_a_d_m_e.html", [
+      [ "Supported Boards", "md__2home_2runner_2work_2_cluster_duck-_protocol_2_cluster_duck-_protocol_2src_2include_2boards_2_r_e_a_d_m_e.html#autotoc_md1", null ],
+      [ "Board Format", "md__2home_2runner_2work_2_cluster_duck-_protocol_2_cluster_duck-_protocol_2src_2include_2boards_2_r_e_a_d_m_e.html#autotoc_md2", null ],
+      [ "Defining the Pins", "md__2home_2runner_2work_2_cluster_duck-_protocol_2_cluster_duck-_protocol_2src_2include_2boards_2_r_e_a_d_m_e.html#autotoc_md3", null ],
+      [ "Adding the Board Header", "md__2home_2runner_2work_2_cluster_duck-_protocol_2_cluster_duck-_protocol_2src_2include_2boards_2_r_e_a_d_m_e.html#autotoc_md4", null ]
     ] ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
       [ "Namespace Members", "namespacemembers.html", [
         [ "All", "namespacemembers.html", null ],
         [ "Functions", "namespacemembers_func.html", null ],
-        [ "Variables", "namespacemembers_vars.html", null ]
+        [ "Variables", "namespacemembers_vars.html", null ],
+        [ "Typedefs", "namespacemembers_type.html", null ]
       ] ]
     ] ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
       [ "Class Index", "classes.html", null ],
+      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
       [ "Class Members", "functions.html", [
         [ "All", "functions.html", null ],
         [ "Functions", "functions_func.html", null ],
         [ "Variables", "functions_vars.html", null ],
-        [ "Related Functions", "functions_rela.html", null ]
+        [ "Typedefs", "functions_type.html", null ],
+        [ "Related Symbols", "functions_rela.html", null ]
       ] ]
     ] ],
     [ "Files", "files.html", [
       [ "File List", "files.html", "files_dup" ],
       [ "File Members", "globals.html", [
         [ "All", "globals.html", null ],
+        [ "Functions", "globals_func.html", null ],
         [ "Variables", "globals_vars.html", null ],
         [ "Enumerations", "globals_enum.html", null ],
         [ "Enumerator", "globals_eval.html", null ],
@@ -66,8 +69,9 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"_duck_8cpp.html",
-"globals_vars.html"
+"_detector_duck_8h.html",
+"class_duck_router.html#a4c9d5c2d62feaf8a461af098a8770ba7",
+"tinyformat_8h.html#a923c19355d6b85fd5d9fb2b7a1185a44"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

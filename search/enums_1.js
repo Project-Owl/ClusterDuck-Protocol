@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['muidstatus_406',['muidStatus',['../_duck_8h.html#a5931873aef9ff172ae93e721a3f84aa9',1,'Duck.h']]]
+  ['networkstate_0',['NetworkState',['../_duck_router_8h.html#a350d04c55f1ef121ca2c7396cae452a0',1,'DuckRouter.h']]]
 ];

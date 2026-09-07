@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['wificredentials_2eh_271',['wifiCredentials.h',['../wifi_credentials_8h.html',1,'']]]
+  ['signalscore_2eh_0',['SignalScore.h',['../_signal_score_8h.html',1,'']]]
 ];

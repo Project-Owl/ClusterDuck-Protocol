@@ -1,8 +1,5 @@
 var searchData=
 [
-  ['duck_236',['Duck',['../class_duck.html',1,'']]],
-  ['duckled_237',['DuckLed',['../class_duck_led.html',1,'']]],
-  ['ducknet_238',['DuckNet',['../class_duck_net.html',1,'']]],
-  ['duckpacket_239',['DuckPacket',['../class_duck_packet.html',1,'']]],
-  ['duckradio_240',['DuckRadio',['../class_duck_radio.html',1,'']]]
+  ['converttoint_0',['convertToInt',['../structtinyformat_1_1detail_1_1convert_to_int.html',1,'tinyformat::detail']]],
+  ['converttoint_3c_20t_2c_20true_20_3e_1',['convertToInt&lt; T, true &gt;',['../structtinyformat_1_1detail_1_1convert_to_int_3_01_t_00_01true_01_4.html',1,'tinyformat::detail']]]
 ];

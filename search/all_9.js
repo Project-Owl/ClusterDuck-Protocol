@@ -1,13 +1,6 @@
 var searchData=
 [
-  ['lastmessageack_152',['lastMessageAck',['../class_duck.html#adab8d421f12c56e1bbd0d20c7579dbac',1,'Duck']]],
-  ['lastmessagemuid_153',['lastMessageMuid',['../class_duck.html#a71b85c77dcab2e749388182fabd92e6c',1,'Duck']]],
-  ['lilygo_5ft_5fbeam_5fsx1262_2eh_154',['lilygo_t_beam_sx1262.h',['../lilygo__t__beam__sx1262_8h.html',1,'']]],
-  ['link_155',['LINK',['../_duck_types_8h.html#ae840cd9270fc5804ad85c80de1686d4aaf2fe1bf26da6f8a451f054e30b3ce0f3',1,'DuckTypes.h']]],
-  ['loadchannel_156',['loadChannel',['../class_duck_net.html#ae67d21661ff5a48777d902e1abf9f9f4',1,'DuckNet']]],
-  ['loadwificredentials_157',['loadWiFiCredentials',['../class_duck_net.html#a98508f1de7a2bf259d91d770b358f6ae',1,'DuckNet']]],
-  ['loadwifipassword_158',['loadWifiPassword',['../namespaceduckutils.html#a56ea08fb08a402d391f3582a309d8899',1,'duckutils']]],
-  ['loadwifissid_159',['loadWifiSsid',['../namespaceduckutils.html#a0a14835a59650aef58f9ffbd107586fe',1,'duckutils']]],
-  ['logiflowmemory_160',['logIfLowMemory',['../class_duck.html#a76ad584ab3b1eee157b9c2bbda491248',1,'Duck']]],
-  ['loraconfigparams_161',['LoraConfigParams',['../struct_lora_config_params.html',1,'']]]
+  ['join_20the_20conversation_0',['Join the Conversation',['../index.html#autotoc_md11',1,'']]],
+  ['joinnetwork_1',['joinnetwork',['../class_duck_wifi.html#a616a5bd75a73e0b85fc52d9721f6a321',1,'DuckWifi::joinNetwork()'],['../class_duck_wifi_none.html#aa1b654b5073e08c9120ec5a6e7bfa90a',1,'DuckWifiNone::joinNetwork()']]],
+  ['joinwifinetwork_2',['joinWifiNetwork',['../class_duck.html#a4bc8893bfa0778cac8e00ec0c15fa92d',1,'Duck']]]
 ];

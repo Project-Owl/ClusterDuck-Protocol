@@ -1,0 +1,36 @@
+var _duck_error_8h =
+[
+    [ "DuckError", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7d", [
+      [ "DUCK_ERR_NONE", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daf587ef039ebf19644b71d18ec6b11b58", null ],
+      [ "DUCK_ERR_NOT_SUPPORTED", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da5b0e0a94863c1bfc2f9730c480812a40", null ],
+      [ "DUCK_ERR_SETUP", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daab86c4e3c5ff0a194ce215a211d0bb78", null ],
+      [ "DUCK_ERR_INVALID_ARGUMENT", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da561f521c494f75fc6e5946b705da1067", null ],
+      [ "DUCK_ERR_ID_TOO_LONG", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da14af98406b300210ea089a6cd34c47f4", null ],
+      [ "DUCKLORA_ERR_BEGIN", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da16d961f8d6dc6f71da1b17985b65dea1", null ],
+      [ "DUCKLORA_ERR_SETUP", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da5b20cc12cfb4aa16f3dc0c491f0c167a", null ],
+      [ "DUCKLORA_ERR_RECEIVE", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da6c24bc5e8bacba31bdc79f1ffe80ae14", null ],
+      [ "DUCKLORA_ERR_TIMEOUT", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daf880e3e682c85311b0e2cdac87080d8f", null ],
+      [ "DUCKLORA_ERR_TRANSMIT", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da45c299137cb97517880437eb10a48e37", null ],
+      [ "DUCKLORA_ERR_HANDLE_PACKET", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daa1b00a620a42658bf0d363c10fc103ef", null ],
+      [ "DUCKLORA_ERR_MSG_TOO_LARGE", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daf3a77bac39088a31979ad475ba4ad8c2", null ],
+      [ "DUCKLORA_ERR_TX_BUSY", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da9b5c3486a7f896c03fb00a4eba2fe2d0", null ],
+      [ "DUCKLORA_ERR_INVALID_CHANNEL", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daa15078f0e4b05c107d8ea2ff2d7e5d31", null ],
+      [ "DUCKLORA_ERR_NOT_INITIALIZED", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da5d36182c2b6578ae3fb7fe05f2672ec7", null ],
+      [ "DUCKLORA_ERR_STANDBY", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7dafd48e8a597a066931a128b87cddac421", null ],
+      [ "DUCKLORA_ERR_SLEEP", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daa6e1609de01b45829f2e17f0f6180ade", null ],
+      [ "DUCKWIFI_ERR_NOT_AVAILABLE", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daf5e4b6f4809e6e28530691eb91e24849", null ],
+      [ "DUCKWIFI_ERR_DISCONNECTED", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daa672b322fb8ff32c22136217a18efc95", null ],
+      [ "DUCKWIFI_ERR_AP_CONFIG", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daf5e113bf32ba0aa0e5e06b125af16be9", null ],
+      [ "DUCKDNS_ERR_STARTING", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7dae16969352d6f0270d92a924f7a74474e", null ],
+      [ "DUCKPACKET_ERR_SIZE_INVALID", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7dab1fd1ed653230ac63d6c2f77ba83dd2e", null ],
+      [ "DUCKPACKET_ERR_TOPIC_INVALID", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da6e0d746b7e5618cc494f4db81e7b1365", null ],
+      [ "DUCKPACKET_ERR_MAX_HOPS", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daadc88c45aea753becfac739bc9c67a28", null ],
+      [ "DUCK_INTERNET_ERR_SETUP", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daf9984e58056a0232e17236a382a04b20", null ],
+      [ "DUCK_INTERNET_ERR_SSID", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daa9afcf5c4cfd8da4ab1667ff6a2dac21", null ],
+      [ "DUCK_INTERNET_ERR_CONNECT", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da28c2870c3b637c813ffccc21c1472645", null ],
+      [ "DUCK_ERR_EEPROM_INIT", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7daded2a6637e3ef162a5c7ac00106e16eb", null ],
+      [ "DUCK_ERR_EEPROM_WRITE", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da3df577a67734503f75b15260457545cc", null ],
+      [ "DUCK_ERR_EEPROM_READ", "_duck_error_8h.html#af2d4aaa2f0cf74655cd02f8f9189ab7da014a5e038f86af93bbd64521d29cc8af", null ]
+    ] ],
+    [ "getDuckErrorString", "_duck_error_8h.html#ae0f1fec98d73e74f7b7459d908daf022", null ]
+];

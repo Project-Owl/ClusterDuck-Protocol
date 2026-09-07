@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['wificredentials_2eh_231',['wifiCredentials.h',['../wifi_credentials_8h.html',1,'']]]
+  ['unknown_0',['UNKNOWN',['../_duck_types_8h.html#ae840cd9270fc5804ad85c80de1686d4aa6ce26a62afab55d7606ad4e92428b30c',1,'DuckTypes.h']]]
 ];
