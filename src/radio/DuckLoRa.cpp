@@ -325,35 +325,54 @@ void DuckLoRa::serviceInterruptFlags() {
     DuckLoRa::interruptPending = false;
 
     // Safe to touch SPI here: this runs in loop context, not the ISR.
-    uint16_t flags = lora.getIrqFlags();
+    // getIrqFlags() returns uint32_t -- do not narrow it to uint16_t.
+    uint32_t flags = lora.getIrqFlags();
     if (flags == 0) {
+        // The latch fired but the radio reports nothing. This happens when another
+        // path (e.g. goToReceiveMode() from readReceivedData()) cleared the IRQ
+        // status between the ISR and this call; that path has already re-armed the
+        // radio, so there is nothing to do and nothing to recover.
         return;
     }
 
 #ifdef CDPCFG_RADIO_SX1262
-        // SX1262 flags
-        if (flags & RADIOLIB_SX126X_CMD_CLEAR_IRQ_STATUS) {
-            logdbg_ln("SX1262 Interrupt flag was set: clear IRQ status");
-        }
-        if (flags & RADIOLIB_SX126X_CMD_CLEAR_DEVICE_ERRORS) {
-            logdbg_ln("SX1262 Interrupt flag was set: clear device errors");
-        }
-        if (flags & RADIOLIB_SX126X_IRQ_CRC_ERR ) {
-            logdbg_ln("SX1262 Interrupt flag was set: payload CRC error");
+        // SX1262 flags.
+        //
+        // Do NOT test these against RADIOLIB_SX126X_CMD_* constants: those are SPI
+        // command opcodes, not IRQ bits, and they alias real ones
+        // (CMD_CLEAR_IRQ_STATUS == 0x02 == IRQ_RX_DONE,
+        //  CMD_CLEAR_DEVICE_ERRORS == 0x07 == TX_DONE|RX_DONE|PREAMBLE_DETECTED),
+        // so every received packet used to emit two meaningless log lines.
+        const bool rxError =
+            (flags & (RADIOLIB_SX126X_IRQ_CRC_ERR | RADIOLIB_SX126X_IRQ_HEADER_ERR)) != 0;
+
+        if (rxError) {
+            // A corrupt frame raises RX_DONE *together with* CRC_ERR/HEADER_ERR, so
+            // this must be exclusive with the RX_DONE branch below. Previously both
+            // ran: goToReceiveMode() cleared the IRQ status and then the RX_DONE
+            // branch set the receive flag anyway, so SX126x::readData() -- which
+            // re-reads the IRQ register to decide RADIOLIB_ERR_CRC_MISMATCH -- saw
+            // irq == 0 and handed a known-corrupt frame up as valid.
+            if (flags & RADIOLIB_SX126X_IRQ_CRC_ERR) {
+                logdbg_ln("SX1262 Interrupt flag was set: payload CRC error");
+            }
+            if (flags & RADIOLIB_SX126X_IRQ_HEADER_ERR) {
+                logdbg_ln("SX1262 Interrupt flag was set: header CRC error");
+            }
             // goToReceiveMode() re-arms the radio (startReceive clears the IRQ
             // status). Do NOT call lora.standby() afterwards: that immediately
             // knocks the radio back out of receive and the node goes deaf.
             goToReceiveMode(false);
-        }
-        if (flags & RADIOLIB_SX126X_IRQ_HEADER_ERR ) {
-            logdbg_ln("SX1262 Interrupt flag was set: header CRC error");
-            goToReceiveMode(false);
-        }
-        if (flags & RADIOLIB_SX126X_IRQ_RX_DONE ) {
+        } else if (flags & RADIOLIB_SX126X_IRQ_RX_DONE) {
             logdbg_ln("SX1262 Interrupt flag was set: packet reception complete");
             setReceiveFlag(true);
-            lora.standby(); // we are done receiving, go to standby. We can't sleep because read buffer is not empty
+            // We are done receiving, go to standby. We can't sleep because the read
+            // buffer is not empty. The IRQ status is deliberately NOT cleared here:
+            // SX126x::readData() re-reads it to detect CRC/header errors and clears
+            // it itself once the payload has been read out.
+            lora.standby();
         }
+
         if (flags & RADIOLIB_SX126X_IRQ_TX_DONE ) {
             logdbg_ln("SX1262 Interrupt flag was set: payload transmission complete");
             lora.finishTransmit();
@@ -369,14 +388,16 @@ void DuckLoRa::serviceInterruptFlags() {
             goToReceiveMode(true); // go back to receive mode and reset the receive flag
             logdbg_ln("SX127x Interrupt flag was set: timeout");
         }
-        if (flags & RADIOLIB_SX127X_CLEAR_IRQ_FLAG_RX_DONE) {
-            logdbg_ln("SX127x Interrupt flag was set: packet reception complete");
-            setReceiveFlag(true); // set the receive flag and we stay in receive mode
-            lora.standby(); // we are done receiving, go to standby. We can't sleep because read buffer is not empty
-        }
+        // Exclusive for the same reason as the SX1262 path above: a corrupt frame
+        // raises RX_DONE and PAYLOAD_CRC_ERROR together, and accepting it as a
+        // completed reception hands a known-bad packet to the caller.
         if (flags & RADIOLIB_SX127X_CLEAR_IRQ_FLAG_PAYLOAD_CRC_ERROR) {
             goToReceiveMode(true); // go back to receive mode and reset the receive flag
             logdbg_ln("SX127x Interrupt flag was set: payload CRC error");
+        } else if (flags & RADIOLIB_SX127X_CLEAR_IRQ_FLAG_RX_DONE) {
+            logdbg_ln("SX127x Interrupt flag was set: packet reception complete");
+            setReceiveFlag(true); // set the receive flag and we stay in receive mode
+            lora.standby(); // we are done receiving, go to standby. We can't sleep because read buffer is not empty
         }
         if (flags & RADIOLIB_SX127X_CLEAR_IRQ_FLAG_VALID_HEADER) {
             logdbg_ln("SX127x Interrupt flag was set: valid header received");
