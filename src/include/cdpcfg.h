@@ -51,6 +51,22 @@
 #define CDPCFG_MAX_QUEUE_SIZE 10
 #define CDPCFG_MAX_PACKET_SEND_RATE 3000
 
+// How long a routing table entry stays valid without being refreshed.
+// Entries are refreshed when a packet is heard directly from that node
+// (hop count 0) and by the periodic route keepalive below, so this must stay
+// comfortably above CDPCFG_ROUTE_KEEPALIVE_MS or routes age out between
+// keepalives and every send falls back to an RREQ.
+#ifndef CDPCFG_ROUTE_TTL_MS
+#define CDPCFG_ROUTE_TTL_MS (1000UL * 60UL * 30UL)   // 30 minutes
+#endif
+
+// How often a duck broadcasts a route keepalive (an RREQ for the papa route).
+// Neighbours that hear it refresh our entry in their table and answer with an
+// RREP, which refreshes theirs in ours. Keep it well under CDPCFG_ROUTE_TTL_MS.
+#ifndef CDPCFG_ROUTE_KEEPALIVE_MS
+#define CDPCFG_ROUTE_KEEPALIVE_MS (1000UL * 60UL * 10UL)   // 10 minutes
+#endif
+
 // Access point IP adress
 
 #define CDPCFG_AP_IP1 192

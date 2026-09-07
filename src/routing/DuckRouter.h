@@ -13,6 +13,7 @@
 #include <map>
 #include <list>
 #include <optional>
+#include "../include/cdpcfg.h"
 #include "bloomfilter.h"
 #include "Neighbor.h"
 enum class NetworkState {SEARCHING, PUBLIC, DISCONNECTED};
@@ -65,7 +66,7 @@ class DuckRouter {
         std::unordered_map<std::string, std::list<Neighbor>> routingTable;
         BloomFilter filter;
         NetworkState networkState = NetworkState::SEARCHING;
-        unsigned long ROUTE_TTL = 1000 * 60 * 102; //1hr 42 min minutes
+        unsigned long ROUTE_TTL = CDPCFG_ROUTE_TTL_MS;
 
         /**
          * @brief NetworkState transition for NetworkState FSM
