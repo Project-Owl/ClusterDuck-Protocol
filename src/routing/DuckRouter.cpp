@@ -1,138 +1,113 @@
 #include "DuckRouter.h"
 #include <ArduinoJson.h>
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
-void DuckRouter::insertIntoRoutingTable(Duid deviceID, Duid nextHop, SignalScore signalInfo) {
-
-    Neighbor neighborRecord(deviceID, nextHop, signalInfo, millis());
-    auto index = routingTable.find(duckutils::hexToString(duckutils::duidAsString(deviceID)));
-    if (index == routingTable.end()) { //need to make sure we aren't adding Link1276->Link1276 to Mama1262
-        std::list<Neighbor> neighborList;
-        neighborList.push_back(neighborRecord);
-        routingTable.insert(std::make_pair(neighborRecord.getDeviceId(), neighborList));
-    } else {
-        // Update existing record
-        index->second.remove_if([neighborRecord](const Neighbor& n) {
-            return n.getLastSeen() < neighborRecord.getLastSeen() && n.getDeviceId() == neighborRecord.getDeviceId();
-        });
-        index->second.push_back(neighborRecord);
-    }
-};
-
-std::optional<Duid> DuckRouter::getBestNextHop(Duid targetDeviceId){
-    //check if nextHop = the duid of the last duid in path/last duid that relayed to the current duck so that it doesn't transmit back the way it came from
-    auto nextHopRecord = routingTable.find(duckutils::hexToString(duckutils::duidAsString(targetDeviceId)));
-    if (nextHopRecord == routingTable.end()) {
-        return std::nullopt; // No entry found
-    }
-    nextHopRecord->second.sort(std::greater<>()); 
-    std::string nextHopStr = nextHopRecord->second.front().getDeviceId();
-    Duid nextHopId;
-    std::copy(nextHopStr.begin(), nextHopStr.end(),nextHopId.begin());
-
-    if ((uint32_t)(millis() - nextHopRecord->second.front().getLastSeen()) >= ROUTE_TTL) {
-        Serial.printf(
-            "millis=%lu lastSeen=%lu ttl=%lu threshold=%lu\n",
-            millis(),
-            nextHopRecord->second.front().getLastSeen(),
-            ROUTE_TTL,
-            millis() - ROUTE_TTL
-        );
-        Serial.println(nextHopStr.c_str());
-              loginfo_ln("[ROUTER] route ttl expired");
-              routingTable.erase(nextHopStr);
-              return std::nullopt;
-    }
-    return nextHopId;
-
-};
-
-void DuckRouter::cullRoutingTable(size_t maxSize) {
-    //iterate through and remove all expired ttl routes based off of the route ttl expiry above
-
-    auto neighborIndex = routingTable.begin();
-    while(neighborIndex != routingTable.end()) {
-        auto& neighborList = neighborIndex->second;
-        
-        auto entry = neighborList.begin();
-        while(entry != neighborList.end()) {
-            if ((uint32_t)(millis() - entry->getLastSeen()) >= ROUTE_TTL) {
-                loginfo_ln("[ROUTER] culling route with ttl expired");
-                entry = neighborList.erase(entry);
-            } else {
-                ++entry;
-            }
-        }
-        //check to make sure entries per destination doesn't exceed max
-        neighborList.sort(std::greater<>()); // remove this when you add sorting to routing table insert?
-        while (neighborList.size() > maxSize) {
-            loginfo_ln("[ROUTER] culling route that exceeded max neighbors");
-            neighborList.pop_back();
-        }
-
-        //empty check needs to go last so that neighborList isn't deleted
-        if (neighborList.empty()) {
-            neighborIndex = routingTable.erase(neighborIndex);
-        } else {
-            ++neighborIndex;
-        }
-    }
-};
-
-std::optional<std::string> DuckRouter::getEntriesFor(Duid targetDuid, Duid thisDuck){
-    // targetDuid is retained for API compatibility but no longer filters. It used
-    // to look up only the papa key, so the signal-health payload reported papa as
-    // the single "neighbour" on every node and the real per-neighbour rssi/snr --
-    // which is already in the table under each sender's own duid -- was never read.
-    (void)targetDuid;
-
-    std::vector<Neighbor> direct;
-    for (const auto& record : routingTable) {
-        for (const auto& entry : record.second) {
-            if (entry.isDirectNeighbor()) {
-                direct.push_back(entry);
-            }
-        }
-    }
-
-    if (direct.empty()) {
-        return std::nullopt;
-    }
-
-    // Best signal first, so if the payload has to be truncated we keep the links
-    // that matter.
-    std::sort(direct.begin(), direct.end(),
-              [](const Neighbor& a, const Neighbor& b) { return a > b; });
-
-    const size_t reported = std::min(direct.size(), (size_t)CDPCFG_SIGNAL_MAX_NEIGHBORS);
-    if (direct.size() > reported) {
-        loginfo_ln("[ROUTER] signal health reporting %u of %u neighbors (payload cap)",
-                   (unsigned)reported, (unsigned)direct.size());
-    }
-
-    JsonDocument doc;
-    doc["s"] = duckutils::hexToString(duckutils::duidAsString(thisDuck));
-    JsonArray neighborsArr = doc["n"].to<JsonArray>();
-
-    for (size_t i = 0; i < reported; i++) {
-        JsonArray node = neighborsArr.createNestedArray();
-        node.add(duckutils::hexToString(duckutils::duidAsString(direct[i].getDuid())));
-        node.add(direct[i].getRssi());
-        node.add(direct[i].getSnr());
-    }
-
-    std::string jsonString;
-    serializeJson(doc, jsonString);
-
-    if (jsonString.size() > MAX_DATA_LENGTH) {
-        logerr_ln("[ROUTER] signal health payload %u bytes exceeds %u; lower CDPCFG_SIGNAL_MAX_NEIGHBORS",
-                  (unsigned)jsonString.size(), (unsigned)MAX_DATA_LENGTH);
-    }
-
-    return jsonString;
+void DuckRouter::insertIntoRoutingTable(Duid deviceID, Duid nextHop, SignalScore signal, uint32_t heardAt) {
+    if (!std::isfinite(signal.rssi) || !std::isfinite(signal.snr) || !std::isfinite(signal.signalScore)) return;
+    Neighbor entry(deviceID, nextHop, signal, heardAt);
+    const auto key = duckutils::duidToString(deviceID);
+    auto& candidates = routingTable[key];
+    // Replace only this next hop, even within the same millisecond.
+    candidates.remove_if([&](const Neighbor& n) { return n.getNextHop() == nextHop; });
+    candidates.push_back(entry);
+    if (deviceID == nextHop && deviceID != PAPADUCK_DUID && deviceID != BROADCAST_DUID)
+        directNeighbors.insert_or_assign(key, entry);
+    cullRoutingTable();
 }
 
-BloomFilter& DuckRouter::getFilter(){
-    return filter; //just call the bloomfilter function here?
-};
+std::optional<Duid> DuckRouter::getBestNextHop(Duid target) {
+    cullRoutingTable();
+    const auto it = routingTable.find(duckutils::duidToString(target));
+    if (it == routingTable.end() || it->second.empty()) return std::nullopt;
+    return it->second.front().getNextHop();
+}
+
+std::optional<uint32_t> DuckRouter::getRouteAge(Duid target) {
+    if (!getBestNextHop(target)) return std::nullopt;
+    return uint32_t(millis() - routingTable.at(duckutils::duidToString(target)).front().getLastSeen());
+}
+
+void DuckRouter::cullRoutingTable(size_t maxSize) {
+    const uint32_t now = millis();
+    for (auto it = routingTable.begin(); it != routingTable.end();) {
+        auto& candidates = it->second;
+        candidates.remove_if([&](const Neighbor& n) { return uint32_t(now - n.getLastSeen()) >= ROUTE_TTL; });
+        candidates.sort(std::greater<>());
+        while (candidates.size() > maxSize) candidates.pop_back();
+        if (candidates.empty()) it = routingTable.erase(it);
+        else ++it;
+    }
+    for (auto it = directNeighbors.begin(); it != directNeighbors.end();) {
+        if (uint32_t(now - it->second.getLastSeen()) >= ROUTE_TTL) it = directNeighbors.erase(it);
+        else ++it;
+    }
+    while (directNeighbors.size() > CDPCFG_MAX_DIRECT_NEIGHBORS) {
+        auto oldest = std::max_element(directNeighbors.begin(), directNeighbors.end(), [&](const auto& a, const auto& b) {
+            return uint32_t(now - a.second.getLastSeen()) < uint32_t(now - b.second.getLastSeen());
+        });
+        directNeighbors.erase(oldest);
+        ++neighborEvictions;
+    }
+    while (routingTable.size() > CDPCFG_MAX_ROUTE_DESTINATIONS) {
+        auto oldest = std::max_element(routingTable.begin(), routingTable.end(), [&](const auto& a, const auto& b) {
+            return uint32_t(now - a.second.front().getLastSeen()) < uint32_t(now - b.second.front().getLastSeen());
+        });
+        routingTable.erase(oldest);
+    }
+}
+
+size_t DuckRouter::directNeighborCount() {
+    cullRoutingTable();
+    return directNeighbors.size();
+}
+
+std::optional<std::string> DuckRouter::getEntriesFor(Duid, Duid self) {
+    cullRoutingTable();
+    std::vector<Neighbor> direct;
+    for (const auto& pair : directNeighbors) direct.push_back(pair.second);
+    std::sort(direct.begin(), direct.end(), [](const Neighbor& a, const Neighbor& b) {
+        return a.getRoutingScore() == b.getRoutingScore() ? a.getDeviceId() < b.getDeviceId() : a > b;
+    });
+    JsonDocument doc;
+    doc["s"] = duckutils::duidToString(self);
+    auto array = doc["n"].to<JsonArray>();
+    doc["v"] = 2;
+    doc["o"] = direct.size();
+    doc["i"] = 0;
+    doc["tr"] = !direct.empty();
+    doc["a"] = nullptr;
+    uint32_t oldestMs = 0;
+    size_t included = 0;
+    for (const auto& peer : direct) {
+        if (included >= CDPCFG_SIGNAL_MAX_NEIGHBORS) break;
+        auto row = array.add<JsonArray>();
+        row.add(peer.getDeviceId());
+        // Preserve the normalized RSSI/SNR contract already consumed by DMS.
+        row.add(std::round(peer.getRssi() * 10000.0f) / 10000.0f);
+        row.add(std::round(peer.getSnr() * 10000.0f) / 10000.0f);
+        const uint32_t age = std::max(oldestMs, uint32_t(millis() - peer.getLastSeen()));
+        doc["i"] = included + 1;
+        doc["tr"] = included + 1 < direct.size();
+        doc["a"] = age / 1000;
+        if (measureJson(doc) > MAX_DATA_LENGTH) {
+            array.remove(array.size() - 1);
+            break;
+        }
+        ++included;
+        oldestMs = age;
+    }
+    doc["i"] = included;
+    doc["tr"] = included < direct.size();
+    if (included) doc["a"] = oldestMs / 1000;
+    else doc["a"] = nullptr;
+    std::string result;
+    signalSnapshot = std::array<uint32_t, 3>{uint32_t(direct.size()), uint32_t(included), uint32_t(millis())};
+    serializeJson(doc, result);
+    loginfo_ln("[ROUTER] signal neighbors observed=%u included=%u bytes=%u",
+               (unsigned)direct.size(), (unsigned)included, (unsigned)result.size());
+    return result;
+}
+
+BloomFilter& DuckRouter::getFilter() { return filter; }

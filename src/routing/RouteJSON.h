@@ -12,6 +12,7 @@
 
 #include <ArduinoJson.h>
 #include <optional>
+#include <algorithm>
 #include "../utils/DuckUtils.h"
 #include "../CdpPacket.h"
 
@@ -24,11 +25,12 @@ class RouteJSON {
          * @param sourceDevice the source device DUID
          */
         RouteJSON(Duid targetDevice, Duid sourceDevice) {
-            origin = duckutils::hexToString(duckutils::duidAsString(sourceDevice));
-            destination = duckutils::hexToString(duckutils::duidAsString(targetDevice));
+            origin = duckutils::duidToString(sourceDevice);
+            // Raw 0xFF bytes are not a valid UTF-8 JSON string.
+            destination = targetDevice == BROADCAST_DUID ? "*" : duckutils::duidToString(targetDevice);
             json["origin"] = origin;
             json["destination"] = destination;
-            json["path"].as<ArduinoJson::JsonArray>();
+            json["path"].to<ArduinoJson::JsonArray>();
 
             std::string log;
             serializeJson(json, log);
@@ -82,6 +84,7 @@ class RouteJSON {
             return originDuid;
         }
         Duid getDestination(){
+            if (destination == "*") return BROADCAST_DUID;
             Duid destinationDuid;
             destinationDuid.fill(0);
             if (destination.size() == DUID_LENGTH) {
@@ -97,7 +100,7 @@ class RouteJSON {
          * @return the newly modified Arduino JSON document
          */
         std::string addToPath(Duid deviceId){
-            objPath.push_back(duckutils::hexToString(duckutils::duidAsString(deviceId)));
+            objPath.push_back(duckutils::duidToString(deviceId));
             json["path"].to<ArduinoJson::JsonArray>(); //.to erases content of the field in the doc, but .as does not modify the doc at all.
             updateJsonPath(); //so we will manually copy the local obj path to the doc
 #ifdef CDP_LOG_DEBUG
@@ -147,6 +150,30 @@ class RouteJSON {
         return asString();
     }
 
+        size_t pathSize() const { return objPath.size(); }
+        bool contains(Duid id) const {
+            return std::find(objPath.begin(), objPath.end(), duckutils::duidToString(id)) != objPath.end();
+        }
+        bool startsAt(Duid id) const {
+            return !objPath.empty() && objPath.front() == duckutils::duidToString(id);
+        }
+        std::optional<Duid> getVia() const {
+            const std::string via = json["via"].as<std::string>();
+            if (via.size() != DUID_LENGTH) return std::nullopt;
+            Duid id{};
+            std::copy(via.begin(), via.end(), id.begin());
+            return id;
+        }
+        void setVia(Duid id) { json["via"] = duckutils::duidToString(id); }
+        RouteJSON responseFrom(Duid responder, Muid requestId) const {
+            RouteJSON response(*this);
+            response.convertReqToRep();
+            response.origin = duckutils::duidToString(responder);
+            response.json["origin"] = response.origin;
+            response.json["q"] = duckutils::arrayToHexString(requestId);
+            return response;
+        }
+
   private:
         /// Only fromPacketData() may build an unpopulated document.
         RouteJSON() = default;
@@ -161,6 +188,7 @@ class RouteJSON {
          * @returns false if the payload is malformed; the reason is logged.
          */
         bool parsePacketData(const std::vector<uint8_t>& packetData) {
+            if (packetData.empty() || packetData.size() > MAX_DATA_LENGTH) return false;
             std::string packetStr(packetData.begin(), packetData.end());
             DeserializationError error = deserializeJson(json, packetStr);
             if (error) {
@@ -174,17 +202,24 @@ class RouteJSON {
                 logerr_ln("RouteJSON missing origin/destination");
                 return false;
             }
-            origin = originPtr;
-            destination = destinationPtr;
-            if (origin.size() != DUID_LENGTH || destination.size() != DUID_LENGTH) {
+            origin = json["origin"].as<std::string>();
+            destination = json["destination"].as<std::string>();
+            if (origin.size() != DUID_LENGTH ||
+                (destination.size() != DUID_LENGTH && destination != "*")) {
                 logerr_ln("RouteJSON origin/destination length invalid (%d/%d)",
                           (int)origin.size(), (int)destination.size());
                 return false;
             }
 
+            if (!printableDuid(origin) ||
+                (destination != "*" && destination != duckutils::duidToString(BROADCAST_DUID) && !printableDuid(destination))) return false;
+            if (!json["path"].is<JsonArray>() || json["path"].size() > MAX_HOPS + 1) return false;
+            if (json["via"].isNull() == false && !printableDuid(json["via"].as<std::string>())) return false;
+            if (json["q"].isNull() == false && json["q"].as<std::string>().size() != MUID_LENGTH * 2) return false;
             for (JsonVariant value : json["path"].as<JsonArray>()) {
                 std::string entry = value.as<std::string>();
-                if (entry.size() != DUID_LENGTH) {
+                if (!printableDuid(entry) ||
+                    std::find(objPath.begin(), objPath.end(), entry) != objPath.end()) {
                     logerr_ln("RouteJSON path entry length invalid (%d)", (int)entry.size());
                     return false;
                 }
@@ -197,6 +232,10 @@ class RouteJSON {
         }
 
         ArduinoJson::JsonDocument json;
+        static bool printableDuid(const std::string& value) {
+            return value.size() == DUID_LENGTH && std::all_of(value.begin(), value.end(),
+                [](unsigned char c) { return c >= 0x20 && c <= 0x7e; });
+        }
         std::vector<std::string> objPath;
         std::string origin;
         std::string destination;

@@ -3,6 +3,8 @@
 
 #include "../utils/DuckLogger.h"
 #include <queue>
+#include <algorithm>
+#include <optional>
 #include "../CdpPacket.h"
 
 class SizedQueue{
@@ -10,13 +12,18 @@ class SizedQueue{
   SizedQueue(size_t maxSize = CDPCFG_MAX_QUEUE_SIZE): maxSize(maxSize) {}
   ~SizedQueue() = default; 
 
-  void enqueue(CdpPacket packet){ //pass copy or reference here?
+  bool enqueue(const CdpPacket& packet){
     if (packetQueue.size() < maxSize){
       packetQueue.push(packet);
+      ++accepted;
+      highWater = std::max(highWater, packetQueue.size());
     }else{
       loginfo_ln("[ROUTER] packet queue max size exceeded");
+      ++dropped;
+      return false;
     }
     loginfo_ln("[ROUTER] queue size: %zu", packetQueue.size());
+    return true;
   }
 
   std::optional<CdpPacket> dequeue(){
@@ -30,10 +37,16 @@ class SizedQueue{
   }
 
   void clear(){
+    cleared += packetQueue.size();
     packetQueue = std::queue<CdpPacket>{};
   }
+
+  const CdpPacket* front() const { return packetQueue.empty() ? nullptr : &packetQueue.front(); }
+  size_t size() const { return packetQueue.size(); }
+  size_t highWater = 0;
+  uint32_t accepted = 0, dropped = 0, cleared = 0;
   
 private:
-  int maxSize;
+  size_t maxSize;
   std::queue<CdpPacket> packetQueue;
 };

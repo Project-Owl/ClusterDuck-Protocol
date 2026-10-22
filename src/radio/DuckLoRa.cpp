@@ -169,12 +169,15 @@ std::optional<std::vector<uint8_t>> DuckLoRa::readReceivedData() { //return a st
 
     packetBytes.resize(packet_length);
     err = lora.readData(packetBytes.data(), packet_length);
+    lastRssi = lora.getRSSI();
+    lastSnr = lora.getSNR();
     loginfo_ln("readReceivedData() - lora.readData returns: err = %d", err);
 
     rxState = goToReceiveMode(true);
 
     if (err != RADIOLIB_ERR_NONE) {
         logerr_ln("ERROR  readReceivedData failed. err = %d", DUCKLORA_ERR_HANDLE_PACKET);
+        return std::nullopt;
     }
 
     loginfo_ln("Rx packet: %s", duckutils::toString(packetBytes.data(), packetBytes.size()).c_str());
@@ -272,7 +275,7 @@ float DuckLoRa::getRSSI()
         logerr_ln("ERROR  LoRa radio not setup");
         return DUCKLORA_ERR_NOT_INITIALIZED;
     }
-    return lora.getRSSI(); 
+    return lastRssi;
 }
 
 float DuckLoRa::getSNR()
@@ -281,7 +284,7 @@ float DuckLoRa::getSNR()
         logerr_ln("ERROR  LoRa radio not setup");
         return DUCKLORA_ERR_NOT_INITIALIZED;
     }
-    return lora.getSNR();
+    return lastSnr;
 }
 
 int DuckLoRa::standBy()
@@ -314,6 +317,13 @@ int DuckLoRa::sleep()
 }
 
 void DuckLoRa::serviceInterruptFlags() {
+    // A missed IRQ must not leave the software permanently busy.
+    if (!interruptPending && transmitting && uint32_t(millis() - txStartedAt) >= txTimeoutMs) {
+        transmitting = false;
+        ++txTimeoutCount;
+        lora.finishTransmit();
+        goToReceiveMode(false);
+    }
     if (!DuckLoRa::interruptPending) {
         return;
     }
@@ -374,11 +384,16 @@ void DuckLoRa::serviceInterruptFlags() {
         }
 
         if (flags & RADIOLIB_SX126X_IRQ_TX_DONE ) {
+            transmitting = false;
+            ++txDoneCount;
+            loginfo_ln("[CDP_DIAG] TX event=done count=%lu", (unsigned long)txDoneCount);
             logdbg_ln("SX1262 Interrupt flag was set: payload transmission complete");
             lora.finishTransmit();
             goToReceiveMode(false);
         }
         if (flags & RADIOLIB_SX126X_IRQ_TIMEOUT ) {
+            if (transmitting) ++txTimeoutCount;
+            transmitting = false;
             logdbg_ln("SX1262 Interrupt flag was set: timeout");
             goToReceiveMode(false);
         }
@@ -403,6 +418,9 @@ void DuckLoRa::serviceInterruptFlags() {
             logdbg_ln("SX127x Interrupt flag was set: valid header received");
         }
         if (flags & RADIOLIB_SX127X_CLEAR_IRQ_FLAG_TX_DONE) {
+            transmitting = false;
+            ++txDoneCount;
+            loginfo_ln("[CDP_DIAG] TX event=done count=%lu", (unsigned long)txDoneCount);
             logdbg_ln("SX127x Interrupt flag was set: payload transmission complete");
             goToReceiveMode(false); // go back to receive mode and reset the receive flag
         }
@@ -430,6 +448,8 @@ void DuckLoRa::onInterrupt(void) {
 }
 
 int DuckLoRa::startTransmitData(uint8_t* data, int length) {
+    serviceInterruptFlags();
+    if (transmitting || getReceiveFlag()) return DUCKLORA_ERR_TX_BUSY;
     int err = DUCK_ERR_NONE;
     int tx_err = RADIOLIB_ERR_NONE;
 
@@ -446,6 +466,9 @@ int DuckLoRa::startTransmitData(uint8_t* data, int length) {
     tx_err = lora.startTransmit(data, length);
     switch (tx_err) {
         case RADIOLIB_ERR_NONE:
+            transmitting = true;
+            txStartedAt = millis();
+            txTimeoutMs = lora.getTimeOnAir(length) / 1000UL + 2000UL;
             loginfo_ln("TX data done in : %d ms",(millis() - t1));
             break;
 

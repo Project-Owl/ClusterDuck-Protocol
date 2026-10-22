@@ -80,6 +80,11 @@ std::string toString(uint8_t* data, int size);
 
 std::string duidAsString(std::array<uint8_t,8> duid);
 
+// Exactly eight bytes, without a hex round trip or a terminating-NUL assumption.
+inline std::string duidToString(const std::array<uint8_t, 8>& duid) {
+    return std::string(duid.begin(), duid.end());
+}
+
 /**
  * @brief Convert a vector into an ASCII string.
  * 

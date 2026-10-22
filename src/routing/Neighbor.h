@@ -21,12 +21,12 @@ class Neighbor {
             return this->routingScore > other.routingScore;
         }
   
-      [[nodiscard]] std::string getDeviceId() const { return duckutils::hexToString(duckutils::duidAsString(DeviceId)); }
-      long getRoutingScore() const { return routingScore; }
+      [[nodiscard]] std::string getDeviceId() const { return duckutils::duidToString(DeviceId); }
+      float getRoutingScore() const { return routingScore; }
       unsigned long getLastSeen() const { return lastSeen; }
-      float getSnr() { return snr; }
-      float getRssi() { return rssi; }
-      Duid getDuid(){  return DeviceId; }
+      float getSnr() const { return snr; }
+      float getRssi() const { return rssi; }
+      Duid getDuid() const { return DeviceId; }
       [[nodiscard]] Duid getNextHop() const { return NextHop; }
 
       /**

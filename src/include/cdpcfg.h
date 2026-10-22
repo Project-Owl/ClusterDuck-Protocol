@@ -27,6 +27,9 @@
 #define CDP_VERSION_MAJOR  5
 #define CDP_VERSION_MINOR  0
 #define CDP_VERSION_PATCH  1
+#ifndef CDPCFG_BUILD_REVISION
+#define CDPCFG_BUILD_REVISION "unversioned"
+#endif
 
 #define CDP_VERSION ((((CDP_VERSION_MAJOR) << 16) | ((CDP_VERSION_MINOR) << 8) | (CDP_VERSION_PATCH)))
 
@@ -51,6 +54,13 @@
 #define CDPCFG_MAX_QUEUE_SIZE 10
 #define CDPCFG_MAX_PACKET_SEND_RATE 3000
 
+// Bounded RAM for directly observed peers and destination alternatives.
+#define CDPCFG_MAX_DIRECT_NEIGHBORS 32
+#define CDPCFG_MAX_ROUTE_DESTINATIONS 64
+#ifndef CDPCFG_DIAGNOSTIC_INTERVAL_MS
+#define CDPCFG_DIAGNOSTIC_INTERVAL_MS (5UL * 60UL * 1000UL)
+#endif
+
 // How long a routing table entry stays valid without being refreshed.
 // Entries are refreshed when a packet is heard directly from that node
 // (hop count 0) and by the periodic route keepalive below, so this must stay
@@ -61,13 +71,14 @@
 #endif
 
 // Most neighbours reported in one signal-health payload. The data section is
-// MAX_DATA_LENGTH (229) bytes and each entry costs roughly 26, so 6 leaves margin.
+// MAX_DATA_LENGTH (228) bytes and each entry costs roughly 26, so 6 leaves margin.
 // Entries are sorted best-signal-first and any truncation is logged.
 #ifndef CDPCFG_SIGNAL_MAX_NEIGHBORS
 #define CDPCFG_SIGNAL_MAX_NEIGHBORS 6
 #endif
 
-// How often a duck broadcasts a route keepalive (an RREQ for the papa route).
+// How often a duck broadcasts a one-hop neighbour keepalive. Missing gateway
+// routes are separately discovered by a bounded, targeted RREQ.
 // Neighbours that hear it refresh our entry in their table and answer with an
 // RREP, which refreshes theirs in ours. Keep it well under CDPCFG_ROUTE_TTL_MS.
 #ifndef CDPCFG_ROUTE_KEEPALIVE_MS
