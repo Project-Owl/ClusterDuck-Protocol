@@ -62,7 +62,7 @@ before queueing, rather than sampled later from an unrelated received packet.
 
 Additional fields are `v:2`, `o` fresh directly observed identities retained,
 `i` included identities, `tr` truncation and `a` oldest included observation age
-in seconds (`null` if empty). Inclusion uses actual serialized size, maximum 229
+in seconds (`null` if empty). Inclusion uses actual serialized size, maximum 228
 bytes, and a six-peer ceiling. Zero peers is an explicit empty array. Storage
 retains at most 32 direct peers and 64 route destinations; direct-peer capacity
 evictions are counted separately. All expiry comparisons tolerate timer rollover.
@@ -130,3 +130,8 @@ uninterrupted run, including scheduled sleep/wake, cold/wake boot JSON, 23-featu
 integrity, unique application acceptance-to-cloud delivery and every missing
 identity. USB capture does not prove no-USB boot. The earlier ML disappearance,
 PMU failures and early wakes remain separate unresolved findings under FIR-21.
+
+The radio limit is 255 bytes total, so payloads are bounded to 228 bytes after
+the 27-byte header. The Teensy formatter uses the same bound and retries compact
+formatting while preserving all 23 features. A 229-byte body is rejected before
+radio submission; the previous 256-byte total could never fit the driver limit.

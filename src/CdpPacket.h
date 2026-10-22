@@ -15,7 +15,8 @@
 #define MAX_HOPS 6
 
 // field/section length (in bytes)
-#define PACKET_LENGTH 256
+// SX126x/SX127x LoRa frames carry at most 255 bytes, including this header.
+#define PACKET_LENGTH 255
 #define DUID_LENGTH 8
 #define MUID_LENGTH 4
 #define DATA_CRC_LENGTH 4
@@ -36,7 +37,7 @@
 #define MAX_DATA_LENGTH (PACKET_LENGTH - HEADER_LENGTH)
 
 /*
-Data Section of a broadcast ack (max 229 bytes):
+Data Section of a broadcast ack (max 228 bytes):
 0 1      8    12...
 | |      |    |
 +-+------+----+-...
@@ -46,13 +47,13 @@ Data Section of a broadcast ack (max 229 bytes):
 Maximum number of DUID/MUID pairs is:
   floor( (maximum data payload size - N) / (DUID size + MUID size) )
 Which is:
-  floor( (229 - 1) / 12 ) = 19
+  floor( (228 - 1) / 12 ) = 18
 
 N:              1  byte                - Number of DUID/MUID pairs
 Each DUID:     08  byte array          - A Device Unique ID
 Each MUID:     04  byte array          - Message unique ID
 */
-#define MAX_MUID_PER_ACK 19
+#define MAX_MUID_PER_ACK ((MAX_DATA_LENGTH - 1) / (DUID_LENGTH + MUID_LENGTH))
 
 
 //Available command IDs (N)
@@ -61,7 +62,7 @@ Each MUID:     04  byte array          - Message unique ID
 #define CMD_CHANNEL 2
 
 /*
-Data Section of a duck command (max 229 bytes):
+Data Section of a duck command (max 228 bytes):
 0 1    229...
 | |     |
 +-+-----+-...
@@ -170,7 +171,7 @@ static std::array<uint8_t,8> BROADCAST_DUID = {0xFF, 0xFF, 0xFF, 0xFF,
 |        |        |    |  |  |  |    |                                        |
 +--------+--------+----+--+--+--+----+----------------------------------------+
 | SDUID  | DDUID  |MUID|T |DT|HC|DCRC|                 DATA                   |
-|        |        |    |  |  |  |    |            (max 229 bytes)             |
+|        |        |    |  |  |  |    |            (max 228 bytes)             |
 +--------+--------+----+--+--+--+----+----------------------------------------+
 
 SDUID:     08  byte array          - Source Device Unique ID
@@ -180,7 +181,7 @@ T   :      01  byte value          - Topic (topic 0..15 are reserved for interna
 DT  :      01  byte value          - Duck Type 
 HC  :      01  byte value          - Hop count (the number of times the packet was relayed)
 DCRC:      04  byte value          - Data section CRC
-DATA:      229 byte array          - Data payload (e.g sensor read, text,...)
+DATA:      228 byte array          - Data payload (e.g sensor read, text,...)
 */
 
 typedef std::array<uint8_t,8> Duid;

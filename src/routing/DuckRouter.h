@@ -54,6 +54,7 @@ class DuckRouter {
             if (networkState != newState) {
                 NetworkState oldState = networkState;
                 networkTransition(oldState, newState);
+                if (networkState != oldState) ++transitions;
             }
         }
 
@@ -84,7 +85,6 @@ class DuckRouter {
          * @param newState NetworkState to transition in to
          */
         void networkTransition(NetworkState oldState, NetworkState newState){
-            ++transitions;
             if (oldState == NetworkState::SEARCHING && newState == NetworkState::PUBLIC) {
                 loginfo_ln("[ROUTER] Public network joined.");
                 networkState = newState;

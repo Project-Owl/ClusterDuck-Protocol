@@ -28,7 +28,7 @@ enum DuckError : int {
     DUCKLORA_ERR_TRANSMIT = -1004,
     /// Failed to handle data received from the Lora module
     DUCKLORA_ERR_HANDLE_PACKET = -1050,
-    /// Attempted to send a message larger than 256 bytes
+    /// Attempted to send a message larger than the radio frame limit
     DUCKLORA_ERR_MSG_TOO_LARGE = -1051,
     /// Radio is busy sending data
     DUCKLORA_ERR_TX_BUSY = -1052,
