@@ -71,7 +71,7 @@
 #endif
 
 // Most neighbours reported in one signal-health payload. The data section is
-// MAX_DATA_LENGTH (229) bytes and each entry costs roughly 26, so 6 leaves margin.
+// MAX_DATA_LENGTH (228) bytes and each entry costs roughly 26, so 6 leaves margin.
 // Entries are sorted best-signal-first and any truncation is logged.
 #ifndef CDPCFG_SIGNAL_MAX_NEIGHBORS
 #define CDPCFG_SIGNAL_MAX_NEIGHBORS 6
