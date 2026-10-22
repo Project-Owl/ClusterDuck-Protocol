@@ -11,6 +11,7 @@
 #define DUCKROUTER_H_
 
 #include <map>
+#include <unordered_map>
 #include <list>
 #include <optional>
 #include "../include/cdpcfg.h"
@@ -34,9 +35,16 @@ class DuckRouter {
          * @param snr the signal to noise ratio
          * @param rssi the received signal strength indicator
          */
-        void insertIntoRoutingTable(Duid deviceID, Duid nextHop, SignalScore signalInfo);
+        void insertIntoRoutingTable(Duid deviceID, Duid nextHop, SignalScore signalInfo,
+                                    uint32_t heardAt = millis());
 
         std::optional<Duid> getBestNextHop(Duid targetDeviceId);
+        std::optional<uint32_t> getRouteAge(Duid targetDeviceId);
+        size_t directNeighborCount();
+        uint32_t transitions = 0;
+        uint32_t neighborEvictions = 0;
+        // observed, included and millis() of the last signal serialization.
+        std::optional<std::array<uint32_t, 3>> signalSnapshot;
 
         /**
          * @brief NetworkState if the Duck joins or disconnects from a CDP network
@@ -46,6 +54,7 @@ class DuckRouter {
             if (networkState != newState) {
                 NetworkState oldState = networkState;
                 networkTransition(oldState, newState);
+                if (networkState != oldState) ++transitions;
             }
         }
 
@@ -64,6 +73,8 @@ class DuckRouter {
 
     private:
         std::unordered_map<std::string, std::list<Neighbor>> routingTable;
+        // A destination changing next hop must never overwrite a measured link.
+        std::unordered_map<std::string, Neighbor> directNeighbors;
         BloomFilter filter;
         NetworkState networkState = NetworkState::SEARCHING;
         unsigned long ROUTE_TTL = CDPCFG_ROUTE_TTL_MS;
