@@ -28,7 +28,7 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
     void onReceiveDuckData(rxDoneCallback cb) { this->recvDataCallback = cb; }
 
   private:
-    rxDoneCallback recvDataCallback;
+    rxDoneCallback recvDataCallback = nullptr;
 
     /**
      * @brief Handles any packets received by the duck. Overrides the pure virtual function in Duck base class.
@@ -54,22 +54,6 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
       void ifBroadcast(CdpPacket rxPacket) {
         int err = DUCK_ERR_NONE;
           switch(rxPacket.topic) {
-              case reservedTopic::rreq: {
-                if(rxPacket.hopCount <= 0){
-                  loginfo_ln("RREQ received from %s. Sending Response!", rxPacket.sduid.data());
-                  RouteJSON rrepDoc = RouteJSON(rxPacket.sduid, this->duid);
-                  this->sendRouteResponse(rxPacket.sduid, rrepDoc.asString());
-                  // Update routing table with signal info
-                  std::optional<Duid> last = rrepDoc.getlastInPath();
-                  Duid lastInPath = last.has_value() ? last.value() : rxPacket.sduid;
-                  if(rxPacket.duckType == DuckType::PAPA){
-                    this->router.insertIntoRoutingTable(PAPADUCK_DUID, lastInPath, this->getSignalScore());
-                  } else {
-                    this->router.insertIntoRoutingTable(rxPacket.sduid, lastInPath, this->getSignalScore());
-                  }
-                }
-                  break;
-              }
               case reservedTopic::ping:
                   loginfo_ln("PING received. Sending PONG!");
                   err = this->sendPong();
@@ -171,42 +155,6 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
       void ifNotBroadcast(CdpPacket rxPacket, bool relay = false) {
         int err = DUCK_ERR_NONE;
           switch(rxPacket.topic) {
-              case reservedTopic::rreq: {
-                  auto parsedRreq = RouteJSON::fromPacketData(rxPacket.data);
-                  if (!parsedRreq) {
-                      break; // fromPacketData() logged why it was rejected
-                  }
-                  RouteJSON& rreqDoc = *parsedRreq;
-                  if(!relay) {
-                      loginfo_ln("handleReceivedPacket: Sending RREP");
-                      std::optional<Duid> last = rreqDoc.getlastInPath();
-                      Duid lastInPath = last.has_value() ? last.value() : rxPacket.sduid;
-                      rreqDoc.convertReqToRep();
-                      this->sendRouteResponse(lastInPath, rreqDoc.asString());
-                      if(rxPacket.duckType == DuckType::PAPA){
-                        this->router.insertIntoRoutingTable(PAPADUCK_DUID, lastInPath, this->getSignalScore());
-                      } else {
-                        this->router.insertIntoRoutingTable(rxPacket.sduid, lastInPath, this->getSignalScore());
-                      }
-                  }
-              }
-                break;
-              case reservedTopic::rrep: {
-                  //we still need to recieve rreps in case of ttl expiry
-                  auto parsedRrep = RouteJSON::fromPacketData(rxPacket.data);
-                  if (!parsedRrep) {
-                      break; // fromPacketData() logged why it was rejected
-                  }
-                  RouteJSON& rrepDoc = *parsedRrep;
-                  std::string sourceDuid(rxPacket.sduid.begin(), rxPacket.sduid.end());
-                  loginfo_ln("Received Route Response from DUID: %s", sourceDuid.c_str());
-                  //destination = sender of the rrep -> the last hop to current duck
-                  std::optional<Duid> last = rrepDoc.getlastInPath();
-                  Duid lastInPath = last.has_value() ? last.value() : rxPacket.sduid;
-
-                  this->router.insertIntoRoutingTable(rrepDoc.getOrigin(), lastInPath, this->getSignalScore());
-              }
-                  break;
               default:
               loginfo_ln("handleReceivedPacket: packet received, skipping forward.");    
           }

@@ -40,7 +40,7 @@ public:
   }
 
 private:
-  rxDoneCallback recvDataCallback;
+  rxDoneCallback recvDataCallback = nullptr;
   
   void handleReceivedPacket(CdpPacket rxPacket) {
     loginfo_ln("====> handleReceivedPacket: START");
@@ -61,17 +61,6 @@ private:
   void ifBroadcast(CdpPacket rxPacket) { 
     int err;
     switch(rxPacket.topic) {
-        case reservedTopic::rreq: {
-            if(rxPacket.hopCount <= 0){
-                loginfo_ln("RREQ received from %s. Sending Response!", rxPacket.sduid.data());
-                RouteJSON rrepDoc = RouteJSON(rxPacket.sduid, PAPADUCK_DUID);
-                rrepDoc.addToPath(PAPADUCK_DUID);
-                this->sendRouteResponse(rxPacket.sduid, rrepDoc.asString());
-                // Update routing table with signal info
-                this->router.insertIntoRoutingTable(rxPacket.sduid, rxPacket.sduid, this->getSignalScore()); //can only be one hop away
-            }
-            break;
-        }
         case reservedTopic::ping:
             loginfo_ln("PING received. Sending PONG!");
             err = this->sendPong();
@@ -106,56 +95,6 @@ private:
 void ifNotBroadcast(CdpPacket rxPacket, bool relay = false) {
     int err;
     switch(rxPacket.topic) {
-        case reservedTopic::rreq: {
-            auto parsedRreq = RouteJSON::fromPacketData(rxPacket.data);
-            if (!parsedRreq) {
-                break; // fromPacketData() logged why it was rejected
-            }
-            RouteJSON& rreqDoc = *parsedRreq;
-            //route requests are just forwarded so we can use the sduid as the origin
-            std::optional<Duid> last = rreqDoc.getlastInPath();
-            Duid lastInPath = last.has_value() ? last.value() : rxPacket.sduid;
-            if(!relay) {
-                loginfo_ln("handleReceivedPacket: Sending RREP");
-                rxPacket.data = duckutils::stringToByteVector(rreqDoc.convertReqToRep());
-                this->sendRouteResponse(lastInPath, rreqDoc.asString());
-            } else {
-                rxPacket.data = duckutils::stringToByteVector(rreqDoc.addToPath(this->duid)); //why is this different from stringToArray -- should this be PAPADUCK_DUID?
-                err = this->forwardPacket(rxPacket);
-                if (err != DUCK_ERR_NONE) {
-                    logerr_ln("====> ERROR handleReceivedPacket failed to relay RREQ. rc = %d",err);
-                } else {
-                    loginfo_ln("handleReceivedPacket: RREQ packet RELAY DONE");
-                }
-            }
-        }
-        break;
-      
-        case reservedTopic::rrep: {
-            //we still need to recieve rreps in case of ttl expiry
-            auto parsedRrep = RouteJSON::fromPacketData(rxPacket.data);
-            if (!parsedRrep) {
-                break; // fromPacketData() logged why it was rejected
-            }
-            RouteJSON& rrepDoc = *parsedRrep;
-            std::optional<Duid> last = rrepDoc.getlastInPath();
-            Duid lastInPath = last.has_value() ? last.value() : rxPacket.sduid;
-            std::string sourceDuid(rxPacket.sduid.begin(), rxPacket.sduid.end());
-            loginfo_ln("Received Route Response from DUID: %s", sourceDuid.c_str());
-
-            std::optional<Duid> nextHop = this->router.getBestNextHop(rrepDoc.getDestination());
-            if((rrepDoc.getDestination() != this->duid) && (nextHop.has_value()) && (nextHop.value() !=  rxPacket.sduid)){ //and not papaduck_duid?
-                rrepDoc.popFromPath();
-                rrepDoc.addToPath(this->duid); //PAPADUCK_DUID?
-                //route responses need a way to keep tray of who relayed the packet, but a response needs to be directed and not broadly relayed
-                this->sendRouteResponse(rrepDoc.getDestination(), rrepDoc.asString()); //so here the "relaying" duck is known from sduid
-                this->router.insertIntoRoutingTable(rxPacket.sduid, lastInPath, this->getSignalScore());
-            } else {
-                //destination = sender of the rrep -> the last hop to current duck
-                this->router.insertIntoRoutingTable(rrepDoc.getOrigin(), lastInPath, this->getSignalScore());
-            }
-        }
-            break;
         case reservedTopic::ping:
             loginfo_ln("PING received. Sending PONG!");
             err = this->sendPong();

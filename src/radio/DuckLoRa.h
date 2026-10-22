@@ -56,7 +56,7 @@ class DuckLoRa {
     public:
         DuckLoRa() {
             // Initialize the random number generator with a seed based on the current time in a non-arduino way
-            gen.seed(time(nullptr));
+            gen.seed(esp_random());
         };
          /*
         * @brief Interrupt service routine for the LoRa module.
@@ -112,6 +112,8 @@ class DuckLoRa {
          * @return true if the flag is set, false otherwise.
          */
         static bool getReceiveFlag() { return receivedFlag; }
+        uint32_t getTxDoneCount() const { return txDoneCount; }
+        uint32_t getTxTimeoutCount() const { return txTimeoutCount; }
 
         /**
          * @brief Get the current RSSI value.
@@ -134,6 +136,10 @@ class DuckLoRa {
         static volatile bool interruptPending;
         static volatile bool receivedFlag;
         volatile bool isSetup = false;
+        bool transmitting = false;
+        uint32_t txDoneCount = 0, txTimeoutCount = 0;
+        uint32_t txStartedAt = 0, txTimeoutMs = 0;
+        float lastRssi = 0, lastSnr = 0;
         unsigned long lastReceiveTime = 0L;
 
         static void setReceiveFlag(bool value) { receivedFlag = value; }

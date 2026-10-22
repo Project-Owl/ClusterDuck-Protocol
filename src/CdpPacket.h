@@ -9,6 +9,8 @@
 #include <string>
 #include <array>
 #include <CRC32.h>
+#include "routing/SignalScore.h"
+#include <optional>
 
 #define MAX_HOPS 6
 
@@ -259,6 +261,8 @@ class CdpPacket {
         std::vector<uint8_t> data;
         //time received
         unsigned long timeReceived;
+        // Local RX metadata only; never serialized into the packet header.
+        std::optional<SignalScore> receivedSignal;
 
 
         /**
