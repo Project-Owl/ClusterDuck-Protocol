@@ -12,6 +12,7 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <Preferences.h>
+#include <optional>
 
 class DuckWifi {
     public:
