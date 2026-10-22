@@ -39,7 +39,7 @@ BloomFilter::BloomFilter(int numSectors, int numHashes, int bitsPerSector, int m
 
     logdbg("initialize random seeds");
     //get random seeds for hash functions 
-    int* Seeds = new int[numHashes];
+    int* Seeds = new int[numHashes]{};
     if (Seeds == NULL) {
         logdbg("Memory allocation for seeds failed!\n");
         exit(0);
@@ -73,9 +73,9 @@ BloomFilter::BloomFilter(int numSectors, int numHashes, int bitsPerSector, int m
 
 BloomFilter::~BloomFilter()
 {
-    delete this->Seeds;
-    delete this->filter2;
-    delete this->filter1;
+    delete[] this->Seeds;
+    delete[] this->filter2;
+    delete[] this->filter1;
 }
 
 void BloomFilter::set_hash_results(unsigned char* msg, int msgSize,
