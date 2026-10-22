@@ -71,14 +71,51 @@ A first signal snapshot is attempted with the first five-minute diagnostic page,
 then the original 195-minute signal timer remains active. This adds one topology
 packet per boot to permit a short installation preflight. The existing DMS
 formatter maps every array entry, but its formatted signal display/CSV omits the
-new metadata. Raw MQTT payloads and health page 3 preserve completeness evidence;
+new metadata. Raw MQTT payloads and serial diagnostic page 3 preserve completeness evidence;
 the displayed neighbour array still needs an actual three-peer cloud check.
 
-## Health diagnostics v2
+## Simple radio health v3
 
-One page is enqueued every five minutes; four pages form a 20-minute rotation.
-The original 132-minute health timer also emits page 0. Counters are cumulative
-unsigned 32-bit values, reset at boot, interpreted modulo 2^32. Every page has
+Every five minutes the node enqueues one flat status message, for example:
+
+```json
+{"v":3,"C":"12","FM":"291340","boot":2488545892,"uptime_s":3604,"neighbors":3,"tx_started":79,"tx_done":79,"tx_failed":0,"tx_timeouts":0,"queue_drops":0}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `v` | Health payload schema version, now 3. The CDP packet header is unchanged. |
+| `C` / `FM` | Health enqueue counter and free heap in bytes; legacy string fields retained. `C` advances after a health message is accepted into the queue. |
+| `boot` / `uptime_s` | Random boot identifier and seconds since boot. Compare counters only within the same boot. Uptime derived from `millis()` wraps after approximately 49.7 days. |
+| `neighbors` | Current fresh directly observed neighbor count. |
+| `tx_started` / `tx_done` | Accepted radio starts and physical transmission completions, including routing traffic. Completion is not a Papa receipt or cloud acknowledgement. One transmission can still be in progress when sampled. |
+| `tx_failed` / `tx_timeouts` | Failed radio starts and physical transmission timeouts. Normal busy waits are excluded. |
+| `queue_drops` | Sum of RX, application-TX and control-TX rejected enqueues. The sum uses 64 bits so adding the three 32-bit counters cannot overflow. |
+
+The original 132-minute health timer emits the same summary. The five-minute
+cadence, routing behavior, packet header and 228-byte data limit are unchanged.
+The summary contains no positional arrays. Radio counters reset at boot and
+wrap modulo 2^32; each individual queue-rejection counter also wraps modulo
+2^32 before aggregation. Payload size is checked before enqueueing.
+
+Papa and generic JSON consumers can forward this payload unchanged. Consumers
+that specifically decode v2 health pages must recognize v3 rather than assume
+that a missing array means a zero counter. Signal-health payloads keep their
+existing separate schema. Already-flashed v2 firmware continues to emit v2;
+updating this source branch does not update devices pinned to an older commit.
+
+## Detailed serial diagnostics v2
+
+Full diagnostic counters remain available through `routingDiagnostics(page)`.
+At each five-minute heartbeat, one v2 page is logged locally as
+`[CDP_DIAG] health_detail={...}`; four successful heartbeats form a 20-minute
+rotation. These pages are no longer automatically transmitted over the radio.
+Headless/cloud-only deployments therefore receive the simple summary; detailed
+queue, routing, duplicate and signal-snapshot inspection requires serial capture
+or an explicit application call to `routingDiagnostics(page)`.
+
+Counters are cumulative unsigned 32-bit values, reset at boot and interpreted
+modulo 2^32. Every page has
 `v`, page `p`, random per-boot epoch `b`, and seconds `u` from `millis()` (which
 wraps after approximately 49.7 days). Compare by node + epoch, never across boots.
 

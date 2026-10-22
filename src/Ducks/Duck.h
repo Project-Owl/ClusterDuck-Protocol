@@ -184,8 +184,30 @@ class Duck {
      */
     virtual DuckType getType() = 0;
 
+    // One readable radio heartbeat. C/FM retain their legacy string types;
+    // transmission completion is not a remote delivery acknowledgement.
+    std::string healthMessage() {
+      JsonDocument doc;
+      doc["v"] = 3;
+      doc["C"] = std::to_string(counter);
+      doc["FM"] = std::to_string(freeMemory());
+      doc["boot"] = bootEpoch;
+      doc["uptime_s"] = uint32_t(millis()) / 1000;
+      doc["neighbors"] = router.directNeighborCount();
+      doc["tx_started"] = radioStarted;
+      doc["tx_done"] = duckRadio.getTxDoneCount();
+      doc["tx_failed"] = radioFailed;
+      doc["tx_timeouts"] = duckRadio.getTxTimeoutCount();
+      doc["queue_drops"] = uint64_t(rxQueue.dropped) + txQueue.dropped + reqQueue.dropped;
+      std::string result;
+      serializeJson(doc, result);
+      if (result.size() > MAX_DATA_LENGTH) return "";
+      return result;
+    }
+
     // Versioned, independently bounded health pages. All counters reset at boot;
     // b identifies that epoch, u is uptime in seconds. null means unavailable.
+    // Detailed pages remain available locally; ordinary radio health uses v3.
     std::string routingDiagnostics(uint8_t page) {
       JsonDocument doc;
       doc["v"] = 2;
@@ -391,7 +413,7 @@ class Duck {
      */
     static bool sendHealth(void* p){
       Duck* duck = static_cast<Duck*>(p);
-      const int err = duck->sendData(topics::health, duck->routingDiagnostics(0));
+      const int err = duck->sendData(topics::health, duck->healthMessage());
       if (err == DUCK_ERR_NONE) ++duck->counter;
       loginfo_ln("[DUCK] health enqueue rc=%d", err);
       return true;
@@ -609,9 +631,11 @@ class Duck {
     static bool sendRoutingDiagnostics(void* p) {
       Duck* duck = static_cast<Duck*>(p);
       if (duck->getType() == DuckType::DETECTOR) return false;
-      const std::string message = duck->routingDiagnostics(duck->diagnosticPage);
+      const std::string detail = duck->routingDiagnostics(duck->diagnosticPage);
+      loginfo_ln("[CDP_DIAG] health_detail=%s", detail.c_str());
+      const std::string message = duck->healthMessage();
       if (duck->sendData(topics::health, message) == DUCK_ERR_NONE) {
-        if (duck->diagnosticPage == 0) ++duck->counter;
+        ++duck->counter;
         duck->diagnosticPage = (duck->diagnosticPage + 1) % 4;
       }
       // One early topology snapshot makes a new installation observable without
