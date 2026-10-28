@@ -184,21 +184,21 @@ class Duck {
      */
     virtual DuckType getType() = 0;
 
-    // One readable radio heartbeat. C/FM retain their legacy string types;
+    // One readable radio heartbeat. v4 uses camelCase keys; c/fm retain their string types;
     // transmission completion is not a remote delivery acknowledgement.
     std::string healthMessage() {
       JsonDocument doc;
-      doc["v"] = 3;
-      doc["C"] = std::to_string(counter);
-      doc["FM"] = std::to_string(freeMemory());
+      doc["v"] = 4;
+      doc["c"] = std::to_string(counter);
+      doc["fm"] = std::to_string(freeMemory());
       doc["boot"] = bootEpoch;
-      doc["uptime_s"] = uint32_t(millis()) / 1000;
+      doc["uptimeS"] = uint32_t(millis()) / 1000;
       doc["neighbors"] = router.directNeighborCount();
-      doc["tx_started"] = radioStarted;
-      doc["tx_done"] = duckRadio.getTxDoneCount();
-      doc["tx_failed"] = radioFailed;
-      doc["tx_timeouts"] = duckRadio.getTxTimeoutCount();
-      doc["queue_drops"] = uint64_t(rxQueue.dropped) + txQueue.dropped + reqQueue.dropped;
+      doc["txStarted"] = radioStarted;
+      doc["txDone"] = duckRadio.getTxDoneCount();
+      doc["txFailed"] = radioFailed;
+      doc["txTimeouts"] = duckRadio.getTxTimeoutCount();
+      doc["queueDrops"] = uint64_t(rxQueue.dropped) + txQueue.dropped + reqQueue.dropped;
       std::string result;
       serializeJson(doc, result);
       if (result.size() > MAX_DATA_LENGTH) return "";
@@ -207,7 +207,7 @@ class Duck {
 
     // Versioned, independently bounded health pages. All counters reset at boot;
     // b identifies that epoch, u is uptime in seconds. null means unavailable.
-    // Detailed pages remain available locally; ordinary radio health uses v3.
+    // Detailed pages remain available locally; ordinary radio health uses v4.
     std::string routingDiagnostics(uint8_t page) {
       JsonDocument doc;
       doc["v"] = 2;
