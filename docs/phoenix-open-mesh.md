@@ -55,6 +55,12 @@ regenerate looping replies. Do not infer fleet readiness from one upgraded node.
 
 ## Signal health
 
+Signal-health JSON ends with `"v":2`, using the same numeric schema-version
+field as radio health, which also places `v` last. This also applies to the
+empty-neighbor fallback.
+Router example: `{"s":"RPNODE01","n":[],"o":0,"i":0,"tr":false,"a":null,"v":2}`.
+The fallback emits only `s`, `n` and `v`; absent completeness metadata is unknown.
+
 The existing `s` sender and `n` array of `[actualDuid, normalizedRssi, normalizedSnr]`
 remain compatible with DMS. Values are normalized using the existing -131..-20 dBm
 and -30..30 dB ranges, rounded to four decimal places. RX signal/time are captured
@@ -74,23 +80,23 @@ formatter maps every array entry, but its formatted signal display/CSV omits the
 new metadata. Raw MQTT payloads and serial diagnostic page 3 preserve completeness evidence;
 the displayed neighbour array still needs an actual three-peer cloud check.
 
-## Simple radio health v3
+## Simple radio health v4
 
 Every five minutes the node enqueues one flat status message, for example:
 
 ```json
-{"v":3,"C":"12","FM":"291340","boot":2488545892,"uptime_s":3604,"neighbors":3,"tx_started":79,"tx_done":79,"tx_failed":0,"tx_timeouts":0,"queue_drops":0}
+{"c":"12","fm":"291340","boot":2488545892,"uptimeS":3604,"neighbors":3,"txStarted":79,"txDone":79,"txFailed":0,"txTimeouts":0,"queueDrops":0,"v":4}
 ```
 
 | Field | Meaning |
 | --- | --- |
-| `v` | Health payload schema version, now 3. The CDP packet header is unchanged. |
-| `C` / `FM` | Health enqueue counter and free heap in bytes; legacy string fields retained. `C` advances after a health message is accepted into the queue. |
-| `boot` / `uptime_s` | Random boot identifier and seconds since boot. Compare counters only within the same boot. Uptime derived from `millis()` wraps after approximately 49.7 days. |
+| `v` | Health payload schema version, now 4. The CDP packet header is unchanged. |
+| `c` / `fm` | Health enqueue counter and free heap in bytes; legacy string fields retained. `c` advances after a health message is accepted into the queue. |
+| `boot` / `uptimeS` | Random boot identifier and seconds since boot. Compare counters only within the same boot. Uptime derived from `millis()` wraps after approximately 49.7 days. |
 | `neighbors` | Current fresh directly observed neighbor count. |
-| `tx_started` / `tx_done` | Accepted radio starts and physical transmission completions, including routing traffic. Completion is not a Papa receipt or cloud acknowledgement. One transmission can still be in progress when sampled. |
-| `tx_failed` / `tx_timeouts` | Failed radio starts and physical transmission timeouts. Normal busy waits are excluded. |
-| `queue_drops` | Sum of RX, application-TX and control-TX rejected enqueues. The sum uses 64 bits so adding the three 32-bit counters cannot overflow. |
+| `txStarted` / `txDone` | Accepted radio starts and physical transmission completions, including routing traffic. Completion is not a Papa receipt or cloud acknowledgement. One transmission can still be in progress when sampled. |
+| `txFailed` / `txTimeouts` | Failed radio starts and physical transmission timeouts. Normal busy waits are excluded. |
+| `queueDrops` | Sum of RX, application-TX and control-TX rejected enqueues. The sum uses 64 bits so adding the three 32-bit counters cannot overflow. |
 
 The original 132-minute health timer emits the same summary. The five-minute
 cadence, routing behavior, packet header and 228-byte data limit are unchanged.
@@ -99,7 +105,7 @@ wrap modulo 2^32; each individual queue-rejection counter also wraps modulo
 2^32 before aggregation. Payload size is checked before enqueueing.
 
 Papa and generic JSON consumers can forward this payload unchanged. Consumers
-that specifically decode v2 health pages must recognize v3 rather than assume
+that specifically decode v2 health pages must recognize v3 and v4 rather than assume
 that a missing array means a zero counter. Signal-health payloads keep their
 existing separate schema. Already-flashed v2 firmware continues to emit v2;
 updating this source branch does not update devices pinned to an older commit.

@@ -73,11 +73,11 @@ std::optional<std::string> DuckRouter::getEntriesFor(Duid, Duid self) {
     JsonDocument doc;
     doc["s"] = duckutils::duidToString(self);
     auto array = doc["n"].to<JsonArray>();
-    doc["v"] = 2;
     doc["o"] = direct.size();
     doc["i"] = 0;
     doc["tr"] = !direct.empty();
     doc["a"] = nullptr;
+    doc["v"] = 2;
     uint32_t oldestMs = 0;
     size_t included = 0;
     for (const auto& peer : direct) {
