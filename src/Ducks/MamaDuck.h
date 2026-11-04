@@ -66,7 +66,7 @@ private :
             case reservedTopic::pong:
                 loginfo_ln("PONG received. Ignoring!");
                 break;
-#if CDPCFG_REMOTE_COMMANDS
+#if CDPCFG_REMOTE_TX_POWER
             case topics::cmd_tx: {
                 ArduinoJson::JsonDocument json;
                   std::string packetStr(rxPacket.data.begin(), rxPacket.data.end());
@@ -99,6 +99,8 @@ private :
                     }
                   break;
             }
+#endif
+#if CDPCFG_REMOTE_TIME_SYNC
               case topics::cmd_time:{
                   loginfo_ln(" !!!!!!!!!!!!!!!!!!!Command received, updating time to match papa");
                   ArduinoJson::JsonDocument json;
@@ -149,8 +151,13 @@ private :
             case reservedTopic::pong:
                 loginfo_ln("PONG received. Ignoring!");
                 break;
-#if CDPCFG_REMOTE_COMMANDS
+#if CDPCFG_REMOTE_TX_POWER
             case topics::cmd_tx: {
+                // A command for another duck is passed on, not applied here.
+                if (relay) {
+                    this->forwardPacket(rxPacket);
+                    break;
+                }
                 // Targeted cmd_tx used to log and do nothing, so a command aimed at a
                 // single duck was silently dropped. Apply the same update as the
                 // broadcast case; deliberately no relay, since this one is addressed

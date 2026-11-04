@@ -61,7 +61,7 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
                       logerr_ln("ERROR failed to send pong message. rc = %d",err);
                   }
                   break;
-#if CDPCFG_REMOTE_COMMANDS
+#if CDPCFG_REMOTE_TX_POWER
               case topics::cmd_tx:{
                   ArduinoJson::JsonDocument json;
                   std::string packetStr(rxPacket.data.begin(), rxPacket.data.end());
@@ -94,6 +94,8 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
                     }
                   break;
               }
+#endif
+#if CDPCFG_REMOTE_TIME_SYNC
               case topics::cmd_time:{
                   loginfo_ln(" !!!!!!!!!!!!!!!!!!!Command received, updating time to match papa");
                   ArduinoJson::JsonDocument json;
