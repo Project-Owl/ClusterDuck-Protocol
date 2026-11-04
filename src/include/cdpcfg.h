@@ -57,8 +57,18 @@
 // Bounded RAM for directly observed peers and destination alternatives.
 #define CDPCFG_MAX_DIRECT_NEIGHBORS 32
 #define CDPCFG_MAX_ROUTE_DESTINATIONS 64
-#ifndef CDPCFG_DIAGNOSTIC_INTERVAL_MS
-#define CDPCFG_DIAGNOSTIC_INTERVAL_MS (5UL * 60UL * 1000UL)
+
+// How often a duck sends its health summary (topics::health) and logs one
+// detailed diagnostics page to serial. The first heartbeat also sends one
+// signal-health snapshot, so a new installation shows up without waiting a
+// full signal interval.
+#ifndef CDPCFG_HEALTH_INTERVAL_MS
+#define CDPCFG_HEALTH_INTERVAL_MS (1000UL * 60UL * 15UL)   // 15 minutes
+#endif
+
+// How often a duck reports its direct neighbours' signal (topics::sig).
+#ifndef CDPCFG_SIGNAL_INTERVAL_MS
+#define CDPCFG_SIGNAL_INTERVAL_MS (1000UL * 60UL * 60UL)   // 60 minutes
 #endif
 
 // How long a routing table entry stays valid without being refreshed.

@@ -95,10 +95,9 @@ class Duck {
       if (err != DUCK_ERR_NONE) {
         logerr_ln("ERROR setupWithDefaults rc = %d",err); 
       } else{
-        duckTimer.every(HEALTH_INTERVAL, sendHealth, this);
-        duckTimer.every(SIGNAL_INTERVAL, sendSignalData, this);
+        duckTimer.every(CDPCFG_SIGNAL_INTERVAL_MS, sendSignalData, this);
         duckTimer.every(CDPCFG_ROUTE_KEEPALIVE_MS, sendRouteKeepalive, this);
-        duckTimer.every(CDPCFG_DIAGNOSTIC_INTERVAL_MS, sendRoutingDiagnostics, this);
+        duckTimer.every(CDPCFG_HEALTH_INTERVAL_MS, sendRoutingDiagnostics, this);
         meshReady = true;
         setupAt = millis();
         bootEpoch = esp_random();
@@ -400,18 +399,6 @@ class Duck {
     }
 
     /**
-     * @brief sendData that allows sending for health on an internal timer
-     * @returns DUCK_ERR_NONE if the data was sent successfully, an error code otherwise.
-     */
-    static bool sendHealth(void* p){
-      Duck* duck = static_cast<Duck*>(p);
-      const int err = duck->sendData(topics::health, duck->healthMessage());
-      if (err == DUCK_ERR_NONE) ++duck->counter;
-      loginfo_ln("[DUCK] health enqueue rc=%d", err);
-      return true;
-    }
-
-    /**
      * @brief Refresh the routing entry for a directly-heard neighbour.
      *
      * Routes are otherwise only inserted on RREQ/RREP, so a duck that is actively
@@ -632,7 +619,7 @@ class Duck {
         duck->diagnosticPage = (duck->diagnosticPage + 1) % 4;
       }
       // One early topology snapshot makes a new installation observable without
-      // waiting for the normal 195-minute signal-health timer.
+      // waiting for the first CDPCFG_SIGNAL_INTERVAL_MS.
       if (!duck->initialSignalSent && duck->getType() != DuckType::PAPA && duck->getType() != DuckType::DETECTOR)
         sendSignalData(duck);
       return true;
@@ -724,8 +711,6 @@ class Duck {
     }
 
     //Telemetry
-    const int HEALTH_INTERVAL = (1000 * 60 * 60 * 2) + (1000 * 60 * 12) ; //2 Hours 12 Minutes
-    const int SIGNAL_INTERVAL = (1000 * 60 * 60 * 3) + (1000 * 60 * 15); //3 hours 15 minutes
     uint32_t counter = 1;
     Timer<10> duckTimer;
 
