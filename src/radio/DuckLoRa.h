@@ -116,6 +116,24 @@ class DuckLoRa {
         uint32_t getTxTimeoutCount() const { return txTimeoutCount; }
 
         /**
+         * @brief Check whether the radio still has work in progress.
+         *
+         * @return true while a transmission has not completed, a received packet
+         * has not been read, or an interrupt has not been serviced yet.
+         */
+        bool isBusy() const { return transmitting || receivedFlag || interruptPending; }
+
+        /**
+         * @brief Set the LoRa radio into sleep mode.
+         *
+         * The radio stays asleep until it is set up again, normally at the next
+         * boot.
+         * @returns DUCK_ERR_NONE if the chip is successfully set in sleep mode, an
+         * error code otherwise.
+         */
+        int sleep();
+
+        /**
          * @brief Get the current RSSI value.
          *
          * @returns A float representing the rssi value.
@@ -178,14 +196,6 @@ class DuckLoRa {
          * error code otherwise.
          */
         int standBy();
-
-        /**
-         * @brief Set the LoRa radio into sleep mode.
-         * 
-         * @returns DUCK_ERR_NONE if the chip is sucessfuly set in standby mode, an
-         * error code otherwise.   
-         */
-        int sleep();
 
        
 
