@@ -126,6 +126,13 @@
 #endif
 /// Antenna Gain correction
 #define CDPCFG_RF_LORA_GAIN 0
+/// LoRa sync word. Ducks only hear radios using the same value, so separate
+/// deployments in range can pick different values to keep their traffic apart.
+/// This is not security: anyone who sets the same value hears and joins the mesh.
+/// 0x12 is the standard private (non-LoRaWAN) value; avoid 0x34, LoRaWAN's public one.
+#ifndef CDPCFG_RF_LORA_SYNC_WORD
+#define CDPCFG_RF_LORA_SYNC_WORD 0x12
+#endif
 
 /// CDP message buffer max length
 #define CDPCFG_CDP_BUFSIZE 256

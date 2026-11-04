@@ -118,9 +118,8 @@ int DuckLoRa::setupRadio(const LoRaConfigParams &config) {
     lora.setDio0Action(config.func,RISING);
 #endif
 
-    // set sync word to private network
-
-    rc = lora.setSyncWord(0x12); //should this be passed?
+    // Ducks only hear radios using the same sync word
+    rc = lora.setSyncWord(CDPCFG_RF_LORA_SYNC_WORD);
 
     if (rc != RADIOLIB_ERR_NONE) {
         logerr_ln("ERROR  sync word is invalid");
