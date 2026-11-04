@@ -18,9 +18,7 @@
 #include "../routing/RouteJSON.h"
 #include "../routing/SizedQueue.h"
 #include "../utils/MemoryFree.h"
-#if CDPCFG_REMOTE_TIME_SYNC
-#include <ESP32Time.h>
-#endif
+#include "../utils/DuckClock.h"
 #include <esp_system.h>
 #include <algorithm>
 
@@ -31,9 +29,6 @@ class Duck {
     virtual ~Duck(){
     };
     Preferences eeprom_preferences;
-#if CDPCFG_REMOTE_TIME_SYNC
-    ESP32Time rtc; // set by topics::cmd_time
-#endif
     /**
      * @brief Duck main running loop
      */
@@ -182,6 +177,18 @@ class Duck {
      */
     virtual DuckType getType() = 0;
 
+    /**
+     * @brief Check whether the system clock holds a usable UTC time.
+     *
+     * The clock can be set by a topics::cmd_time from a PapaDuck (with
+     * CDPCFG_REMOTE_TIME_SYNC), or by the sketch itself, e.g. from NTP or GPS.
+     * It survives deep sleep and software resets, but not a power loss.
+     * @returns true if the clock is at or after CDPCFG_TIME_MIN_EPOCH.
+     */
+    bool hasValidTime() const {
+      return duckclock::now() >= static_cast<time_t>(CDPCFG_TIME_MIN_EPOCH);
+    }
+
     // One readable radio heartbeat. v4 uses camelCase keys; c/fm retain their string types;
     // transmission completion is not a remote delivery acknowledgement.
     std::string healthMessage() {
@@ -320,6 +327,61 @@ class Duck {
       // destination route, including after sleep or late gateway arrival.
       return broadcastPacket(packet);
     }
+
+#if CDPCFG_REMOTE_TIME_SYNC
+    /**
+     * @brief Set the clock from a topics::cmd_time packet, {"epoch":<UTC seconds>}.
+     *
+     * Applied only if all of these hold:
+     * - it is the first copy of this message. Later copies arrive after extra
+     *   relay delay and would step the clock back, so call this before the
+     *   packet is relayed or added to the duplicate filter;
+     * - the sender is a PapaDuck;
+     * - "epoch" is an integer of at least CDPCFG_TIME_MIN_EPOCH.
+     * The caller relays the packet as usual, whether or not it was applied.
+     * @returns true if the clock was set.
+     */
+    bool applyTimeCommand(CdpPacket& packet) {
+      if (router.getFilter().bloom_check(packet.muid.data(), MUID_LENGTH)) {
+        logdbg_ln("[TIME] cmd_time mid=%s already seen, ignored",
+          duckutils::arrayToHexString(packet.muid).c_str());
+        return false;
+      }
+      if (packet.duckType != DuckType::PAPA) {
+        logwarn_ln("[TIME] cmd_time from %s rejected: sender type %u is not a PapaDuck",
+          duckutils::duidToString(packet.sduid).c_str(), unsigned(packet.duckType));
+        return false;
+      }
+      JsonDocument json;
+      const DeserializationError error =
+        deserializeJson(json, reinterpret_cast<const char*>(packet.data.data()), packet.data.size());
+      if (error) {
+        logerr_ln("[TIME] cmd_time from %s rejected: %s",
+          duckutils::duidToString(packet.sduid).c_str(), error.c_str());
+        return false;
+      }
+      const JsonVariantConst value = json["epoch"];
+      if (!value.is<uint32_t>()) {
+        logwarn_ln("[TIME] cmd_time from %s rejected: no integer epoch",
+          duckutils::duidToString(packet.sduid).c_str());
+        return false;
+      }
+      const uint32_t epoch = value.as<uint32_t>();
+      if (epoch < CDPCFG_TIME_MIN_EPOCH) {
+        logwarn_ln("[TIME] cmd_time from %s rejected: epoch %lu is before %lu",
+          duckutils::duidToString(packet.sduid).c_str(), (unsigned long)epoch,
+          (unsigned long)CDPCFG_TIME_MIN_EPOCH);
+        return false;
+      }
+      if (duckclock::set(epoch) != 0) {
+        logerr_ln("[TIME] failed to set the clock to %lu", (unsigned long)epoch);
+        return false;
+      }
+      loginfo_ln("[TIME] clock set to %lu from %s", (unsigned long)epoch,
+        duckutils::duidToString(packet.sduid).c_str());
+      return true;
+    }
+#endif
 
     unsigned long lastRreqTime = 0L;
     unsigned long lastPacketTx = 0L;

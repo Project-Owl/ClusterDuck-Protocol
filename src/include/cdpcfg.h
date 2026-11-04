@@ -64,6 +64,13 @@
 #define CDPCFG_REMOTE_TX_POWER CDPCFG_REMOTE_COMMANDS
 #endif
 
+// Oldest UTC time, in seconds since 1970, that a duck treats as valid
+// (default 2026-01-01). A topics::cmd_time with an older epoch is rejected,
+// and Duck::hasValidTime() stays false until the clock reaches it.
+#ifndef CDPCFG_TIME_MIN_EPOCH
+#define CDPCFG_TIME_MIN_EPOCH 1767225600UL
+#endif
+
 /// Serial Console Baud Rate
 #define CDPCFG_SERIAL_BAUD 115200
 
