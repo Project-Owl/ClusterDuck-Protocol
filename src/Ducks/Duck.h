@@ -599,7 +599,7 @@ class Duck {
       loginfo_ln("[ROUTE] enqueue t=%u src=%s mid=%s hop=%u to=%s relay=%u",
         packet.topic, duckutils::duidToString(packet.sduid).c_str(),
         duckutils::arrayToHexString(packet.muid).c_str(), packet.hopCount,
-        (packet.dduid == BROADCAST_DUID ? "*" : duckutils::duidToString(packet.dduid)).c_str(), forwarded);
+        RouteJSON::toText(packet.dduid).c_str(), forwarded);
       return DUCK_ERR_NONE;
     }
 
@@ -711,6 +711,8 @@ class Duck {
     }
 
     void processReceivedPacket(CdpPacket& packet) {
+      // Phoenix 2026 firmware addressed the PapaDuck as "11111111" in the header.
+      if (packet.dduid == PAPADUCK_ALIAS_DUID) packet.dduid = PAPADUCK_DUID;
       if (handleRoutingPacket(packet)) return;
       if (packet.hopCount > MAX_HOPS) { ++hopDropped; return; }
       refreshNeighborRoute(packet);
