@@ -74,9 +74,14 @@
 /// Serial Console Baud Rate
 #define CDPCFG_SERIAL_BAUD 115200
 
-//Max TX and RX packet queue size
+// Packets each of the RX, data-TX and control-TX queues can hold.
+#ifndef CDPCFG_MAX_QUEUE_SIZE
 #define CDPCFG_MAX_QUEUE_SIZE 10
+#endif
+// Minimum time between two transmissions, in milliseconds.
+#ifndef CDPCFG_MAX_PACKET_SEND_RATE
 #define CDPCFG_MAX_PACKET_SEND_RATE 3000
+#endif
 
 // Bounded RAM for directly observed peers and destination alternatives.
 #define CDPCFG_MAX_DIRECT_NEIGHBORS 32
