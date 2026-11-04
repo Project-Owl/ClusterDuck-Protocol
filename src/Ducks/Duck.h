@@ -18,7 +18,7 @@
 #include "../routing/RouteJSON.h"
 #include "../routing/SizedQueue.h"
 #include "../utils/MemoryFree.h"
-#if CDPCFG_REMOTE_COMMANDS
+#if CDPCFG_REMOTE_TIME_SYNC
 #include <ESP32Time.h>
 #endif
 #include <esp_system.h>
@@ -31,7 +31,7 @@ class Duck {
     virtual ~Duck(){
     };
     Preferences eeprom_preferences;
-#if CDPCFG_REMOTE_COMMANDS
+#if CDPCFG_REMOTE_TIME_SYNC
     ESP32Time rtc; // set by topics::cmd_time
 #endif
     /**
@@ -77,7 +77,7 @@ class Duck {
         return DUCK_ERR_EEPROM_INIT;
       }
 
-#if CDPCFG_REMOTE_COMMANDS
+#if CDPCFG_REMOTE_TX_POWER
       // TX power last set by a topics::cmd_tx command, if any
       int txPwr = eeprom_preferences.getInt("txPwr", CDPCFG_RF_LORA_TXPOW);
       if (txPwr < 14 || txPwr > 22) {

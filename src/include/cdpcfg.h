@@ -47,12 +47,21 @@
 #define CDPCFG_UPDATE_USERNAME "user"
 #define CDPCFG_UPDATE_PASSWORD "pass"
 
-// Remote duck commands: topics::cmd_tx sets TX power (persisted), topics::cmd_time
-// sets the RTC. Commands are not authenticated, so any node in radio range can
-// send them; they are off by default. With them off, ducks still relay command
-// packets for other ducks but ignore them themselves.
+// Remote duck commands. Commands are not authenticated, so any node in radio
+// range can send them; they are off by default. With a command off, ducks still
+// relay its packets for other ducks but ignore them themselves.
+//   CDPCFG_REMOTE_TIME_SYNC: act on topics::cmd_time (set the clock).
+//   CDPCFG_REMOTE_TX_POWER:  act on topics::cmd_tx (set TX power, persisted).
+// Both default to CDPCFG_REMOTE_COMMANDS, so -DCDPCFG_REMOTE_COMMANDS=1 still
+// turns both on. Turn on time sync alone with -DCDPCFG_REMOTE_TIME_SYNC=1.
 #ifndef CDPCFG_REMOTE_COMMANDS
 #define CDPCFG_REMOTE_COMMANDS 0
+#endif
+#ifndef CDPCFG_REMOTE_TIME_SYNC
+#define CDPCFG_REMOTE_TIME_SYNC CDPCFG_REMOTE_COMMANDS
+#endif
+#ifndef CDPCFG_REMOTE_TX_POWER
+#define CDPCFG_REMOTE_TX_POWER CDPCFG_REMOTE_COMMANDS
 #endif
 
 /// Serial Console Baud Rate
