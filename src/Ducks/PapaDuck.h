@@ -43,6 +43,31 @@ public:
    return this->router.getFilter().bloom_check(muid.data(), MUID_LENGTH) == 0;
   }
 
+  /**
+   * @brief Send a UTC time to the mesh as topics::cmd_time, {"epoch":<seconds>}.
+   *
+   * Ducks built with CDPCFG_REMOTE_TIME_SYNC set their clock from it; other
+   * ducks only relay it. Send only a time you trust, such as one from NTP or
+   * the cellular network, and resend it periodically: a duck that missed it,
+   * or rebooted after a power loss, has no time until the next one.
+   * @param epoch UTC seconds since 1970, at least CDPCFG_TIME_MIN_EPOCH
+   * @param target BROADCAST_DUID for every duck, or one duck's DUID
+   * @returns DUCK_ERR_NONE if queued, DUCK_ERR_INVALID_ARGUMENT for an epoch
+   * below CDPCFG_TIME_MIN_EPOCH, or the sendData() error.
+   */
+  int sendTimeSync(uint32_t epoch, Duid target = BROADCAST_DUID) {
+    if (epoch < CDPCFG_TIME_MIN_EPOCH) {
+      logerr_ln("ERROR sendTimeSync epoch %lu is before %lu", (unsigned long)epoch,
+        (unsigned long)CDPCFG_TIME_MIN_EPOCH);
+      return DUCK_ERR_INVALID_ARGUMENT;
+    }
+    JsonDocument doc;
+    doc["epoch"] = epoch;
+    std::string payload;
+    serializeJson(doc, payload);
+    return this->sendData(topics::cmd_time, payload, target);
+  }
+
 private:
   rxDoneCallback recvDataCallback = nullptr;
   
