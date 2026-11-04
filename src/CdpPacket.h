@@ -96,6 +96,8 @@ enum topics {
   alert = 0x14,
   /// Device health status
   health = 0x15,
+  /// Deprecated: no longer handled by CDP. Kept so existing sketches compile.
+  dcmd = 0x16,
   //node signal data
   sig = 0x17,
   //battery level
@@ -130,6 +132,8 @@ enum reservedTopic {
   ping = 0x01,
   pong = 0x02,
   ack = 0x04,
+  /// Deprecated: relayed like any other packet. Kept so existing sketches compile.
+  cmd = 0x05,
   rreq = 0x06,
   rrep = 0x07,
   max_reserved = 0x0F
@@ -306,6 +310,8 @@ class CdpPacket {
                 return "alert";
             case topics::health:
                 return "health";
+            case topics::dcmd:
+                return "dcmd";
             case topics::cmd_time:
                 return "cmd_time";
             case topics::cmd_tx:
