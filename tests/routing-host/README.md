@@ -1,6 +1,6 @@
 # Routing host tests
 
-Runs the real CDP routing code on your computer, with a fake radio and clock in place of the hardware. Each run builds with the address and undefined-behaviour sanitizers, once with remote commands off and once with them on.
+Runs the real CDP routing code on your computer, with a fake radio and clock in place of the hardware. The script builds three times, each with the address and undefined-behaviour sanitizers: remote commands off (the default), time sync only (`CDPCFG_REMOTE_TIME_SYNC=1`), and all remote commands on (`CDPCFG_REMOTE_COMMANDS=1`).
 
 ## Run
 
@@ -11,7 +11,7 @@ EXAMPLE_DIR=Basic-Ducks/MamaDuck pio run -e local_lilygo_t_beam_sx1262
 bash tests/routing-host/run.sh
 ```
 
-To use other copies of those libraries, set `ARDUINOJSON_SRC` and `CRC32_SRC` to their `src` folders. Set `CXX` to use a compiler other than `clang++`. The output ends with `PASS`.
+To use other copies of those libraries, set `ARDUINOJSON_SRC` and `CRC32_SRC` to their `src` folders. Set `CXX` to use a compiler other than `clang++`. Each of the three runs ends with `PASS`.
 
 ## What's covered
 
@@ -22,5 +22,8 @@ To use other copies of those libraries, set `ARDUINOJSON_SRC` and `CRC32_SRC` to
 - **Three-link chain:** discovery reaches the PapaDuck, and replies keep their identity across hops. The duck recovers after losing the gateway, and after a relay reboots.
 - **Startup pacing:** sends are queued and paced, then delivered.
 - **5.0 compatibility:** PapaDuck data uses the `00000000` header address, route JSON uses `"11111111"`, and packets addressed to `11111111` are accepted as PapaDuck traffic.
+- **Time sync (`cmd_time`):** a PapaDuck's `sendTimeSync()` sets each MamaDuck's clock once, although every MamaDuck hears three copies, and a repeated copy never moves the clock back. Packets from a MamaDuck, with an epoch before `CDPCFG_TIME_MIN_EPOCH`, without an integer epoch or with broken JSON are rejected but still relayed. A command addressed to one duck is applied there and not relayed; other ducks pass it on. DuckLinks apply it too. With time sync off nothing is applied, and MamaDucks still relay every copy. The clock is a fake, so the tests never touch the computer's clock.
+- **TX power (`cmd_tx`):** stored only when `CDPCFG_REMOTE_TX_POWER` is on, relayed either way, and a command addressed to another duck is passed on rather than applied.
+- **Sleep hooks:** `txIdle()` is false while a packet is queued, the radio is transmitting or a received packet is unread, and true once the queues drain. After `prepareForSleep()` the radio is asleep and `sendData()` fails.
 
 These tests don't model RF loss, collisions, power or real timing. Hardware testing is still needed before a release.

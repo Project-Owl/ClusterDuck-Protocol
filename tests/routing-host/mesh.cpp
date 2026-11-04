@@ -27,10 +27,15 @@ public:
     uint32_t getTxTimeoutCount() const { return 0; }
     float getRSSI() { return -50; }
     float getSNR() { return 12; }
+    bool transmitting = false;
+    unsigned sleeps = 0;
+    bool isBusy() const { return transmitting || !inbox.empty(); }
+    int sleep() { ++sleeps; return 0; }
 };
 
 #include "Ducks/MamaDuck.h"
 #include "Ducks/PapaDuck.h"
+#include "Ducks/DuckLink.h"
 
 // Ducks read and set the wall clock through duckclock. Setting the real clock
 // needs root, so the host tests keep a fake one.
@@ -44,6 +49,7 @@ int set(uint32_t epoch) { hostNow = epoch; ++hostSets; return 0; }
 Duid id(const std::string& name) { assert(name.size() == 8); Duid value{}; std::copy(name.begin(), name.end(), value.begin()); return value; }
 using Mama = MamaDuck<DuckWifiNone, FakeRadio>;
 using Papa = PapaDuck<DuckWifiNone, FakeRadio>;
+using Link = DuckLink<DuckWifiNone, FakeRadio>;
 template<class Base> struct Node : Base {
     explicit Node(std::string name) : Base(name) { this->onReceiveDuckData(receive); }
     FakeRadio& radio() { return this->duckRadio; }
@@ -68,6 +74,7 @@ struct Mesh {
             const size_t sender = std::find(radios.begin(), radios.end(), from) - radios.begin();
             CdpPacket packet(bytes);
             sent.push_back({sender, packet});
+            if (sender == radios.size()) return; // a node outside the mesh: nobody hears it
             for (size_t j = 0; j < radios.size(); ++j) if (links[sender][j]) radios[j]->inbox.push_back(bytes);
         };
         assert(a.setupWithDefaults() == 0); assert(b.setupWithDefaults() == 0);
@@ -82,6 +89,162 @@ struct Mesh {
 };
 
 JsonDocument parse(const std::string& text) { JsonDocument doc; assert(!deserializeJson(doc, text)); return doc; }
+
+// A packet as it arrives over the air, from GATE0001.
+std::vector<uint8_t> packetBytes(uint8_t topic, const std::string& json, Muid muid,
+                                 Duid target = BROADCAST_DUID, DuckType sender = DuckType::PAPA) {
+    CdpPacket packet(target, topic, duckutils::stringToByteVector(json), id("GATE0001"), sender);
+    packet.muid = muid;
+    assert(packet.prepareForSending() == 0);
+    return packet.asBytes();
+}
+
+void timeSyncChecks() {
+    constexpr bool applies = CDPCFG_REMOTE_TIME_SYNC;
+    constexpr uint32_t epoch = 1790000000; // 2026-09-21
+    Mesh mesh(true);
+    mesh.until(120000);
+    Node<Link> link{"LINK0001"}; // outside the mesh: fed directly, heard by nobody
+    assert(link.setupWithDefaults() == 0);
+
+    // The duplicate filter can report a false positive, and a duck drops that
+    // packet as a repeat. Give each test packet a MUID no duck has seen yet.
+    uint8_t serial = 0;
+    auto freshMuid = [&] {
+        for (;;) {
+            const Muid muid{'T','E','S',serial++};
+            bool seen = false;
+            for (DuckRouter* router : {&mesh.a.routes(), &mesh.b.routes(), &mesh.c.routes(),
+                                       &mesh.p.routes(), &link.routes()})
+                if (router->getFilter().bloom_check(const_cast<uint8_t*>(muid.data()), MUID_LENGTH)) seen = true;
+            if (!seen) return muid;
+        }
+    };
+    auto resetClock = [] { duckclock::hostNow = 0; duckclock::hostSets = 0; };
+    // Hand a packet to one duck alone and let it handle it.
+    auto feed = [](auto& node, const std::vector<uint8_t>& bytes) {
+        node.radio().inbox.push_back(bytes);
+        for (int i = 0; i < 3; ++i) node.run();
+    };
+    auto settle = [&] { mesh.until(hostMillis + 30000); };
+    auto relayedByA = [&](const Muid& muid) {
+        return std::count_if(mesh.sent.begin(), mesh.sent.end(), [&muid](const auto& item) {
+            return item.sender == 0 && item.packet.muid == muid;
+        });
+    };
+
+    resetClock();
+    assert(!mesh.a.hasValidTime());
+    duckclock::hostNow = CDPCFG_TIME_MIN_EPOCH - 1; assert(!mesh.a.hasValidTime());
+    duckclock::hostNow = CDPCFG_TIME_MIN_EPOCH; assert(mesh.a.hasValidTime());
+
+    // PapaDuck broadcast: each MamaDuck hears three copies (the PapaDuck's and
+    // two relays), applies the first and relays once, flag or no flag.
+    resetClock();
+    assert(mesh.p.sendTimeSync(CDPCFG_TIME_MIN_EPOCH - 1) == DUCK_ERR_INVALID_ARGUMENT);
+    const size_t start = mesh.sent.size();
+    assert(mesh.p.sendTimeSync(epoch) == DUCK_ERR_NONE);
+    settle();
+    assert(duckclock::hostSets == (applies ? 3u : 0u));
+    assert(mesh.a.hasValidTime() == applies);
+    assert(mesh.count(topics::cmd_time, start) == 4);
+
+    // A later copy of the same message is ignored, even after the clock moved on.
+    resetClock();
+    const Muid repeated = freshMuid();
+    const auto copy = packetBytes(topics::cmd_time, "{\"epoch\":1790000100}", repeated);
+    feed(mesh.a, copy);
+    assert(duckclock::hostSets == (applies ? 1u : 0u));
+    if (applies) assert(duckclock::hostNow == 1790000100);
+    duckclock::hostNow = 1790000999;
+    feed(mesh.a, copy);
+    assert(duckclock::hostSets == (applies ? 1u : 0u) && duckclock::hostNow == 1790000999);
+    settle();
+    assert(relayedByA(repeated) == 1);
+
+    // Rejected, but still relayed: a MamaDuck sender, an epoch before the
+    // minimum, no epoch, a string or negative epoch, and a JSON parse error.
+    const std::vector<std::pair<std::string, DuckType>> rejected = {
+        {"{\"epoch\":1790000000}", DuckType::MAMA},
+        {"{\"epoch\":" + std::to_string(CDPCFG_TIME_MIN_EPOCH - 1) + "}", DuckType::PAPA},
+        {"{\"time\":1790000000}", DuckType::PAPA},
+        {"{\"epoch\":\"1790000000\"}", DuckType::PAPA},
+        {"{\"epoch\":-1}", DuckType::PAPA},
+        {"{\"epoch\":17900", DuckType::PAPA},
+    };
+    for (const auto& [json, sender] : rejected) {
+        resetClock();
+        const Muid muid = freshMuid();
+        feed(mesh.a, packetBytes(topics::cmd_time, json, muid, BROADCAST_DUID, sender));
+        assert(duckclock::hostSets == 0);
+        settle();
+        assert(relayedByA(muid) == 1);
+    }
+
+    // Addressed to NODE0001: applied there and not relayed.
+    resetClock();
+    const Muid toA = freshMuid();
+    feed(mesh.a, packetBytes(topics::cmd_time, "{\"epoch\":1790000200}", toA, id("NODE0001")));
+    assert(duckclock::hostSets == (applies ? 1u : 0u));
+    settle();
+    assert(relayedByA(toA) == 0);
+    // Addressed to NODE0002: NODE0001 passes it on, and only NODE0002 applies it.
+    resetClock();
+    const Muid toB = freshMuid();
+    feed(mesh.a, packetBytes(topics::cmd_time, "{\"epoch\":1790000300}", toB, id("NODE0002")));
+    assert(duckclock::hostSets == 0);
+    settle();
+    assert(relayedByA(toB) == 1);
+    assert(duckclock::hostSets == (applies ? 1u : 0u));
+
+    // TX power is a separate flag: stored only with CDPCFG_REMOTE_TX_POWER,
+    // relayed either way, and a command for another duck is passed on.
+    const Muid power = freshMuid(), powerToB = freshMuid();
+    feed(mesh.a, packetBytes(topics::cmd_tx, "{\"txPwr\":20}", power));
+    assert(mesh.a.eeprom_preferences.getInt("txPwr", -1) == (CDPCFG_REMOTE_TX_POWER ? 20 : -1));
+    feed(mesh.a, packetBytes(topics::cmd_tx, "{\"txPwr\":17}", powerToB, id("NODE0002")));
+    assert(mesh.a.eeprom_preferences.getInt("txPwr", -1) == (CDPCFG_REMOTE_TX_POWER ? 20 : -1));
+    settle();
+    assert(relayedByA(power) == 1 && relayedByA(powerToB) == 1);
+
+    // A DuckLink applies a broadcast or a command addressed to it, once each.
+    resetClock();
+    const auto linkCopy = packetBytes(topics::cmd_time, "{\"epoch\":1790000400}", freshMuid());
+    feed(link, linkCopy);
+    feed(link, linkCopy);
+    assert(duckclock::hostSets == (applies ? 1u : 0u));
+    feed(link, packetBytes(topics::cmd_time, "{\"epoch\":1790000500}", freshMuid(), id("LINK0001")));
+    feed(link, packetBytes(topics::cmd_time, "{\"epoch\":1790000600}", freshMuid(), id("NODE0002")));
+    assert(duckclock::hostSets == (applies ? 2u : 0u));
+    if (applies) assert(duckclock::hostNow == 1790000500);
+    std::cout << "time sync: " << (applies ? "applied once per message, from a PapaDuck only"
+                                            : "not applied (flag off)")
+              << "; MamaDucks relay every cmd_time\n";
+}
+
+void sleepChecks() {
+    Mesh mesh(true);
+    mesh.until(120000);
+    assert(mesh.a.txIdle());
+    assert(mesh.a.sendData(topics::sensor, "{\"c\":3}") == 0);
+    assert(!mesh.a.txIdle()); // queued, not sent yet
+    const uint32_t deadline = hostMillis + 30000;
+    while (!mesh.a.txIdle() && hostMillis < deadline) mesh.until(hostMillis + 100);
+    assert(mesh.a.txIdle());
+    assert(std::any_of(Node<Papa>::received.begin(), Node<Papa>::received.end(), [](const auto& packet) {
+        return packet.topic == topics::sensor && packet.sduid == id("NODE0001");
+    }));
+    mesh.a.radio().transmitting = true;
+    assert(!mesh.a.txIdle()); // radio mid-transmission
+    mesh.a.radio().transmitting = false;
+    mesh.a.radio().inbox.push_back(packetBytes(topics::sensor, "{}", {'S','L','P','1'}));
+    assert(!mesh.a.txIdle()); // unread packet
+    mesh.a.radio().inbox.clear();
+    assert(mesh.a.prepareForSleep() == DUCK_ERR_NONE);
+    assert(mesh.a.radio().sleeps == 1);
+    assert(mesh.a.sendData(topics::sensor, "{\"c\":4}") == DUCK_ERR_NOT_SUPPORTED);
+    std::cout << "sleep hooks: txIdle follows the queues and radio; prepareForSleep stops the duck\n";
+}
 void routerChecks() {
     hostMillis = 100;
     const SignalScore strong{0.95f, 0.75f, 0.85f}, weak{0.5f, 0.5f, 0.5f};
@@ -151,6 +314,8 @@ void routerChecks() {
 }
 
 int main() {
+    std::cout << "remote commands: time sync=" << CDPCFG_REMOTE_TIME_SYNC
+              << " tx power=" << CDPCFG_REMOTE_TX_POWER << '\n';
     routerChecks();
     {
         Mesh mesh(true);
@@ -268,5 +433,7 @@ int main() {
         assert(Node<Papa>::received.back().dduid == PAPADUCK_DUID);
         std::cout << "5.0 compatibility: header 00000000, route JSON 11111111, legacy header accepted\n";
     }
+    timeSyncChecks();
+    sleepChecks();
     std::cout << "PASS\n";
 }
