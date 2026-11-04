@@ -100,28 +100,12 @@ enum topics {
   sig = 0x17,
   //battery level
   bat = 0x18,
-  // external battery status
-  externalbattery = 0x19,
   //duck command for spreading factor and tx power
   cmd_tx = 0x20,
   //duck command for battery level for phoenix sleep
   cmd_bat = 0x21,
   //duck command for phoenix time sync
   cmd_time = 0x22,
-  // acoustic metric
-  acousticmetric = 0x23, 
-  // bird detection event
-  birddetection = 0x1A,
-  // sleep status
-  sleepstatus = 0x1B,
-  // teensy status
-  teensystatus = 0x1C,
-  // teensy health status
-  teensyhealth = 0x1D,
-  // boot status
-  boot = 0x1E,
-  // tbeam status
-  tbeamstatus = 0x1F,
   //gps
   gps = 0xEA,
   // MQ7 Gas Sensor
@@ -306,20 +290,6 @@ class CdpPacket {
                 return "sensor";
             case topics::bat:
                 return "battery";
-            case topics::externalbattery:
-                return "externalbattery";
-            case topics::birddetection:
-                return "birddetection";
-            case topics::sleepstatus:
-                return "sleepstatus";
-            case topics::teensystatus:
-                return "teensystatus";
-            case topics::teensyhealth:
-                return "teensyhealth";
-            case topics::tbeamstatus:
-                return "tbeamstatus";
-            case topics::boot:
-                return "boot";
             case topics::sig:
                 return "signal health";
             case topics::alert:
@@ -332,8 +302,6 @@ class CdpPacket {
                 return "cmd_time";
             case topics::cmd_tx:
                 return "cmd_tx";
-            case topics::acousticmetric:
-                return "acousticmetric";
             case topics::mq7:
                 return "mq7";
             case topics::gp2y:
