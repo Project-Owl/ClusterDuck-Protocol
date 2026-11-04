@@ -18,7 +18,9 @@
 #include "../routing/RouteJSON.h"
 #include "../routing/SizedQueue.h"
 #include "../utils/MemoryFree.h"
+#if CDPCFG_REMOTE_COMMANDS
 #include <ESP32Time.h>
+#endif
 #include <esp_system.h>
 #include <algorithm>
 
@@ -29,7 +31,9 @@ class Duck {
     virtual ~Duck(){
     };
     Preferences eeprom_preferences;
-    ESP32Time rtc; 
+#if CDPCFG_REMOTE_COMMANDS
+    ESP32Time rtc; // set by topics::cmd_time
+#endif
     /**
      * @brief Duck main running loop
      */
@@ -73,15 +77,18 @@ class Duck {
         return DUCK_ERR_EEPROM_INIT;
       }
 
+#if CDPCFG_REMOTE_COMMANDS
+      // TX power last set by a topics::cmd_tx command, if any
       int txPwr = eeprom_preferences.getInt("txPwr", CDPCFG_RF_LORA_TXPOW);
       if (txPwr < 14 || txPwr > 22) {
           txPwr = CDPCFG_RF_LORA_TXPOW;
       }
+#else
+      int txPwr = CDPCFG_RF_LORA_TXPOW;
+#endif
       Serial.print("tx power value on startup : ");
       Serial.println(txPwr);
-      //should i close the eeprom_preferences here??
 
-      //lora config for use in phoenix
       const LoRaConfigParams radioParam = {
         /* band     = */ CDPCFG_RF_LORA_FREQ,
         /* txPower  = */ static_cast<int8_t>(txPwr),
