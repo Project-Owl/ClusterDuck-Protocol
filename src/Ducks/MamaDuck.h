@@ -66,6 +66,7 @@ private :
             case reservedTopic::pong:
                 loginfo_ln("PONG received. Ignoring!");
                 break;
+#if CDPCFG_REMOTE_COMMANDS
             case topics::cmd_tx: {
                 ArduinoJson::JsonDocument json;
                   std::string packetStr(rxPacket.data.begin(), rxPacket.data.end());
@@ -124,6 +125,7 @@ private :
                     }
                   break;
               }
+#endif
             default:
                 err = this->broadcastPacket(rxPacket);
                 if (err != DUCK_ERR_NONE) {
@@ -147,6 +149,7 @@ private :
             case reservedTopic::pong:
                 loginfo_ln("PONG received. Ignoring!");
                 break;
+#if CDPCFG_REMOTE_COMMANDS
             case topics::cmd_tx: {
                 // Targeted cmd_tx used to log and do nothing, so a command aimed at a
                 // single duck was silently dropped. Apply the same update as the
@@ -171,6 +174,7 @@ private :
                 loginfo_ln("updating tx power to value : %i", txPwr);
                 break;
             }
+#endif
             default:
                 if(relay){
                     this->forwardPacket(rxPacket); 

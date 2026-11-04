@@ -61,6 +61,7 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
                       logerr_ln("ERROR failed to send pong message. rc = %d",err);
                   }
                   break;
+#if CDPCFG_REMOTE_COMMANDS
               case topics::cmd_tx:{
                   ArduinoJson::JsonDocument json;
                   std::string packetStr(rxPacket.data.begin(), rxPacket.data.end());
@@ -109,6 +110,7 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
                     }
                   break;
               }
+#endif
               default:
                   loginfo_ln("handleReceivedPacket: packet received, skipping relay.");
           }
