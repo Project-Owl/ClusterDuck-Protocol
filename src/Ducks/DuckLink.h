@@ -22,8 +22,9 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
     /**
      * @brief Register callback for handling data received from duck devices
      * 
-     * The callback will be invoked if the packet needs to be relayed (i.e not seen before)
-     * @param cb a callback to handle data received by the papa duck
+     * The callback is invoked for every packet the duck hears, including repeated
+     * copies of the same message relayed by different ducks.
+     * @param cb a callback to handle data received by the duck link
      */
     void onReceiveDuckData(rxDoneCallback cb) { this->recvDataCallback = cb; }
 
@@ -96,22 +97,10 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
               }
 #endif
 #if CDPCFG_REMOTE_TIME_SYNC
-              case topics::cmd_time:{
-                  loginfo_ln(" !!!!!!!!!!!!!!!!!!!Command received, updating time to match papa");
-                  ArduinoJson::JsonDocument json;
-
-                    std::string packetStr(rxPacket.data.begin(), rxPacket.data.end());
-                    DeserializationError error = deserializeJson(json, packetStr);
-                    if (error) {
-                        logerr("JSON parse failed: ");
-                        logerr(error.c_str());
-                    } else{
-                      uint32_t epoch = json["epoch"].as<uint32_t>();
-                      this->rtc.setTime(epoch);
-                      Serial.printf("RTC set to %u\n", epoch);
-                    }
+              case topics::cmd_time:
+                  // A DuckLink is a leaf: it applies the time but does not relay it.
+                  this->applyTimeCommand(rxPacket);
                   break;
-              }
 #endif
               default:
                   loginfo_ln("handleReceivedPacket: packet received, skipping relay.");
@@ -121,6 +110,12 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
       void ifNotBroadcast(CdpPacket rxPacket, bool relay = false) {
         int err = DUCK_ERR_NONE;
           switch(rxPacket.topic) {
+#if CDPCFG_REMOTE_TIME_SYNC
+              case topics::cmd_time:
+                  // Apply only a command addressed to us.
+                  if (!relay) this->applyTimeCommand(rxPacket);
+                  break;
+#endif
               default:
               loginfo_ln("handleReceivedPacket: packet received, skipping forward.");    
           }

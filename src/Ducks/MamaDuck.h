@@ -18,8 +18,9 @@ public:
     /**
      * @brief Register callback for handling data received from duck devices
      * 
-     * The callback will be invoked if the packet needs to be relayed (i.e not seen before)
-     * @param cb a callback to handle data received by the papa duck
+     * The callback is invoked for every packet the duck hears, including repeated
+     * copies of the same message relayed by different ducks.
+     * @param cb a callback to handle data received by the mama duck
      */
     void onReceiveDuckData(rxDoneCallback cb) { this->recvDataCallback = cb; }
 
@@ -101,32 +102,11 @@ private :
             }
 #endif
 #if CDPCFG_REMOTE_TIME_SYNC
-              case topics::cmd_time:{
-                  loginfo_ln(" !!!!!!!!!!!!!!!!!!!Command received, updating time to match papa");
-                  ArduinoJson::JsonDocument json;
-                  std::string packetStr(rxPacket.data.begin(), rxPacket.data.end());
-
-                    DeserializationError error = deserializeJson(json, packetStr);
-                    if (error) {
-                        Serial.print("JSON parse failed: ");
-                        Serial.println(error.c_str());
-                        return;
-                    }
-
-                    uint32_t epoch = json["epoch"].as<uint32_t>();
-
-                    this->rtc.setTime(epoch);
-
-                    Serial.printf("RTC set to %u\n", epoch);
-
-                  err = this->broadcastPacket(rxPacket);
-                  if (err != DUCK_ERR_NONE) {
-                    logerr_ln("====> ERROR handleReceivedPacket failed to relay. rc = %d",err);
-                    } else {
-                        loginfo_ln("handleReceivedPacket: packet RELAY DONE");
-                    }
-                  break;
-              }
+            case topics::cmd_time:
+                // Must run before the relay below, which marks the message as seen.
+                // Relayed whether or not it was applied, like any other packet.
+                this->applyTimeCommand(rxPacket);
+                [[fallthrough]];
 #endif
             default:
                 err = this->broadcastPacket(rxPacket);
@@ -181,6 +161,13 @@ private :
                 loginfo_ln("updating tx power to value : %i", txPwr);
                 break;
             }
+#endif
+#if CDPCFG_REMOTE_TIME_SYNC
+            case topics::cmd_time:
+                // Addressed to us: apply it, no relay. Otherwise pass it on.
+                if (relay) this->forwardPacket(rxPacket);
+                else this->applyTimeCommand(rxPacket);
+                break;
 #endif
             default:
                 if(relay){

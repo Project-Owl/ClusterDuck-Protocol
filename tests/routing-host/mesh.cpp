@@ -32,6 +32,15 @@ public:
 #include "Ducks/MamaDuck.h"
 #include "Ducks/PapaDuck.h"
 
+// Ducks read and set the wall clock through duckclock. Setting the real clock
+// needs root, so the host tests keep a fake one.
+namespace duckclock {
+time_t hostNow = 0;
+unsigned hostSets = 0;
+time_t now() { return hostNow; }
+int set(uint32_t epoch) { hostNow = epoch; ++hostSets; return 0; }
+}
+
 Duid id(const std::string& name) { assert(name.size() == 8); Duid value{}; std::copy(name.begin(), name.end(), value.begin()); return value; }
 using Mama = MamaDuck<DuckWifiNone, FakeRadio>;
 using Papa = PapaDuck<DuckWifiNone, FakeRadio>;
