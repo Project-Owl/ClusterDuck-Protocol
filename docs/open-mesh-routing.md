@@ -1,11 +1,11 @@
 # Open-mesh routing, health and diagnostics
 
-How CDP 5.5 ducks find each other, deliver data, and report their own health. The packet header is the same 27 bytes as in 5.0.
+How CDP 5.5 ducks find each other, deliver data, report their own health, share the time and prepare for deep sleep. The packet header is the same 27 bytes as in 5.0.
 
 ## How a duck joins and sends
 
 - **No join handshake.** A duck is ready to send and receive as soon as its radio starts. Ducks still need compatible radio settings: frequency, bandwidth, spreading factor and sync word.
-- **Sending:** `sendData()` returns success once the packet is accepted into the bounded TX queue. That isn't a delivery receipt. A full queue returns `DUCK_ERR_QUEUE_FULL`. There's no persistent store, so a reboot or sleep discards anything still queued.
+- **Sending:** `sendData()` returns success once the packet is accepted into the bounded TX queue. That isn't a delivery receipt. A full queue returns `DUCK_ERR_QUEUE_FULL`. There's no persistent store, so a reboot or sleep discards anything still queued (see [Deep sleep](#deep-sleep)).
 - **Relaying:** MamaDucks flood application packets to every neighbour, whether or not they know a route to the destination. The duplicate filter stops repeats, and a packet is relayed at most `MAX_HOPS` (6) times.
 - **Pacing:** route-control and data queues take turns when both have work, with `CDPCFG_MAX_PACKET_SEND_RATE` (3 s) between transmissions. If the radio is busy, the packet stays queued.
 - **Leaves and observers:** DuckLinks never advertise a transit route. DetectorDucks only listen.
@@ -100,6 +100,39 @@ A missing page or a `null` value means "not known", not zero.
 
 Define `CDPCFG_LOG_PACKET_HEX` to log every packet a duck builds, in hex, at INFO level. That helps when tracing a message from a duck to the cloud.
 
+## Time sync (`topics::cmd_time`)
+
+A PapaDuck with a trusted clock, such as one set from NTP or the cellular network, can share it with the mesh:
+
+```cpp
+papa.sendTimeSync(epoch);          // every duck
+papa.sendTimeSync(epoch, duid);    // one duck
+```
+
+The payload is `{"epoch":<UTC seconds>}`. `sendTimeSync()` refuses an epoch before `CDPCFG_TIME_MIN_EPOCH`, so a PapaDuck without valid time can't push 1970 to the mesh. CDP never sends the time by itself: when and how often is up to the sketch. Send it periodically, because a duck that missed it or lost power has no time until the next one.
+
+MamaDucks and DuckLinks built with `CDPCFG_REMOTE_TIME_SYNC=1` set their clock from it, but only if all of these hold:
+
+- **First copy only.** It's the first copy of that message the duck has handled. Relayed copies arrive later and would set the clock back by their delay.
+- **From a PapaDuck.** The sender's duck type in the header is PapaDuck.
+- **A plausible time.** `epoch` is an integer of at least `CDPCFG_TIME_MIN_EPOCH` (2026-01-01 by default). A missing, negative or text epoch, or broken JSON, is rejected.
+- **For this duck.** It's a broadcast or addressed to this duck. A command addressed to another duck is only passed on.
+
+MamaDucks relay every broadcast `cmd_time` under the normal duplicate and hop rules, whether or not they applied it and whether or not they were built with time sync. DuckLinks apply it but don't relay it. `hasValidTime()` tells a sketch whether the clock has reached `CDPCFG_TIME_MIN_EPOCH`, whatever set it. The clock survives deep sleep and software resets, but starts again at 1970 after a power loss.
+
+- **Accuracy:** the epoch is read when the PapaDuck queues the packet, and relays don't correct for their own delay. With 3 s between transmissions, ducks a few hops away are typically a few seconds behind, more on a busy mesh. That's fine for schedules measured in minutes, not for sub-second timestamps.
+- **Security:** these checks make spoofing harder, but the command isn't authenticated. Anyone in radio range using the same sync word can send a packet that claims to come from a PapaDuck.
+- **Echoes:** the PapaDuck's receive callback also gets the relayed copies of its own `cmd_time`. Leave them out when forwarding to the cloud.
+
+## Deep sleep
+
+CDP doesn't decide when a duck sleeps, but it gives the sketch two hooks:
+
+- **`txIdle()`** is true when the receive, data and control queues are empty and the radio isn't transmitting, holding an unread packet or waiting for an interrupt to be serviced. Keep calling `run()` until it's true, with a timeout: a relay on a busy mesh may never be idle.
+- **`prepareForSleep()`** puts the LoRa radio to sleep and stops the duck, so `sendData()` then returns `DUCK_ERR_NOT_SUPPORTED`. Call it right before `esp_deep_sleep_start()`.
+
+Waking from deep sleep is a reboot. Setup runs again, and `setupWithDefaults()` reinitialises the radio, queues, routes and duplicate filter. There's no resume without a reboot.
+
 ## Configuration
 
 All of these can be overridden at build time with `-D`.
@@ -113,7 +146,12 @@ All of these can be overridden at build time with `-D`.
 | `CDPCFG_SIGNAL_MAX_NEIGHBORS` | 6 | Neighbours per signal-health message |
 | `CDPCFG_RF_LORA_TXPOW` | 14 | Transmit power in dBm |
 | `CDPCFG_RF_LORA_SYNC_WORD` | `0x12` | LoRa sync word. Ducks only hear the same value; use different values to keep nearby deployments apart. Not security |
-| `CDPCFG_REMOTE_COMMANDS` | 0 (off) | Act on `cmd_tx` (set TX power, stored across reboots) and `cmd_time` (set the clock). Commands aren't authenticated. When off, MamaDucks still relay them |
+| `CDPCFG_REMOTE_COMMANDS` | 0 (off) | Default for the next two settings, so `-DCDPCFG_REMOTE_COMMANDS=1` turns both on |
+| `CDPCFG_REMOTE_TIME_SYNC` | `CDPCFG_REMOTE_COMMANDS` | Set the clock from `cmd_time` (see [Time sync](#time-sync-topicscmd_time)). Not authenticated. When off, MamaDucks still relay it |
+| `CDPCFG_REMOTE_TX_POWER` | `CDPCFG_REMOTE_COMMANDS` | Set TX power from `cmd_tx`, 14 to 22 dBm, stored across reboots. Not authenticated, and the top of that range can exceed regional limits. When off, MamaDucks still relay it |
+| `CDPCFG_TIME_MIN_EPOCH` | 1767225600 (2026-01-01) | Oldest UTC time, in seconds, that `cmd_time` and `sendTimeSync()` accept and `hasValidTime()` counts as valid |
+| `CDPCFG_MAX_QUEUE_SIZE` | 10 | Packets each of the RX, data-TX and control-TX queues can hold |
+| `CDPCFG_MAX_PACKET_SEND_RATE` | 3000 ms | Minimum time between two transmissions |
 | `CDPCFG_LOG_PACKET_HEX` | undefined | Log each packet a duck builds, in hex |
 
 ## Payload size
