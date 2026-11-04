@@ -178,6 +178,46 @@ class Duck {
     virtual DuckType getType() = 0;
 
     /**
+     * @brief Check whether the duck has nothing left to send or process.
+     *
+     * True when the receive, data and control queues are empty and the radio
+     * is not transmitting, holding an unread packet or waiting for an
+     * interrupt to be serviced. Before deep sleep, keep calling run() until
+     * this is true, or queued packets are lost. Use a timeout: on a busy mesh
+     * a relay keeps getting packets to forward, and a packet can arrive at any
+     * moment, so the answer only holds until the next run().
+     * @returns true if no transmit, receive or control work is pending.
+     */
+    bool txIdle() const {
+      return rxQueue.size() == 0 && txQueue.size() == 0 && reqQueue.size() == 0 &&
+        !duckRadio.isBusy();
+    }
+
+    /**
+     * @brief Put the LoRa radio to sleep, ready for ESP32 deep sleep.
+     *
+     * Call it once txIdle() is true (anything still queued is dropped), right
+     * before esp_deep_sleep_start(). On success the duck stops: run() no
+     * longer receives or sends, and sendData() returns DUCK_ERR_NOT_SUPPORTED.
+     * Waking from deep sleep is a reboot, so the next boot runs
+     * setupWithDefaults() again, which reinitialises the radio, queues, routes
+     * and duplicate filter. This is not a light-sleep pause: there is no
+     * resume without a reboot.
+     * @returns DUCK_ERR_NONE, or the radio's error code, in which case the duck
+     * keeps running.
+     */
+    int prepareForSleep() {
+      const int err = duckRadio.sleep();
+      if (err != DUCK_ERR_NONE) {
+        logerr_ln("ERROR prepareForSleep: radio sleep failed. rc = %d", err);
+        return err;
+      }
+      meshReady = false;
+      loginfo_ln("[CDP] radio asleep, duck stopped until the next boot");
+      return DUCK_ERR_NONE;
+    }
+
+    /**
      * @brief Check whether the system clock holds a usable UTC time.
      *
      * The clock can be set by a topics::cmd_time from a PapaDuck (with
