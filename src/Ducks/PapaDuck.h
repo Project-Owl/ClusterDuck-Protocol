@@ -18,7 +18,10 @@ public:
   /**
    * @brief Register callback for handling data received from duck devices
    * 
-   * The callback will be invoked if the packet needs to be relayed (i.e not seen before)
+   * The callback is invoked for every packet the papa hears, including repeated
+   * copies of the same message relayed by different ducks. Duplicates are meant
+   * to be removed downstream (e.g. in the cloud), where every copy is still useful
+   * for coverage. Use muidNotReceived() to drop them locally instead.
    * @param cb a callback to handle data received by the papa duck
    */
   void onReceiveDuckData(rxDoneCallback cb) { this->recvDataCallback = cb; }
@@ -35,6 +38,7 @@ public:
     return this->duckWifi.connected();
   }
 
+  /// True if no copy of this message has been handled yet. Optional local dedup.
   bool muidNotReceived(Muid muid){
    return this->router.getFilter().bloom_check(muid.data(), MUID_LENGTH) == 0;
   }
