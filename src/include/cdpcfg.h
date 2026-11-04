@@ -102,8 +102,10 @@
 #define CDPCFG_RF_LORA_BW 125.0f
 /// Spread Factor
 #define CDPCFG_RF_LORA_SF 7
-/// Transmit Power
-#define CDPCFG_RF_LORA_TXPOW 22
+/// Transmit Power (dBm). Deployments that need more can override it at build time.
+#ifndef CDPCFG_RF_LORA_TXPOW
+#define CDPCFG_RF_LORA_TXPOW 14
+#endif
 /// Antenna Gain correction
 #define CDPCFG_RF_LORA_GAIN 0
 
