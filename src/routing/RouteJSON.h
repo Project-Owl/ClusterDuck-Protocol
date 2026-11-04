@@ -25,9 +25,8 @@ class RouteJSON {
          * @param sourceDevice the source device DUID
          */
         RouteJSON(Duid targetDevice, Duid sourceDevice) {
-            origin = duckutils::duidToString(sourceDevice);
-            // Raw 0xFF bytes are not a valid UTF-8 JSON string.
-            destination = targetDevice == BROADCAST_DUID ? "*" : duckutils::duidToString(targetDevice);
+            origin = toText(sourceDevice);
+            destination = toText(targetDevice);
             json["origin"] = origin;
             json["destination"] = destination;
             json["path"].to<ArduinoJson::JsonArray>();
@@ -75,22 +74,27 @@ class RouteJSON {
 
             return asString();
         }
-        Duid getOrigin(){
-            Duid originDuid;
-            originDuid.fill(0);
-            if (origin.size() == DUID_LENGTH) {
-                std::copy(origin.begin(), origin.end(), originDuid.begin());
-            }
-            return originDuid;
+        Duid getOrigin(){ return fromText(origin); }
+        Duid getDestination(){ return fromText(destination); }
+
+        /**
+         * @brief Write a DUID as route JSON text.
+         *
+         * Broadcast (raw 0xFF) and the PapaDuck (raw 0x00) are not valid JSON
+         * strings, so they travel as "*" and "11111111" (PAPADUCK_ALIAS_DUID).
+         */
+        static std::string toText(const Duid& id) {
+            if (id == BROADCAST_DUID) return "*";
+            if (id == PAPADUCK_DUID) return duckutils::duidToString(PAPADUCK_ALIAS_DUID);
+            return duckutils::duidToString(id);
         }
-        Duid getDestination(){
-            if (destination == "*") return BROADCAST_DUID;
-            Duid destinationDuid;
-            destinationDuid.fill(0);
-            if (destination.size() == DUID_LENGTH) {
-                std::copy(destination.begin(), destination.end(), destinationDuid.begin());
-            }
-            return destinationDuid;
+
+        /// Read route JSON text back into a DUID; the inverse of toText().
+        static Duid fromText(const std::string& text) {
+            if (text == "*") return BROADCAST_DUID;
+            Duid id{};
+            if (text.size() == DUID_LENGTH) std::copy(text.begin(), text.end(), id.begin());
+            return id == PAPADUCK_ALIAS_DUID ? PAPADUCK_DUID : id;
         }
 
         /**
@@ -100,7 +104,7 @@ class RouteJSON {
          * @return the newly modified Arduino JSON document
          */
         std::string addToPath(Duid deviceId){
-            objPath.push_back(duckutils::duidToString(deviceId));
+            objPath.push_back(toText(deviceId));
             json["path"].to<ArduinoJson::JsonArray>(); //.to erases content of the field in the doc, but .as does not modify the doc at all.
             updateJsonPath(); //so we will manually copy the local obj path to the doc
 #ifdef CDP_LOG_DEBUG
@@ -113,15 +117,13 @@ class RouteJSON {
         }
 
         std::optional<Duid> getlastInPath(){
-            Duid lastDuid;
             if(objPath.size() > 0){
                 const std::string& last = objPath[objPath.size()-1];
                 if (last.size() != DUID_LENGTH) {
                     logdbg_ln("RREQ path entry has invalid length, ignoring");
                     return std::nullopt;
                 }
-                std::copy(last.begin(), last.end(), lastDuid.begin());
-                return lastDuid;
+                return fromText(last);
 
             } else{
                 logdbg_ln("RREQ path empty, filling with self");
@@ -152,23 +154,21 @@ class RouteJSON {
 
         size_t pathSize() const { return objPath.size(); }
         bool contains(Duid id) const {
-            return std::find(objPath.begin(), objPath.end(), duckutils::duidToString(id)) != objPath.end();
+            return std::find(objPath.begin(), objPath.end(), toText(id)) != objPath.end();
         }
         bool startsAt(Duid id) const {
-            return !objPath.empty() && objPath.front() == duckutils::duidToString(id);
+            return !objPath.empty() && objPath.front() == toText(id);
         }
         std::optional<Duid> getVia() const {
             const std::string via = json["via"].as<std::string>();
             if (via.size() != DUID_LENGTH) return std::nullopt;
-            Duid id{};
-            std::copy(via.begin(), via.end(), id.begin());
-            return id;
+            return fromText(via);
         }
-        void setVia(Duid id) { json["via"] = duckutils::duidToString(id); }
+        void setVia(Duid id) { json["via"] = toText(id); }
         RouteJSON responseFrom(Duid responder, Muid requestId) const {
             RouteJSON response(*this);
             response.convertReqToRep();
-            response.origin = duckutils::duidToString(responder);
+            response.origin = toText(responder);
             response.json["origin"] = response.origin;
             response.json["q"] = duckutils::arrayToHexString(requestId);
             return response;

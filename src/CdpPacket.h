@@ -139,7 +139,19 @@ enum reservedTopic {
  * @brief Use this DUID to send to all PapaDucks
  * 
  */
-static std::array<uint8_t,8> PAPADUCK_DUID = {0x31,0x31,0x31,0x31,0x31,0x31,0x31,0x31};
+static std::array<uint8_t,8> PAPADUCK_DUID = {0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00};
+
+/**
+ * @brief Printable stand-in for PAPADUCK_DUID ("11111111")
+ *
+ * Route JSON carries DUIDs as text, and PAPADUCK_DUID's zero bytes cannot be
+ * written there, so route JSON uses this alias instead (as broadcast uses "*").
+ * Phoenix 2026 firmware also used it as the PapaDuck header address; ducks
+ * still accept that and treat it as PAPADUCK_DUID.
+ */
+static std::array<uint8_t,8> PAPADUCK_ALIAS_DUID = {0x31, 0x31, 0x31, 0x31,
+    0x31, 0x31, 0x31, 0x31};
 /**
 * @brief Use this DUID to be received by every duck in the network
 * 
