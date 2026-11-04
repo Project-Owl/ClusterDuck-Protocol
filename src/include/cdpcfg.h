@@ -25,8 +25,8 @@
 
 // version definitions
 #define CDP_VERSION_MAJOR  5
-#define CDP_VERSION_MINOR  0
-#define CDP_VERSION_PATCH  1
+#define CDP_VERSION_MINOR  5
+#define CDP_VERSION_PATCH  0
 #ifndef CDPCFG_BUILD_REVISION
 #define CDPCFG_BUILD_REVISION "unversioned"
 #endif
