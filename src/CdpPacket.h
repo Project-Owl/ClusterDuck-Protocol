@@ -102,8 +102,6 @@ enum topics {
   bat = 0x18,
   //duck command for spreading factor and tx power
   cmd_tx = 0x20,
-  //duck command for battery level for phoenix sleep
-  cmd_bat = 0x21,
   //duck command for phoenix time sync
   cmd_time = 0x22,
   //gps
@@ -296,8 +294,6 @@ class CdpPacket {
                 return "alert";
             case topics::health:
                 return "health";
-            case topics::cmd_bat:
-                return "cmd_bat";
             case topics::cmd_time:
                 return "cmd_time";
             case topics::cmd_tx:

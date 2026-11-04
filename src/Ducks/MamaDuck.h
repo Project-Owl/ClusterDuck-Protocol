@@ -66,47 +66,6 @@ private :
             case reservedTopic::pong:
                 loginfo_ln("PONG received. Ignoring!");
                 break;
-            case topics::cmd_bat: {
-                ArduinoJson::JsonDocument json;
-                std::string packetStr(rxPacket.data.begin(), rxPacket.data.end());
-                DeserializationError error = deserializeJson(json, packetStr);
-                if (error) {
-                    logerr_ln("Duck Command cmd_tx deserialization failed: %s", error.c_str());
-                    break;
-                }
-                float battery_min = json["min"];
-                float battery_max = json["max"];
-                loginfo_ln("Command received, updating battery sleep thresholds: off(min)=%.3fV on(max)=%.3fV", battery_min, battery_max);
-                
-                //what is the min and max possible voltages
-                if ((battery_min < BAT_V_EMPTY || battery_min > BAT_V_FULL) || (battery_max < BAT_V_EMPTY || battery_max > BAT_V_FULL)) {
-                logerr_ln("Invalid argument -- battery threshold min: %.3f , battery threshold max %.3f", battery_min, battery_max);
-                err = DUCK_ERR_INVALID_ARGUMENT;
-                break;
-                }
-
-                if (err == DUCK_ERR_NONE){
-                // min = Teensy power-off threshold, max = power-on/recovery
-                // threshold, both in volts. Store as float under the same keys
-                // seeded in Duck::setupWithDefaults so the firmware reads one
-                // source of truth.
-                const size_t offBytes = this->eeprom_preferences.putFloat("teensy_off", battery_min);
-                const size_t onBytes = this->eeprom_preferences.putFloat("teensy_on", battery_max);
-                if (offBytes != sizeof(float) || onBytes != sizeof(float)) {
-                    logerr_ln("Failed to persist battery sleep thresholds to Preferences");
-                    err = DUCK_ERR_EEPROM_WRITE;
-                    break;
-                }
-                }
-
-                err = this->broadcastPacket(rxPacket);
-                if (err != DUCK_ERR_NONE) {
-                logerr_ln("====> ERROR handleReceivedPacket failed to relay. rc = %d",err);
-                } else {
-                    loginfo_ln("handleReceivedPacket: packet RELAY DONE");
-                }
-                break;
-            }
             case topics::cmd_tx: {
                 ArduinoJson::JsonDocument json;
                   std::string packetStr(rxPacket.data.begin(), rxPacket.data.end());

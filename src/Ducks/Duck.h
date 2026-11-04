@@ -73,14 +73,6 @@ class Duck {
         return DUCK_ERR_EEPROM_INIT;
       }
 
-      // Seed the Teensy battery sleep thresholds only if they have never been set.
-      if (!eeprom_preferences.isKey("teensy_off")) {
-        eeprom_preferences.putFloat("teensy_off", BAT_TEENSY_POWER_OFF_V);
-      }
-      if (!eeprom_preferences.isKey("teensy_on")) {
-        eeprom_preferences.putFloat("teensy_on", BAT_TEENSY_POWER_ON_V);
-      }
-
       int txPwr = eeprom_preferences.getInt("txPwr", CDPCFG_RF_LORA_TXPOW);
       if (txPwr < 14 || txPwr > 22) {
           txPwr = CDPCFG_RF_LORA_TXPOW;
