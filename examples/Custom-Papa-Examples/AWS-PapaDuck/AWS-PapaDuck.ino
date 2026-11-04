@@ -129,7 +129,6 @@ void handleDuckData(CdpPacket receivedPacket) {
   if (receivedPacket.topic != reservedTopic::ack &&
       receivedPacket.topic != reservedTopic::rrep &&
       receivedPacket.topic != reservedTopic::rreq &&
-      receivedPacket.topic != topics::cmd_bat &&
       duck.muidNotReceived(receivedPacket.muid)) {
     if(quackJson(receivedPacket) == -1) {
       if(packetQueue.size() > QUEUE_SIZE_MAX) {
