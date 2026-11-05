@@ -86,8 +86,10 @@ void publishQueue();
 WiFiClientSecure wifiClient;
 PubSubClient client(AWS_IOT_ENDPOINT, 8883, wifiClient);
 // PubSubClient's default 256-byte buffer is too small for a 228-byte CDP
-// payload wrapped in JSON, and publish() fails when it doesn't fit.
-const uint16_t MQTT_BUFFER_SIZE = 1024;
+// payload wrapped in JSON, and publish() fails when it doesn't fit. JSON
+// writes a control byte, such as 0x00, as 6 characters, so a binary payload
+// can need about 1.6 KB.
+const uint16_t MQTT_BUFFER_SIZE = 2048;
 
 /**
  * @brief Converts a received CDP packet into JSON format and publishes it to an MQTT topic.
