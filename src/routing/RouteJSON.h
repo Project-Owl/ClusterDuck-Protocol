@@ -73,7 +73,7 @@ class RouteJSON {
 #ifdef CDP_LOG_DEBUG
             std::string log;
             serializeJson(json, log);
-            logdbg_ln("RREP: %s",log);
+            logdbg_ln("RREP: %s", log.c_str());
 #endif
             return asString();
         }
@@ -113,7 +113,7 @@ class RouteJSON {
 #ifdef CDP_LOG_DEBUG
             std::string log;
             serializeJson(json, log);
-            logdbg_ln("RREQ: %s", log);
+            logdbg_ln("RREQ: %s", log.c_str());
 #endif
             return asString();
             //add rssi snr
@@ -150,7 +150,7 @@ class RouteJSON {
 #ifdef CDP_LOG_DEBUG
         std::string log;
         serializeJson(json, log);
-        logdbg_ln("Packet: %s", log);
+        logdbg_ln("Packet: %s", log.c_str());
 #endif
         return asString();
     }
@@ -232,7 +232,7 @@ class RouteJSON {
 #ifdef CDP_LOG_DEBUG
             std::string log;
             serializeJson(json, log);
-            logdbg_ln("Built RouteJSON from packet data: %s",log);
+            logdbg_ln("Built RouteJSON from packet data: %s", log.c_str());
 #endif
             return true;
         }
@@ -257,7 +257,7 @@ class RouteJSON {
 
             for (const auto& s : objPath) {
                 if (!path.add(s))
-                    logerr_ln("Failed to add %s to JSON path array; No more memory in JSON Document", s);
+                    logerr_ln("Failed to add %s to JSON path array; No more memory in JSON Document", s.c_str());
             }
         }
   };
