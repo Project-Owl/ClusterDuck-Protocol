@@ -76,6 +76,19 @@ class DuckLoRa {
          */
         int setupRadio(const LoRaConfigParams& config = defaultRadioParams);
 
+        /**
+         * @brief Check whether the radio takes a TX power, without changing it.
+         *
+         * Runs the same checks as setupRadio(), including RadioLib's own, so a
+         * value that passes here doesn't make radio setup fail. Of the 14 to 22
+         * dBm that topics::cmd_tx allows, an SX1276 takes 14 to 17 or 20 and an
+         * SX1262 takes all. Works before and after setupRadio().
+         *
+         * @param power TX power in dBm
+         * @returns DUCK_ERR_NONE if the radio takes it, DUCK_ERR_INVALID_ARGUMENT otherwise.
+         */
+        int checkTxPower(int power);
+
                 /**
          * @brief Send packet data out into the LoRa mesh network
          *
