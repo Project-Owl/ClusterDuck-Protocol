@@ -69,11 +69,11 @@ std::string convertToHex(uint8_t* data, int size);
 
 std::string hexToString(const std::string& hex);
 /**
- * @brief Convert a byte array into an ASCII string.
- * This function assumes that the byte array contains printable ASCII characters. Intended for debugging purposes.
+ * @brief Convert a byte array into an ASCII string, for logs.
  * @param data a byte array to convert
  * @param size the size of the array
- * @returns A std::string representing the byte array in ASCII.
+ * @returns A std::string representing the byte array in ASCII, with each
+ * non-printable byte written as two hex digits (see detail::appendPrintable).
  *
  */
 std::string toString(uint8_t* data, int size);

@@ -468,6 +468,26 @@ void toStringChecks() {
     assert(duckutils::toString(std::vector<uint8_t>(raw.begin(), raw.end())) == "NODE0A00FF1");
     assert(duckutils::toString(std::string("NODE0001")) == "NODE0001");
     assert(duckutils::toString(std::vector<char>{'\x80', 'A'}) == "80A");
+    // The pointer overload feeds the "Rx packet:" log line: same escaping, and
+    // a 0x00 byte must not cut the text short.
+    std::array<uint8_t, 8> rawCopy{};
+    std::copy(raw.begin(), raw.end(), rawCopy.begin());
+    assert(duckutils::toString(rawCopy.data(), int(rawCopy.size())) == "NODE0A00FF1");
+    // How that line starts for a broadcast: sender, destination, MUID, topic,
+    // duck type and hop count.
+    std::vector<uint8_t> header{'W','F','7','U','D','7','0','Z'};
+    header.insert(header.end(), BROADCAST_DUID.begin(), BROADCAST_DUID.end());
+    header.insert(header.end(), {'K','A','K','M', 0x06, 0x01, 0x00});
+    assert(header.size() == DATA_CRC_POS);
+    assert(duckutils::toString(header.data(), int(header.size())) == "WF7UD70ZFFFFFFFFFFFFFFFFKAKM060100");
+    // The data CRC and the payload follow on the same line. A JSON payload is
+    // printable, so it prints unchanged, even after a hop count of 0x00.
+    std::vector<uint8_t> rxPacket = header;
+    rxPacket.insert(rxPacket.end(), {0x12, 0x00, 0xAB, 'z'});
+    const std::string payload = "{\"v\":3,\"boot\":1}";
+    rxPacket.insert(rxPacket.end(), payload.begin(), payload.end());
+    assert(duckutils::toString(rxPacket.data(), int(rxPacket.size())) ==
+           "WF7UD70ZFFFFFFFFFFFFFFFFKAKM060100" "1200ABz" + payload);
     // The routing table and route JSON keep the raw eight bytes.
     assert(duckutils::duidToString(raw).size() == DUID_LENGTH);
     std::cout << "toString: printable bytes kept, others written as hex\n";
