@@ -18,7 +18,7 @@
 #include "DuckError.h"
 #include <functional>
 #include <thread>
-#include <iomanip>
+#include <cctype>
 
 namespace duckutils {
 
@@ -86,6 +86,22 @@ inline std::string duidToString(const std::array<uint8_t, 8>& duid) {
     return std::string(duid.begin(), duid.end());
 }
 
+namespace detail {
+// Appends a printable ASCII byte as it is and any other byte as two upper-case
+// hex digits (0x0A becomes "0A"). The text "0A" and the byte 0x0A then look the
+// same, so this is for logs only: use duidToString() or convertToHex() for keys
+// and packet data.
+inline void appendPrintable(std::string& out, unsigned char c) {
+    static const char hex[] = "0123456789ABCDEF";
+    if (std::isprint(c)) {
+        out += static_cast<char>(c);
+    } else {
+        out += hex[c >> 4];
+        out += hex[c & 0x0F];
+    }
+}
+} // namespace detail
+
 /**
  * @brief Convert a vector into an ASCII string.
  * 
@@ -109,21 +125,15 @@ std::string toString(const std::vector<T>& vec) {
  * @brief Convert a container into an ASCII string.
  *
  * @param arr Any container type to convert
- * @returns A std::string representing the byte array in ASCII.
+ * @returns A std::string representing the byte array in ASCII, with each
+ * non-printable byte written as two hex digits (see detail::appendPrintable).
  *
  */
 template<typename Container>
 std::string toString(const Container& arr) {
     std::string result;
     for (unsigned char c : arr) {
-        if (std::isprint(c)) {
-            result += static_cast<char>(c);
-        } else {
-            // Convert non-printable byte to hex string (e.g., 0x0A -> "0A")
-            std::ostringstream oss;
-            oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c);
-            result += oss.str();
-        }
+        detail::appendPrintable(result, c);
     }
     return result;
 }
