@@ -11,7 +11,7 @@
  *
  * - The receive callback gets every copy of a message: one per relay path that
  *   reached this duck. This sketch publishes every copy; remove duplicates
- *   downstream by MessageID, or call hub.muidNotReceived(packet.muid) in the
+ *   downstream by MessageID, or call duck.muidNotReceived(packet.muid) in the
  *   callback to drop them here.
  * - Every 15 minutes the PapaDuck's own health (topics::health) also arrives in
  *   the callback, as a packet from this duck with hop count 0. It isn't sent
@@ -71,7 +71,7 @@ static const char MQTT_CA_CERT[] = \
 
 
 // --- Globals ---
-PapaDuck hub(DEVICE_ID);
+PapaDuck duck(DEVICE_ID);
 auto timer = timer_create_default();
 WiFiClientSecure wifiClient;
 PubSubClient mqttClient(wifiClient);
@@ -84,16 +84,16 @@ void publishPacket(CdpPacket& packet);
 
 void setup() {
   // Starts the serial port at 115200 baud and the LoRa radio.
-  int err = hub.setupWithDefaults();
+  int err = duck.setupWithDefaults();
   if (err != DUCK_ERR_NONE) {
     Serial.printf("[PAPA] Setup failed, rc = %d (%s)\n", err, getDuckErrorString(err));
     return;
   }
-  hub.onReceiveDuckData(handleDuckData);
+  duck.onReceiveDuckData(handleDuckData);
   setupOK = true;
 
   // Retries a few times when the network isn't found, so this can take ~30 s.
-  hub.joinWifiNetwork(WIFI_SSID, WIFI_PASS);
+  duck.joinWifiNetwork(WIFI_SSID, WIFI_PASS);
 
   wifiClient.setCACert(MQTT_CA_CERT);
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
@@ -110,13 +110,13 @@ void loop() {
   if (!setupOK) {
     return;
   }
-  hub.run();          // receives packets and calls handleDuckData()
+  duck.run();          // receives packets and calls handleDuckData()
   timer.tick();
   mqttClient.loop();  // keeps the MQTT connection alive and calls handleMqttMessage()
 }
 
 /**
- * @brief Called by hub.run() for every packet the PapaDuck receives, and for
+ * @brief Called by duck.run() for every packet the PapaDuck receives, and for
  * its own health message.
  */
 void handleDuckData(CdpPacket packet) {
@@ -132,7 +132,7 @@ void handleDuckData(CdpPacket packet) {
  * @returns true to keep the timer running
  */
 bool connectMqtt(void*) {
-  if (mqttClient.connected() || !hub.isWifiConnected()) {
+  if (mqttClient.connected() || !duck.isWifiConnected()) {
     return true;
   }
   Serial.printf("[PAPA] Connecting to MQTT broker %s\n", MQTT_SERVER);
