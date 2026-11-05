@@ -30,10 +30,11 @@ class RouteJSON {
             json["origin"] = origin;
             json["destination"] = destination;
             json["path"].to<ArduinoJson::JsonArray>();
-
+#ifdef CDP_LOG_DEBUG
             std::string log;
             serializeJson(json, log);
-            loginfo_ln("RouteDoc: %s", log.c_str());
+            logdbg_ln("RouteDoc: %s", log.c_str());
+#endif
         }
 
         /**
