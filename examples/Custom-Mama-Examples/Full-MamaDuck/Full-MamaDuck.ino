@@ -49,6 +49,7 @@
 
 #include <string>
 #include <time.h>
+#include <esp_timer.h>
 #include <CDP.h>
 
 #ifdef CDPCFG_PIN_LED1
@@ -204,7 +205,9 @@ void handleDuckData(CdpPacket packet) {
 bool sendReading(void*) {
   JsonDocument doc;
   doc["count"] = counter;
-  doc["uptimeS"] = millis() / 1000;
+  // esp_timer_get_time() counts microseconds in 64 bits; millis() wraps
+  // after about 49.7 days.
+  doc["uptimeS"] = static_cast<uint32_t>(esp_timer_get_time() / 1000000ULL);
   doc["freeHeap"] = ESP.getFreeHeap();
   if (duck.hasValidTime()) {
     doc["utc"] = static_cast<uint32_t>(time(nullptr));
