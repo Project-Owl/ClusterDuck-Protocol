@@ -1,5 +1,6 @@
 #include "bloomfilter.h"
 #include "utils/DuckLogger.h"
+#include <esp_system.h>
 
 
 BloomFilter::BloomFilter(int numSectors, int numHashes, int bitsPerSector, int maxMsgs) {
@@ -44,23 +45,12 @@ BloomFilter::BloomFilter(int numSectors, int numHashes, int bitsPerSector, int m
         logdbg("Memory allocation for seeds failed!\n");
         exit(0);
     }
-    srand(time(NULL));
-    bool seedCollision = true;
-    bool collision;
-    while (seedCollision) {
-        collision = false;
-        for (int i = 0; i < numHashes; i++) {
-            int r = rand();
-            if (Seeds[i] == r) {
-                r = rand();
-                collision = true;
-                break;
-            }
-            Seeds[i] = r;
-        }
-        if (!collision) {
-            seedCollision = false;
-        }
+    // Seeds come from the hardware random number generator, so each duck has its
+    // own and a false positive on one duck is not repeated on the others.
+    // srand(time(NULL)) did not do that: a duck is usually built before setup(),
+    // before the clock is set, so ducks seeded rand() with the same value.
+    for (int i = 0; i < numHashes; i++) {
+        Seeds[i] = static_cast<int>(esp_random());
     }
 
     for (int i = 0; i < numHashes; i++) {
