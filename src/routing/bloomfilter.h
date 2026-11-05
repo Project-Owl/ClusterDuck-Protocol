@@ -33,17 +33,21 @@ public:
    * - Allocates two unsigned int arrays (filter1 and filter2), each containing DEFAULT_NUM_SECTORS
    *   elements initialized to zero
    * - Sets the active filter to filter1 upon initialization
-   * - Initializes an array of DEFAULT_NUM_HASH_FUNCS random seed values, ensuring no duplicate seeds
+   * - Draws DEFAULT_NUM_HASH_FUNCS seeds from rand(), seeded with srand(time(NULL)). The seeds
+   *   are not compared with each other, so two can be equal
    * - These seeds are used by the djb2Hash function to generate consistent hash values for messages
    *
    * Default parameters used:
    * - DEFAULT_NUM_SECTORS: 312 sectors for bit storage
    * - DEFAULT_NUM_HASH_FUNCS: 2 independent hash functions
    * - DEFAULT_BITS_PER_SECTOR: 32 bits per sector (matches unsigned int size)
-   * - DEFAULT_MAX_MESSAGES: 100 messages before filter rotation
+   * - DEFAULT_MAX_MESSAGES: 100 calls to bloom_add() before the filters rotate. A duck can add
+   *   the same MUID more than once, for example when it relays a packet, so this is fewer than
+   *   100 distinct messages
    *
-   * The two-phase approach allows the filter to implement a sliding time window: after reaching
-   * maxMsgs, the inactive filter is cleared and becomes active, effectively discarding old entries.
+   * The two phases make a sliding window counted in additions, not time: after maxMsgs additions
+   * the inactive filter is cleared and becomes active. bloom_check() looks in both filters, so a
+   * MUID is forgotten after between maxMsgs and 2 * maxMsgs further additions.
    *
    * @see BloomFilter(int, int, int, int) for the parameterized constructor
    * @see bloom_add() to add messages to the active filter
