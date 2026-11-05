@@ -152,8 +152,9 @@ private :
      *   passed on.
      * - PONG: ignored, not passed on.
      * - cmd_tx and cmd_time, if their setting is on: applied when addressed to
-     *   this duck, and then not passed on. Passed on with forwardPacket() when
-     *   addressed to another duck.
+     *   this duck, and then not passed on. cmd_tx is stored only if it is 14 to
+     *   22 dBm and this duck's radio takes it. Passed on with forwardPacket()
+     *   when addressed to another duck.
      * - Anything else: passed on with forwardPacket() when relay is true. A
      *   packet addressed to this duck only goes to the onReceiveDuckData()
      *   callback, which handleReceivedPacket() has already called.
