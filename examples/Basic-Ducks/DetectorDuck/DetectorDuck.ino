@@ -13,11 +13,12 @@
  *   green   RSSI above -95 dBm    good signal
  *   blue    above -108 dBm        okay signal
  *   purple  above -118 dBm        low signal
- *   red     weaker, or no answer for SIGNAL_TIMEOUT_MS
+ *   red     weaker, or no answer to NO_SIGNAL_PINGS pings in a row
  * On boards without CDPCFG_PIN_LED1, such as the Heltec WiFi LoRa 32 V3, the
  * result goes to serial only.
  *
- * A DetectorDuck only listens: it sends no health messages and relays nothing.
+ * Apart from its pings, a DetectorDuck sends nothing: no health messages, and
+ * it relays nothing.
  */
 
 #include <CDP.h>
@@ -29,7 +30,10 @@
 // --- Configuration ---
 const char DEVICE_ID[] = "DETECTOR";            // exactly 8 characters, unique in the mesh
 const unsigned long PING_INTERVAL_MS = 5000;     // time between two pings
-const unsigned long SIGNAL_TIMEOUT_MS = PING_INTERVAL_MS + 1000;  // no answer for this long: no signal
+// Pings in a row with no answer before the detector reports no signal. More
+// than one, because a pong can wait up to 3 s or more in the answering duck's
+// transmit queue (CDP sends at most one packet every 3 s).
+const uint32_t NO_SIGNAL_PINGS = 2;
 const uint8_t LED_BRIGHTNESS = 128;              // 0 to 255
 
 // Signal levels in dBm, and their LED colours as 0xRRGGBB
@@ -45,7 +49,7 @@ const uint32_t COLOR_NONE = 0xFF0000;   // red: no signal, or setup failed
 // --- Globals ---
 DetectorDuck duck(DEVICE_ID);
 auto timer = timer_create_default();
-unsigned long lastSignalTime = 0;  // millis() of the last answer
+uint32_t pingsSinceAnswer = 0;     // pings sent since the latest answer
 bool answered = false;             // whether any duck answered the latest ping
 float bestRssi = 0.0f;             // strongest RSSI heard since the latest ping
 bool setupOK = false;
@@ -85,7 +89,6 @@ void setup() {
 
   duck.onReceiveDuckData(handlePong);
   timer.every(PING_INTERVAL_MS, pingNeighbours);
-  lastSignalTime = millis();
   setupOK = true;
   setLed(COLOR_READY);
   Serial.println("[DETECTOR] Setup OK");
@@ -97,22 +100,25 @@ void loop() {
   }
   timer.tick();
   duck.run();   // sends the pings and calls handlePong() for each answer
-
-  if (millis() - lastSignalTime > SIGNAL_TIMEOUT_MS) {
-    Serial.println("[DETECTOR] No signal: no duck answered");
-    setLed(COLOR_NONE);
-    lastSignalTime = millis();   // report once per timeout
-  }
 }
 
 /**
- * @brief Broadcast a ping to the direct neighbours. Called by the timer.
+ * @brief Report no signal if the last NO_SIGNAL_PINGS pings got no answer, then
+ * broadcast a ping to the direct neighbours. Called by the timer.
  * @returns true to keep the timer running
  */
 bool pingNeighbours(void*) {
+  if (pingsSinceAnswer >= NO_SIGNAL_PINGS) {
+    Serial.printf("[DETECTOR] No signal: no duck answered the last %u pings\n",
+      unsigned(pingsSinceAnswer));
+    setLed(COLOR_NONE);
+  }
+
   answered = false;
   int err = duck.sendPing();
-  if (err != DUCK_ERR_NONE) {
+  if (err == DUCK_ERR_NONE) {
+    pingsSinceAnswer++;
+  } else {
     Serial.printf("[DETECTOR] sendPing failed, rc = %d (%s)\n", err, getDuckErrorString(err));
   }
   return true;
@@ -147,7 +153,7 @@ void handlePong(CdpPacket packet) {
   }
   float rssi = doc["rssi"].as<float>();
   float snr = doc["snr"].as<float>();
-  lastSignalTime = millis();
+  pingsSinceAnswer = 0;
 
   Serial.printf("[DETECTOR] %s answered: RSSI %.1f dBm, SNR %.1f dB - %s\n",
     duckutils::toString(packet.sduid).c_str(), rssi, snr, signalLabel(rssi));
