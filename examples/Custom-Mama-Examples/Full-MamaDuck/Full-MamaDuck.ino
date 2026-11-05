@@ -35,10 +35,9 @@
  *      -DCDPCFG_REMOTE_TX_POWER=1   accept topics::cmd_tx TX power commands, such
  *                                   as {"txPwr":20} (14 to 22 dBm). The duck
  *                                   stores the value and uses it from its next
- *                                   boot. SX1276 boards (Heltec V2, TTGO LoRa32)
- *                                   only take 14 to 17 or 20 dBm: with another
- *                                   value stored, setup fails at every boot
- *                                   until the flash (NVS) is erased.
+ *                                   boot. It only stores a value its radio
+ *                                   takes: SX1276 boards (Heltec V2, TTGO
+ *                                   LoRa32) take 14 to 17 or 20 dBm.
  *      -DCDPCFG_REMOTE_COMMANDS=1   both
  *    Neither command is authenticated: anything in radio range can send one.
  *    With them off, the duck still relays them for other ducks. To build with

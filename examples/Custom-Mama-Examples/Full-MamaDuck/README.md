@@ -23,7 +23,7 @@ In the Arduino IDE, open `Full-MamaDuck.ino` from File > Examples > ClusterDuck 
 | Feature | How to turn it on | Notes |
 |---|---|---|
 | Remote time sync | `-DCDPCFG_REMOTE_TIME_SYNC=1` | Sets the clock from `topics::cmd_time`. Readings include `utc` once a PapaDuck has sent the time with `sendTimeSync()`; the CDP example PapaDucks don't send it. |
-| Remote TX power | `-DCDPCFG_REMOTE_TX_POWER=1` | Accepts `topics::cmd_tx` commands such as `{"txPwr":20}`, 14 to 22 dBm. The duck stores the value and uses it from its next boot. SX1276 boards (Heltec V2, TTGO LoRa32) only take 14 to 17 or 20 dBm: with another value stored, setup fails at every boot until the flash (NVS) is erased. |
+| Remote TX power | `-DCDPCFG_REMOTE_TX_POWER=1` | Accepts `topics::cmd_tx` commands such as `{"txPwr":20}`, 14 to 22 dBm. The duck stores the value and uses it from its next boot. It only stores a value its radio takes: 14 to 17 or 20 dBm on SX1276 boards (Heltec V2, TTGO LoRa32), all of 14 to 22 on SX1262 boards. |
 | Both commands | `-DCDPCFG_REMOTE_COMMANDS=1` | |
 | Deep sleep | change `#define ENABLE_DEEP_SLEEP 0` to `1` in the sketch, or build with `-DENABLE_DEEP_SLEEP=1` | Awake 60 s, asleep 300 s. See the warning below. |
 

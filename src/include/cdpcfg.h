@@ -51,7 +51,8 @@
 // range can send them; they are off by default. With a command off, ducks still
 // relay its packets for other ducks but ignore them themselves.
 //   CDPCFG_REMOTE_TIME_SYNC: act on topics::cmd_time (set the clock).
-//   CDPCFG_REMOTE_TX_POWER:  act on topics::cmd_tx (set TX power, persisted).
+//   CDPCFG_REMOTE_TX_POWER:  act on topics::cmd_tx (store a TX power for the
+//                            next boot, if the radio takes it).
 // Both default to CDPCFG_REMOTE_COMMANDS, so -DCDPCFG_REMOTE_COMMANDS=1 still
 // turns both on. Turn on time sync alone with -DCDPCFG_REMOTE_TIME_SYNC=1.
 #ifndef CDPCFG_REMOTE_COMMANDS
