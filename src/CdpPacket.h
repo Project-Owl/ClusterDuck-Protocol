@@ -104,7 +104,7 @@ enum topics {
   bat = 0x18,
   //duck command for spreading factor and tx power
   cmd_tx = 0x20,
-  //duck command for phoenix time sync
+  //UTC time from a PapaDuck, {"epoch":<seconds>}; see PapaDuck::sendTimeSync()
   cmd_time = 0x22,
   //gps
   gps = 0xEA,
