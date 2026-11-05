@@ -17,16 +17,24 @@ public:
     inline static const LoRaConfigParams defaultRadioParams{915, 22, 125, 7, 0, onInterrupt};
     // TX power range, like RadioLib's checkOutputPower(). By default an SX1276
     // on PA_BOOST: 2 to 17 or 20 dBm. With sx1262 set: -9 to 22 dBm. Setup
-    // fails on any other value, as on the real radio.
-    bool sx1262 = false;
+    // fails on any other value, as on the real radio. With looseCheck set,
+    // checkTxPower() passes all of -9 to 22 dBm but setup still fails: a check
+    // that disagrees with setup. With fault set, setup always fails.
+    bool sx1262 = false, looseCheck = false, fault = false;
     int setupPower = 0;
+    unsigned setups = 0;
+    bool takes(int power) const {
+        return sx1262 ? power >= -9 && power <= 22 : (power >= 2 && power <= 17) || power == 20;
+    }
     int checkTxPower(int power) const {
-        const bool ok = sx1262 ? power >= -9 && power <= 22 : (power >= 2 && power <= 17) || power == 20;
+        const bool ok = looseCheck ? power >= -9 && power <= 22 : takes(power);
         return ok ? DUCK_ERR_NONE : DUCK_ERR_INVALID_ARGUMENT;
     }
     int setupRadio(const LoRaConfigParams& config) {
         setupPower = config.txPower;
-        return checkTxPower(config.txPower) == DUCK_ERR_NONE ? DUCK_ERR_NONE : DUCKLORA_ERR_SETUP;
+        ++setups;
+        if (fault) return DUCKLORA_ERR_BEGIN;
+        return takes(config.txPower) ? DUCK_ERR_NONE : DUCKLORA_ERR_SETUP;
     }
     void serviceInterruptFlags() {}
     bool getReceiveFlag() { return !inbox.empty(); }
@@ -299,30 +307,48 @@ void txPowerChecks() {
     feed(wide, packetBytes(topics::cmd_tx, "{\"txPwr\":22}", freshMuid()));
     check(stored(wide) == (applies ? 22 : -1), "SX1262 MamaDuck didn't store 22 dBm");
 
-    // Boot with a stored value. One the radio can't use, or outside 14 to 22,
-    // is removed and the default used. With the setting off the stored value
-    // is ignored and left alone, as before.
-    struct Boot { int value; bool sx1262; int power; bool kept; const char* what; };
+    // Boot with a stored value. One outside 14 to 22 dBm, or one the radio
+    // can't use, is removed and the default used. If setup still fails with a
+    // stored value other than the default (looseCheck), setup runs once more
+    // with the default. A radio fault leaves the stored value alone. With the
+    // setting off the stored value is ignored and left alone, as before. Every
+    // duck type boots through Duck::setupWithDefaults().
+    constexpr int dflt = CDPCFG_RF_LORA_TXPOW;
+    struct Boot {
+        int value; bool sx1262, looseCheck, fault; int power; bool kept; unsigned setups; const char* what;
+    };
     const Boot boots[] = {
-        {18, false, CDPCFG_RF_LORA_TXPOW, !applies, "stored 18 dBm on an SX1276"},
-        {22, false, CDPCFG_RF_LORA_TXPOW, !applies, "stored 22 dBm on an SX1276"},
-        {30, false, CDPCFG_RF_LORA_TXPOW, !applies, "stored 30 dBm"},
-        {20, false, applies ? 20 : CDPCFG_RF_LORA_TXPOW, true, "stored 20 dBm on an SX1276"},
-        {22, true, applies ? 22 : CDPCFG_RF_LORA_TXPOW, true, "stored 22 dBm on an SX1262"},
+        {18, false, false, false, dflt, !applies, 1, "stored 18 dBm on an SX1276"},
+        {22, false, false, false, dflt, !applies, 1, "stored 22 dBm on an SX1276"},
+        {30, false, false, false, dflt, !applies, 1, "stored 30 dBm"},
+        {10, false, false, false, dflt, !applies, 1, "stored 10 dBm on an SX1276 (the radio takes it)"},
+        {-5, true, false, false, dflt, !applies, 1, "stored -5 dBm on an SX1262 (the radio takes it)"},
+        {20, false, false, false, applies ? 20 : dflt, true, 1, "stored 20 dBm on an SX1276"},
+        {22, true, false, false, applies ? 22 : dflt, true, 1, "stored 22 dBm on an SX1262"},
+        {18, false, true, false, dflt, !applies, applies ? 2u : 1u, "stored 18 dBm, check passes, setup fails"},
+        {20, false, false, true, dflt, true, applies ? 2u : 1u, "stored 20 dBm, radio fault"},
+        {dflt, false, false, true, dflt, true, 1, "stored default TX power, radio fault"},
+    };
+    auto bootWith = [&check](auto& node, const Boot& boot, const std::string& what) {
+        node.radio().sx1262 = boot.sx1262;
+        node.radio().looseCheck = boot.looseCheck;
+        node.radio().fault = boot.fault;
+        node.eeprom_preferences.putInt("txPwr", boot.value);
+        const int rc = node.setupWithDefaults();
+        if (boot.fault) check(rc != DUCK_ERR_NONE, (what + ": setup didn't fail").c_str());
+        else check(rc == DUCK_ERR_NONE, (what + ": setup failed").c_str());
+        check(node.radio().setupPower == boot.power, (what + ": wrong TX power at setup").c_str());
+        check(node.radio().setups == boot.setups, (what + ": wrong number of setup attempts").c_str());
+        check(node.eeprom_preferences.isKey("txPwr") == boot.kept,
+              (what + (boot.kept ? ": removed" : ": not removed")).c_str());
     };
     for (const Boot& boot : boots) {
         Node<Mama> mama{"NODE0006"};
         Node<Link> leaf{"LINK0002"};
-        mama.radio().sx1262 = leaf.radio().sx1262 = boot.sx1262;
-        mama.eeprom_preferences.putInt("txPwr", boot.value);
-        leaf.eeprom_preferences.putInt("txPwr", boot.value);
-        const int mamaRc = mama.setupWithDefaults(), leafRc = leaf.setupWithDefaults();
-        const std::string what = boot.what;
-        check(mamaRc == DUCK_ERR_NONE && leafRc == DUCK_ERR_NONE, (what + ": setup failed").c_str());
-        check(mama.radio().setupPower == boot.power && leaf.radio().setupPower == boot.power,
-              (what + ": wrong TX power at setup").c_str());
-        check(mama.eeprom_preferences.isKey("txPwr") == boot.kept && leaf.eeprom_preferences.isKey("txPwr") == boot.kept,
-              (what + (boot.kept ? ": removed" : ": not removed")).c_str());
+        Node<Papa> papa{"GATE0002"};
+        bootWith(mama, boot, std::string(boot.what) + ", MamaDuck");
+        bootWith(leaf, boot, std::string(boot.what) + ", DuckLink");
+        bootWith(papa, boot, std::string(boot.what) + ", PapaDuck");
     }
     assert(failures == 0);
     std::cout << "tx power: " << (applies ? "stored only if this duck's radio takes it; a bad stored value is "

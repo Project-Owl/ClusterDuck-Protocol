@@ -80,12 +80,16 @@ class Duck {
       int txPwr = CDPCFG_RF_LORA_TXPOW;
       if (eeprom_preferences.isKey("txPwr")) {
         const int stored = eeprom_preferences.getInt("txPwr", CDPCFG_RF_LORA_TXPOW);
-        if (stored >= 14 && stored <= 22 && duckRadio.checkTxPower(stored) == DUCK_ERR_NONE) {
-          txPwr = stored;
+        const char* refused = nullptr;
+        if (stored < 14 || stored > 22) {
+          refused = "is outside 14 to 22 dBm";
+        } else if (duckRadio.checkTxPower(stored) != DUCK_ERR_NONE) {
+          refused = "is not supported by this radio";
+        }
+        if (refused) {
+          dropStoredTxPower(stored, refused);
         } else {
-          eeprom_preferences.remove("txPwr");
-          logerr_ln("Stored tx power %d dBm not supported by this radio: removed, using %d dBm",
-            stored, CDPCFG_RF_LORA_TXPOW);
+          txPwr = stored;
         }
       }
 #else
@@ -104,6 +108,20 @@ class Duck {
     };
 
       int err = this->setupLoRaRadio(radioParam);
+#if CDPCFG_REMOTE_TX_POWER
+      // Not expected after the check above. If setup still fails with a stored
+      // power, try once more with the default. setupRadio() starts again from
+      // begin(), which resets the radio. Remove the stored value only if that
+      // works, so a radio fault doesn't erase it.
+      if (err != DUCK_ERR_NONE && txPwr != CDPCFG_RF_LORA_TXPOW) {
+        LoRaConfigParams fallback = radioParam;
+        fallback.txPower = CDPCFG_RF_LORA_TXPOW;
+        err = this->setupLoRaRadio(fallback);
+        if (err == DUCK_ERR_NONE) {
+          dropStoredTxPower(txPwr, "made radio setup fail");
+        }
+      }
+#endif
       if (err != DUCK_ERR_NONE) {
         logerr_ln("ERROR setupWithDefaults rc = %d",err); 
       } else{
@@ -697,6 +715,16 @@ class Duck {
     };
     std::array<ControlSeen, 64> controlHistory{};
     size_t historyIndex = 0;
+
+#if CDPCFG_REMOTE_TX_POWER
+    // Boot fallback for a stored topics::cmd_tx value: remove it and log one
+    // line. The caller uses CDPCFG_RF_LORA_TXPOW.
+    void dropStoredTxPower(int stored, const char* reason) {
+      const bool removed = eeprom_preferences.remove("txPwr");
+      logerr_ln("Stored tx power %d dBm %s: %s, using %d dBm", stored, reason,
+        removed ? "removed" : "could not remove it", CDPCFG_RF_LORA_TXPOW);
+    }
+#endif
 
     bool controlSeen(const CdpPacket& packet) const {
       for (const auto& seen : controlHistory)
