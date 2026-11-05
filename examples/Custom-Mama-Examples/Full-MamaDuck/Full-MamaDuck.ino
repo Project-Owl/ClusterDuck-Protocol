@@ -15,7 +15,7 @@
  *     red           setup failed
  *     green flash   reading queued
  *     red flash     reading not queued (the serial log has the error)
- *     blue flash    packet heard from another duck
+ *     blue flash    packet heard (see handleDuckData())
  *   On boards without CDPCFG_PIN_LED1, such as the Heltec WiFi LoRa 32 V3, it
  *   builds and runs the same, without the LED.
  * - logs every result to serial, at 115200 baud.
@@ -28,10 +28,17 @@
  *
  * 1. Remote time sync and TX power. These are CDP build flags, not code in
  *    this sketch:
- *      -DCDPCFG_REMOTE_TIME_SYNC=1  set the clock from a PapaDuck's
- *                                   topics::cmd_time; readings then get "utc"
- *      -DCDPCFG_REMOTE_TX_POWER=1   accept topics::cmd_tx TX power commands
- *                                   (14 to 22 dBm, kept across reboots)
+ *      -DCDPCFG_REMOTE_TIME_SYNC=1  set the clock from topics::cmd_time. Readings
+ *                                   get "utc" once a PapaDuck has sent the time
+ *                                   with sendTimeSync(); the CDP example
+ *                                   PapaDucks don't send it.
+ *      -DCDPCFG_REMOTE_TX_POWER=1   accept topics::cmd_tx TX power commands, such
+ *                                   as {"txPwr":20} (14 to 22 dBm). The duck
+ *                                   stores the value and uses it from its next
+ *                                   boot. SX1276 boards (Heltec V2, TTGO LoRa32)
+ *                                   only take 14 to 17 or 20 dBm: with another
+ *                                   value stored, setup fails at every boot
+ *                                   until the flash (NVS) is erased.
  *      -DCDPCFG_REMOTE_COMMANDS=1   both
  *    Neither command is authenticated: anything in radio range can send one.
  *    With them off, the duck still relays them for other ducks. To build with
@@ -41,7 +48,7 @@
  *        pio run -e local_heltec_wifi_lora_32_V3
  *    or add the flag to build_flags in your own platformio.ini.
  *
- * 2. Deep sleep: set ENABLE_DEEP_SLEEP to 1 below, or build with
+ * 2. Deep sleep: change `#define ENABLE_DEEP_SLEEP 0` below to 1, or build with
  *    -DENABLE_DEEP_SLEEP=1. WARNING: a sleeping MamaDuck receives and relays
  *    nothing, so ducks that depend on it lose their path to the PapaDuck. Use
  *    it only for a duck that no other duck needs as a relay.
@@ -188,12 +195,13 @@ void loop() {
 
 /**
  * @brief Called by duck.run() for every packet the duck hears, before it is
- * relayed: other ducks' messages, pings, pongs and commands. A message that
- * several ducks relay arrives once per copy, so this can include copies of
- * this duck's own messages.
+ * relayed, except route requests and replies (CDP handles those itself) and
+ * packets over the hop limit. That includes pings, pongs and commands. A
+ * message that several ducks relay arrives once per copy, so this also gets
+ * copies of this duck's own messages that neighbours relay back.
  */
 void handleDuckData(CdpPacket packet) {
-  Serial.printf("[MAMA] Heard %s from %s, %u hops\n", packet.topicToString().c_str(),
+  Serial.printf("[MAMA] Heard %s from %s, hop count %u\n", packet.topicToString().c_str(),
     duckutils::toString(packet.sduid).c_str(), unsigned(packet.hopCount));
   flashLed(COLOR_RECEIVED);
 }
