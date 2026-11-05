@@ -27,35 +27,34 @@ class DuckRouter {
         NetworkState getNetworkState(){ return networkState; };
 
                 /**
-         * @brief Insert a new record into the routing table. Does not sort Neighbor list, but updates last seen timestamp if device already exists in the list.
-         * Routing score is calculated based on signal info and may be updated in existing record if new score is better than old score.
+         * @brief Record that @p deviceID can be reached through @p nextHop.
          *
-         * @param deviceID the device ID
-         * @param nextHop the next hop device ID to reach the target device
-         * @param signalInfo the signal information (SNR & RSSI) used to sort the @p nextHop elements in the routing table
+         * Replaces any earlier entry for the same destination and next hop, so
+         * the newest signal reading always wins, better or worse. An entry
+         * where @p deviceID equals @p nextHop is also kept as a measured direct
+         * link (not for the PapaDuck or broadcast addresses). Readings that
+         * aren't finite numbers are ignored. Ends with cullRoutingTable(), so
+         * the candidates for each destination stay sorted best first.
+         *
+         * @param deviceID the destination device ID
+         * @param nextHop the neighbour to send through to reach @p deviceID
+         * @param signalInfo RSSI, SNR and the signal score of the packet this
+         *        route was learned from; candidates are ranked by the score
+         * @param heardAt millis() when that packet was received
          */
         void insertIntoRoutingTable(Duid deviceID, Duid nextHop, SignalScore signalInfo,
                                     uint32_t heardAt = millis());
-    /**
-* @brief Get the best next hop DUID for reaching a target device.
-*
-* The routing table stores, for each destination device, a list of Neighbor
-* records (likely representing possible next hops and their signal scores /
-* last-seen timestamps). This function:
-* - Looks up the routing table entry for @p targetDeviceId.
-* - If an entry exists, sorts the neighbor list by Neighbor's operator> (so
-*   presumably highest-quality neighbors come first).
-* - Returns the device id of the top neighbor as a Duid.
-*
-* Notes and caveats:
-* - If no routing entry exists for the requested target, returns std::nullopt.
-* - Sorting is done in-place (side effect) on the stored neighbor list.
-*
-* @param targetDeviceId The destination device identifier for which a next hop
-*                       is requested.
-* @return std::optional<Duid> The Duid of the selected next hop, or
-*                             std::nullopt if none exists.
-*/
+
+        /**
+         * @brief Get the next hop with the best signal score for a destination.
+         *
+         * Calls cullRoutingTable() first, so expired entries are gone and every
+         * destination's candidates are sorted, best first.
+         *
+         * @param targetDeviceId the destination device ID
+         * @return the next hop of the best candidate, or std::nullopt if there
+         *         is no fresh route to @p targetDeviceId
+         */
         std::optional<Duid> getBestNextHop(Duid targetDeviceId);
         std::optional<uint32_t> getRouteAge(Duid targetDeviceId);
         size_t directNeighborCount();
