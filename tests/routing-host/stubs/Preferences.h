@@ -6,7 +6,8 @@
 struct Preferences {
     std::map<std::string, int> ints;
     bool begin(const char*) { return true; }
-    bool isKey(const char*) { return true; }
+    bool isKey(const char* key) { return ints.count(key) != 0; }
+    bool remove(const char* key) { return ints.erase(key) != 0; }
     int getInt(const char* key, int value) {
         auto found = ints.find(key);
         return found == ints.end() ? value : found->second;
