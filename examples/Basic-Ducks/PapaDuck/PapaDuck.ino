@@ -47,7 +47,9 @@ const unsigned long MQTT_RETRY_MAX_MS = 60000;  // longest wait after failed att
 const uint16_t MQTT_TIMEOUT_S = 5;              // longest wait for each connection step
 // PubSubClient's default 256-byte buffer is too small for a 228-byte CDP
 // payload wrapped in JSON: publish() returns false when a message doesn't fit.
-const uint16_t MQTT_BUFFER_SIZE = 1024;
+// JSON writes a control byte, such as 0x00, as 6 characters, so a binary
+// payload can need about 1.6 KB.
+const uint16_t MQTT_BUFFER_SIZE = 2048;
 
 // CA certificate of test.mosquitto.org, from https://test.mosquitto.org/
 static const char MQTT_CA_CERT[] = \
