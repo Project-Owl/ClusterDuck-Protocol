@@ -312,11 +312,23 @@ void routerChecks() {
     packet.data.assign(1, 1); packet.hopCount = MAX_HOPS + 1;
     assert(packet.prepareForSending() == DUCKPACKET_ERR_MAX_HOPS);
 }
+void toStringChecks() {
+    // Printable ASCII stays as it is; any other byte becomes two hex digits.
+    const Duid raw{'N','O','D','E', 0x0A, 0x00, 0xFF, '1'};
+    assert(duckutils::toString(raw) == "NODE0A00FF1");
+    assert(duckutils::toString(std::vector<uint8_t>(raw.begin(), raw.end())) == "NODE0A00FF1");
+    assert(duckutils::toString(std::string("NODE0001")) == "NODE0001");
+    assert(duckutils::toString(std::vector<char>{'\x80', 'A'}) == "80A");
+    // The routing table and route JSON keep the raw eight bytes.
+    assert(duckutils::duidToString(raw).size() == DUID_LENGTH);
+    std::cout << "toString: printable bytes kept, others written as hex\n";
+}
 
 int main() {
     std::cout << "remote commands: time sync=" << CDPCFG_REMOTE_TIME_SYNC
               << " tx power=" << CDPCFG_REMOTE_TX_POWER << '\n';
     routerChecks();
+    toStringChecks();
     {
         Mesh mesh(true);
         mesh.until(120000);
