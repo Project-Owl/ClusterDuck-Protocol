@@ -55,12 +55,23 @@ private :
     }
 
     /**
-     * @brief Handles packets that are meant for broadcasing (i.e RREQ, PING, CMD, etc).
-     * Overrides the pure virtual function in Duck base class.
-     * Only responds to neighbors to decrease strain on the network.
-     * @param rxPacket the received packet to be processed by the mama duck if it's a broadcast packet (RREQ, PING, CMD, etc).
-     * If it's a RREQ with hop count > 0, it will send a response.
-     * If it's a PING, a PONG will be sent back. If it's a CMD, it will be relayed.
+     * @brief Handle a packet addressed to every duck (BROADCAST_DUID).
+     *
+     * Route requests and replies never reach this function:
+     * Duck::processReceivedPacket() hands them to handleRoutingPacket() first.
+     * - PING: answered with a broadcast PONG. Neither is relayed, so PING and
+     *   PONG only reach direct neighbours.
+     * - PONG: ignored.
+     * - cmd_tx, if CDPCFG_REMOTE_TX_POWER is on: stores the new TX power
+     *   (14 to 22 dBm) and relays the packet. A command that doesn't parse or
+     *   is out of range is neither applied nor relayed.
+     * - cmd_time, if CDPCFG_REMOTE_TIME_SYNC is on: applyTimeCommand(), then
+     *   relayed whether or not the time was applied.
+     * - Anything else, including cmd_tx and cmd_time when their setting is
+     *   off: relayed with broadcastPacket(), which drops packets it has
+     *   already seen and packets that reached MAX_HOPS.
+     *
+     * @param rxPacket the received packet
      */
     void ifBroadcast(CdpPacket rxPacket) {
         int err = DUCK_ERR_NONE;
@@ -127,12 +138,25 @@ private :
     }
 
     /**
-     * @brief Handles packets that are meant for specific targets (i.e RREP, PONG, etc).
-     * If the RREQ is not meant for the mama duck but is still a directed packet, it will be relayed; otherwise, sends RREP.
-     * If the packet is a RREP meant for the mama duck, it will update the routing table with the path information; otherwise, it will be relayed to the next hop.
-     * Overrides the pure virtual function in Duck base class.
-     * @param rxPacket
-     * @param relay
+     * @brief Handle a packet addressed to a single duck.
+     *
+     * Route requests and replies never reach this function:
+     * Duck::processReceivedPacket() hands them to handleRoutingPacket() first.
+     * - PING: answered with a broadcast PONG, even when relay is true. Not
+     *   passed on.
+     * - PONG: ignored, not passed on.
+     * - cmd_tx and cmd_time, if their setting is on: applied when addressed to
+     *   this duck, and then not passed on. Passed on with forwardPacket() when
+     *   addressed to another duck.
+     * - Anything else: passed on with forwardPacket() when relay is true. A
+     *   packet addressed to this duck only goes to the onReceiveDuckData()
+     *   callback, which handleReceivedPacket() has already called.
+     *
+     * forwardPacket() floods like broadcastPacket(): it doesn't need a route
+     * to the destination.
+     *
+     * @param rxPacket the received packet
+     * @param relay true if the packet is addressed to another duck
      */
     void ifNotBroadcast(CdpPacket rxPacket, bool relay = false) {
         int err;
