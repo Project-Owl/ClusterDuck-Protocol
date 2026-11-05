@@ -40,7 +40,7 @@ Check out the [Wiki](https://github.com/ClusterDuck-Protocol/ClusterDuck-Protoco
 DuckLink duck("LINK0001"); //Declare the duck type and pass in your Device ID name
 
 MamaDuck duck("MAMA0002"); //By default, DuckLinks and MamaDucks use LoRa radio but do not have wifi
-MamaDuck<DuckWifiNone, DuckLora> duck("MAMA0002"); //so these two MamaDuck constructors are equivalent
+MamaDuck<DuckWifiNone, DuckLoRa> duck("MAMA0002"); //so these two MamaDuck constructors are equivalent
 
 PapaDuck<DuckWifiNone> duck("PAPA0003"); //by default PapaDucks do have wifi enabled; when using local storage you may want to turn it off
 
