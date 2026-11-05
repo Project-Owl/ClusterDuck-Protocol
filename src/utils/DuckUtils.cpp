@@ -77,7 +77,12 @@ std::string hexToString(const std::string& hex) {
 }
 
 std::string toString(uint8_t* data, int size) {
-    std::string str = std::string(data, data + size); //data + size for the entire length
+    // For logs, like the container overloads: non-printable bytes become two
+    // hex digits, so a 0x00 can't end the text and 0xFF can't reach the terminal.
+    std::string str;
+    for (int i = 0; data != nullptr && i < size; ++i) {
+        detail::appendPrintable(str, data[i]);
+    }
     return str;
 }
 
