@@ -11,8 +11,8 @@
  *   setupWithDefaults() has started the radio.
  * - sendData() returns DUCK_ERR_NONE once the message is queued for the radio.
  *   That is not a delivery receipt.
- * - CDP sends this duck's own health on topics::health every 15 minutes, so
- *   application data uses another topic.
+ * - CDP sends this duck's own health on topics::health every 15 minutes. Send
+ *   your own data on another topic, such as topics::sensor.
  */
 
 #include <string>

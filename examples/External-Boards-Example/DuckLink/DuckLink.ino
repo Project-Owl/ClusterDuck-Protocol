@@ -22,7 +22,7 @@ void setup() {
     return;
   }
   setupOK = true;
-  Serial.println("[LINK] Hello, World!");
+  Serial.println("[LINK] Setup OK");
 }
 
 void loop() {
