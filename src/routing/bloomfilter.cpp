@@ -109,7 +109,7 @@ void BloomFilter::assignUniqueMessageId(CdpPacket& packet) {
     while (getNewUnique) {
       duckutils::getRandomBytes(MUID_LENGTH, packet.muid.data());
       getNewUnique = this->bloom_check(packet.muid.data(), MUID_LENGTH);
-      loginfo_ln("prepareForSending: new MUID -> %s",duckutils::convertToHex(packet.muid.data(), MUID_LENGTH).c_str());
+      logdbg_ln("prepareForSending: new MUID -> %s",duckutils::convertToHex(packet.muid.data(), MUID_LENGTH).c_str());
     }
 }
 

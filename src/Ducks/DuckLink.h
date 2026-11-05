@@ -37,7 +37,7 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
     void handleReceivedPacket(CdpPacket rxPacket) override{
         bool relay = false;
         
-        loginfo_ln("====> handleReceivedPacket: START");
+        logdbg_ln("====> handleReceivedPacket: START");
 
         if (recvDataCallback) recvDataCallback(rxPacket);
         
@@ -103,7 +103,7 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
                   break;
 #endif
               default:
-                  loginfo_ln("handleReceivedPacket: packet received, skipping relay.");
+                  logdbg_ln("handleReceivedPacket: packet received, skipping relay.");
           }
       }
   
@@ -117,7 +117,7 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
                   break;
 #endif
               default:
-              loginfo_ln("handleReceivedPacket: packet received, skipping forward.");    
+              logdbg_ln("handleReceivedPacket: packet received, skipping forward.");    
           }
       }
 };

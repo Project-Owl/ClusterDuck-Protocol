@@ -72,7 +72,7 @@ private:
   rxDoneCallback recvDataCallback = nullptr;
   
   void handleReceivedPacket(CdpPacket rxPacket) {
-    loginfo_ln("====> handleReceivedPacket: START");
+    logdbg_ln("====> handleReceivedPacket: START");
     
     if (recvDataCallback) recvDataCallback(rxPacket);
 

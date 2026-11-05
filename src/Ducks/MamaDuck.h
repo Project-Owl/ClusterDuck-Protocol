@@ -40,7 +40,7 @@ private :
      *
      */
     void handleReceivedPacket(CdpPacket rxPacket) override {
-        loginfo_ln("====> handleReceivedPacket: START");
+        logdbg_ln("====> handleReceivedPacket: START");
         if (recvDataCallback) recvDataCallback(rxPacket);
 
         //Check if Duck is desitination for this packet before relaying

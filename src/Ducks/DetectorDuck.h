@@ -32,7 +32,7 @@ private:
   rxDoneCallback recvDataCallback;
 
   void handleReceivedPacket(CdpPacket rxPacket) {
-    loginfo_ln("====> handleReceivedPacket: START");
+    logdbg_ln("====> handleReceivedPacket: START");
 
     if (rxPacket.topic == reservedTopic::pong) {
       logdbg("run() - got ping response!");

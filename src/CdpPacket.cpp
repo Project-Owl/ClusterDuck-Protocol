@@ -9,10 +9,10 @@ int CdpPacket::prepareForSending() {
     }
     if (hopCount > MAX_HOPS) return DUCKPACKET_ERR_MAX_HOPS;
 
-    loginfo_ln("packet format: DATA LENGTH: %d - TOPIC (%s)", data_length, topicToString().c_str());
+    logdbg_ln("packet format: DATA LENGTH: %d - TOPIC (%s)", data_length, topicToString().c_str());
 
 // ----- insert packet header  -----
-    loginfo_ln("packet format: START");
+    logdbg_ln("packet format: START");
     std::string printStr;
 // source device uid
     buffer.insert(buffer.end(), this->sduid.begin(), this->sduid.end());
