@@ -348,6 +348,18 @@ class Duck {
      */ 
     virtual void handleReceivedPacket(CdpPacket packet) = 0;
 
+    /**
+     * @brief Report this duck's own health message (topics::health).
+     *
+     * Ducks send it over the mesh to the PapaDuck. A PapaDuck is that
+     * destination, so it overrides this to hand the message straight to its
+     * own application instead of using the radio.
+     * @returns DUCK_ERR_NONE if the message was accepted, an error code otherwise.
+     */
+    virtual int reportHealth(const std::string& message) {
+      return sendData(topics::health, message);
+    }
+
     int broadcastPacket(CdpPacket& packet){
       if (packet.hopCount >= MAX_HOPS) { ++hopDropped; return DUCKPACKET_ERR_MAX_HOPS; }
       if (router.getFilter().bloom_check(packet.muid.data(), MUID_LENGTH)) {
@@ -723,7 +735,7 @@ class Duck {
       const std::string detail = duck->routingDiagnostics(duck->diagnosticPage);
       loginfo_ln("[CDP_DIAG] health_detail=%s", detail.c_str());
       const std::string message = duck->healthMessage();
-      if (duck->sendData(topics::health, message) == DUCK_ERR_NONE) {
+      if (duck->reportHealth(message) == DUCK_ERR_NONE) {
         ++duck->counter;
         duck->diagnosticPage = (duck->diagnosticPage + 1) % 4;
       }

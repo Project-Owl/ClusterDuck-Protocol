@@ -68,6 +68,30 @@ public:
     return this->sendData(topics::cmd_time, payload, target);
   }
 
+protected:
+  /**
+   * @brief Hand the PapaDuck's own health message to the receive callback.
+   *
+   * The PapaDuck is where health messages go, so sending its own over LoRa
+   * would only use airtime. The callback gets it as a packet from this duck to
+   * PAPADUCK_DUID with hop count 0, the same way it gets health from the mesh,
+   * so the application can publish it to the cloud.
+   * @returns DUCK_ERR_NONE if delivered, DUCK_ERR_NOT_SUPPORTED without a
+   * callback, DUCKPACKET_ERR_SIZE_INVALID for an empty or oversized message.
+   */
+  int reportHealth(const std::string& message) override {
+    if (!recvDataCallback) return DUCK_ERR_NOT_SUPPORTED;
+    CdpPacket packet(PAPADUCK_DUID, topics::health,
+      std::vector<uint8_t>(message.begin(), message.end()), this->duid, getType());
+    this->router.getFilter().assignUniqueMessageId(packet);
+    const int err = packet.prepareForSending();
+    if (err != DUCK_ERR_NONE) return err;
+    CdpPacket delivered(packet.asBytes());
+    delivered.timeReceived = millis();
+    recvDataCallback(delivered);
+    return DUCK_ERR_NONE;
+  }
+
 private:
   rxDoneCallback recvDataCallback = nullptr;
   

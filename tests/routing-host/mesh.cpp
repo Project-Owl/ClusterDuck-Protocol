@@ -445,6 +445,25 @@ int main() {
         assert(Node<Papa>::received.back().dduid == PAPADUCK_DUID);
         std::cout << "5.0 compatibility: header 00000000, route JSON 11111111, legacy header accepted\n";
     }
+    {
+        // The PapaDuck is the destination for health, so it hands its own to
+        // the application instead of the radio.
+        Mesh mesh(true);
+        mesh.until(CDPCFG_HEALTH_INTERVAL_MS + 1000);
+        const auto own = std::find_if(Node<Papa>::received.begin(), Node<Papa>::received.end(), [](const auto& packet) {
+            return packet.topic == topics::health && packet.sduid == id("GATE0001");
+        });
+        assert(own != Node<Papa>::received.end());
+        assert(own->dduid == PAPADUCK_DUID && own->hopCount == 0 && own->duckType == DuckType::PAPA);
+        assert(parse(std::string(own->data.begin(), own->data.end()))["v"] == 4);
+        assert(std::none_of(mesh.sent.begin(), mesh.sent.end(), [](const auto& item) {
+            return item.sender == 3 && item.packet.topic == topics::health;
+        }));
+        assert(std::any_of(Node<Papa>::received.begin(), Node<Papa>::received.end(), [](const auto& packet) {
+            return packet.topic == topics::health && packet.sduid == id("NODE0001");
+        }));
+        std::cout << "PapaDuck health: handed to the application, not transmitted\n";
+    }
     timeSyncChecks();
     sleepChecks();
     std::cout << "PASS\n";
