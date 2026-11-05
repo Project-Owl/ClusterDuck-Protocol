@@ -110,7 +110,7 @@ private:
   int maxMsgs;
   int* Seeds;
 
-  static unsigned int djb2Hash(unsigned char* str, int seed, int msgSize);
+  static unsigned int murmur3Hash(const unsigned char* data, int seed, int length);
 
   /**
    * Generates a unique unsigned int index for each hash
