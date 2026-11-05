@@ -65,7 +65,7 @@ At most `CDPCFG_SIGNAL_MAX_NEIGHBORS` (6) entries are included, and the whole pa
 
 ## Radio health (`topics::health`, schema v4)
 
-Every `CDPCFG_HEALTH_INTERVAL_MS` (15 min) a duck sends one flat status message:
+Every `CDPCFG_HEALTH_INTERVAL_MS` (15 min) a duck sends one flat status message to the PapaDuck. DetectorDucks send none. The PapaDuck doesn't transmit its own: it passes it to its `onReceiveDuckData()` callback as a packet from itself to `PAPADUCK_DUID` with hop count 0, so it reaches the cloud with the health of the other ducks. Without a callback, the PapaDuck's health isn't sent anywhere.
 
 ```json
 {"c":"12","fm":"291340","boot":2488545892,"uptimeS":3604,"neighbors":3,"txStarted":79,"txDone":79,"txFailed":0,"txTimeouts":0,"queueDrops":0,"v":4}
