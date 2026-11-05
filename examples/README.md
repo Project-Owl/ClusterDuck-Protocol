@@ -14,7 +14,7 @@ Example sketches for CDP 5.5. Each example is a folder with a sketch of the same
 
 ## Basic-Ducks
 
-The smallest working sketch for each duck type. They use no LED. DuckLink, MamaDuck and PapaDuck share one layout: a header comment, the includes, the configuration constants, the duck and a timer, `setup()`, `loop()` and one function that sends or publishes.
+The smallest working sketch for each duck type. DuckLink, MamaDuck and PapaDuck use no LED; the DetectorDuck uses one to show signal strength. DuckLink, MamaDuck and PapaDuck share one layout: a header comment, the includes, the configuration constants, the duck and a timer, `setup()`, `loop()`, and the functions that send or publish.
 
 - **DuckLink** sends `Hello from DUCKLINK C:<n>` on `topics::sensor` every `SEND_INTERVAL_MS`. A DuckLink doesn't relay messages from other ducks.
 - **MamaDuck** sends the same message as `MAMADUCK` and relays the messages of other ducks. Relaying needs no code: `duck.run()` does it.
@@ -24,8 +24,8 @@ The smallest working sketch for each duck type. They use no LED. DuckLink, MamaD
   {"from":"hub","to":"controller","RE":false,"eventType":"sensor","MessageID":"K3TQ","payload":{"hops":0,"duckType":2,"DeviceID":"MAMADUCK","Message":"Hello from MAMADUCK C:7"}}
   ```
 
-  It also prints what arrives on `incoming/say_hello`, and reconnects to the broker every 5 s after a drop. Pings and pongs aren't published. `web/` holds a small browser page that shows the published messages.
-- **DetectorDuck** broadcasts a ping every 5 s. Every duck in direct range answers with a pong, and the detector logs the RSSI and SNR of each answer. On boards that define `CDPCFG_PIN_LED1` it shows the strongest answer on a WS2812 LED: green above -95 dBm, blue above -108 dBm, purple above -118 dBm, and red for weaker or no answer. On boards without the pin, such as the Heltec V3, the result goes to serial only. A DetectorDuck relays nothing and sends no health messages.
+  It also prints what arrives on `incoming/say_hello`. It checks the broker connection every 5 s and reconnects after a drop; after each failed attempt it waits twice as long, up to 60 s, because the PapaDuck doesn't receive LoRa packets while it connects. Pings and pongs aren't published. `web/` holds a small browser page that shows the published messages.
+- **DetectorDuck** broadcasts a ping every 5 s. Every duck in direct range answers with a pong, and the detector logs the RSSI and SNR of each answer. On boards that define `CDPCFG_PIN_LED1` it shows the strongest answer on a WS2812 LED: green above -95 dBm, blue above -108 dBm, purple above -118 dBm, and red for a weaker signal or when two pings in a row get no answer. On boards without the pin, such as the Heltec V3, the result goes to serial only. A DetectorDuck relays nothing and sends no health messages.
 
 ## Custom-Mama-Examples
 
@@ -80,24 +80,26 @@ PLATFORMIO_BUILD_FLAGS="-DCDPCFG_REMOTE_TIME_SYNC=1" EXAMPLE_DIR=Custom-Mama-Exa
 
 ### Arduino IDE
 
-1. Install the ESP32 board package and the ClusterDuck Protocol library, with the libraries it depends on: arduino-timer, ArduinoJson, CRC32, RadioLib, PubSubClient and FastLED.
+1. Install the ESP32 board package and the ClusterDuck Protocol library, with the libraries it depends on: arduino-timer, ArduinoJson, CRC32, RadioLib, PubSubClient and FastLED. CDP 5.5 needs C++17 or newer; see the note below.
 2. Open the example from File > Examples > ClusterDuck Protocol.
 3. Select your board. For the PapaDuck examples, also pick a partition scheme without OTA, such as "No OTA (2MB APP/2MB SPIFFS)" (see below).
 4. Upload, and open the serial monitor at 115200 baud.
 
 The Basic-Ducks, Full-MamaDuck and External-Boards sketches print with `Serial`, so their output shows in both tools. The CDP library's own log lines, and those of AWS-PapaDuck, use CDP's logger, which needs `-D CDP_INFO`; the PlatformIO configuration sets it. Build flags such as `CDPCFG_REMOTE_TIME_SYNC` are set with PlatformIO.
 
+CDP 5.5 needs C++17 or newer and is built and tested with PlatformIO. The ESP32 board package 2.0.x compiles Arduino IDE sketches as C++11, which CDP 5.5 doesn't support: the build fails with errors such as `'optional' in namespace 'std' does not name a template type`. The Arduino IDE steps above haven't been tested with CDP 5.5.
+
 ## Notes for writing a 5.5 sketch
 
 - **No network join.** A duck can send as soon as `setupWithDefaults()` returns `DUCK_ERR_NONE`. Ducks in one mesh need the same radio settings; the default is 915 MHz.
-- **`sendData()` queues.** It returns `DUCK_ERR_NONE` once the message is in the transmit queue, which isn't a delivery receipt. Otherwise it returns an error code: `DUCK_ERR_QUEUE_FULL` when the queue (10 packets) is full, `DUCKPACKET_ERR_SIZE_INVALID` for an empty payload or one over 228 bytes (`MAX_DATA_LENGTH`), and `DUCK_ERR_NOT_SUPPORTED` before setup or after `prepareForSleep()`. `getDuckErrorString(err)` turns a code into text. A duck transmits at most once every 3 s.
-- **`topics::health` belongs to CDP.** Every duck except a DetectorDuck sends its own health message on it every 15 minutes. Send your data on `topics::sensor`, `topics::status` or another topic.
-- **The PapaDuck receives every copy.** Its `onReceiveDuckData()` callback gets each copy of a message that reaches it through a different relay, plus pings and pongs. Remove duplicates downstream by message ID, or call `muidNotReceived()` to drop them locally. The PapaDuck's own health also arrives in the callback, as a packet from itself with hop count 0, so publish it like the others. A MamaDuck or DuckLink callback also gets every packet it hears.
+- **`sendData()` queues.** It returns `DUCK_ERR_NONE` once the message is in the transmit queue, which isn't a delivery receipt. Otherwise it returns an error code: `DUCKPACKET_ERR_TOPIC_INVALID` for a reserved topic (below `0x10`), `DUCKPACKET_ERR_SIZE_INVALID` for an empty payload or one over 228 bytes (`MAX_DATA_LENGTH`), `DUCK_ERR_NOT_SUPPORTED` before setup or after `prepareForSleep()`, and `DUCK_ERR_QUEUE_FULL` when the queue (10 packets) is full. `getDuckErrorString(err)` turns a code into text. A duck transmits at most once every 3 s.
+- **Some topics belong to CDP.** Topics below `0x10` are reserved for CDP's own packets, such as pings and route requests. Every duck except a DetectorDuck sends its own health message on `topics::health` every 15 minutes, MamaDucks and DuckLinks also send signal data on `topics::sig`, and `topics::cmd_tx` and `topics::cmd_time` carry commands (see the opt-in settings below). Send your data on `topics::sensor`, `topics::status` or another topic that isn't one of these.
+- **The PapaDuck receives every copy.** Its `onReceiveDuckData()` callback gets each copy of a message that reaches it through a different relay, plus pings and pongs. Remove duplicates downstream by message ID, or call `muidNotReceived()` to drop them locally. The PapaDuck's own health also arrives in the callback, as a packet from itself with hop count 0, so publish it like the others. A MamaDuck or DuckLink callback also gets every packet it hears, except route requests and replies, which CDP handles itself. That includes copies of its own messages that neighbours relay back.
 - **PapaDuck partitions.** WiFi, TLS and MQTT don't fit the default 1.25 MB app partition. The root `platformio.ini` sets `board_build.partitions = no_ota.csv`; do the same in your own PapaDuck project.
-- **Opt-in settings, off by default.** `CDPCFG_REMOTE_TIME_SYNC=1` sets the clock from a PapaDuck's `topics::cmd_time`, `CDPCFG_REMOTE_TX_POWER=1` accepts TX power commands, and `CDPCFG_REMOTE_COMMANDS=1` turns on both. The commands aren't authenticated. With them off, MamaDucks still relay them. `hasValidTime()` tells whether the clock holds a valid time. A PapaDuck shares a trusted time with `sendTimeSync(epoch)`; none of these examples sends one.
+- **Opt-in settings, off by default.** `CDPCFG_REMOTE_TIME_SYNC=1` sets the clock from a PapaDuck's `topics::cmd_time`, `CDPCFG_REMOTE_TX_POWER=1` accepts TX power commands (`topics::cmd_tx`, `{"txPwr":20}`, 14 to 22 dBm), which take effect at the next boot, and `CDPCFG_REMOTE_COMMANDS=1` turns on both. The commands aren't authenticated. With them off, MamaDucks still relay them. SX1276 boards (Heltec V2, TTGO LoRa32) only take a TX power of 14 to 17 or 20 dBm: with another value stored, setup fails at every boot until the flash (NVS) is erased. `hasValidTime()` tells whether the clock holds a valid time. A PapaDuck shares a trusted time with `sendTimeSync(epoch)`; none of these examples sends one.
 - **Deep sleep.** Keep calling `run()` until `txIdle()` is true (with a timeout), then call `prepareForSleep()` and `esp_deep_sleep_start()`. Waking up is a reboot. A sleeping MamaDuck doesn't relay.
 - **Device IDs** are 8 characters and must be unique in the mesh.
-- **Board pins.** Use `#ifdef CDPCFG_PIN_LED1` around LED code, because not every board defines it. On T-Beam boards, GPIO 16 and 17 are PSRAM lines. The T-Beam's OLED is optional; build with `-D ENABLE_DISPLAY` when one is fitted.
+- **Board pins.** Use `#ifdef CDPCFG_PIN_LED1` around LED code, because not every board defines it. On T-Beam boards, GPIO 16 and 17 connect to the PSRAM, so don't use them for sensors or LEDs. The T-Beam's OLED is optional; build with `-D ENABLE_DISPLAY` when one is fitted.
 
 [Open-mesh routing, health and diagnostics](../docs/open-mesh-routing.md) describes the mesh, the health and signal messages, time sync and deep sleep in detail.
 
