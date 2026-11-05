@@ -284,7 +284,8 @@ void txPowerChecks() {
 
     // Commands. A value the radio can't use is not stored, but a MamaDuck still
     // relays it: other ducks may have a radio that takes it.
-    const Muid p18 = freshMuid(), p20 = freshMuid(), p19 = freshMuid(), p23 = freshMuid();
+    const Muid p18 = freshMuid(), p20 = freshMuid(), p19 = freshMuid(), p17 = freshMuid(),
+               p23 = freshMuid(), p13 = freshMuid();
     feed(mesh.a, packetBytes(topics::cmd_tx, "{\"txPwr\":18}", p18));
     check(stored(mesh.a) == -1, "MamaDuck stored 18 dBm, which its SX1276 rejects");
     feed(mesh.a, packetBytes(topics::cmd_tx, "{\"txPwr\":20}", p20));
@@ -292,20 +293,33 @@ void txPowerChecks() {
     int before = stored(mesh.a);
     feed(mesh.a, packetBytes(topics::cmd_tx, "{\"txPwr\":19}", p19, id("NODE0001")));
     check(stored(mesh.a) == before, "MamaDuck stored 19 dBm, addressed to it, which its SX1276 rejects");
+    feed(mesh.a, packetBytes(topics::cmd_tx, "{\"txPwr\":17}", p17, id("NODE0001")));
+    check(stored(mesh.a) == (applies ? 17 : -1), "MamaDuck didn't store 17 dBm addressed to it");
     before = stored(mesh.a);
     feed(mesh.a, packetBytes(topics::cmd_tx, "{\"txPwr\":23}", p23));
     check(stored(mesh.a) == before, "MamaDuck stored 23 dBm, outside 14 to 22");
+    // The radio takes 13 dBm, but the command doesn't allow it.
+    feed(mesh.a, packetBytes(topics::cmd_tx, "{\"txPwr\":13}", p13));
+    check(stored(mesh.a) == before, "MamaDuck stored 13 dBm, outside 14 to 22");
     check(mesh.a.radio().setupPower == CDPCFG_RF_LORA_TXPOW, "TX power changed before the next boot");
     mesh.until(hostMillis + 30000);
     check(relayedByA(p18) == 1 && relayedByA(p20) == 1, "a broadcast cmd_tx was not relayed once");
-    check(relayedByA(p19) == 0, "a cmd_tx addressed to the MamaDuck was relayed");
-    check(relayedByA(p23) == (applies ? 0 : 1), "23 dBm was relayed by a duck that acts on cmd_tx");
+    check(relayedByA(p19) == 0 && relayedByA(p17) == 0, "a cmd_tx addressed to the MamaDuck was relayed");
+    check(relayedByA(p23) == (applies ? 0 : 1) && relayedByA(p13) == (applies ? 0 : 1),
+          "a cmd_tx outside 14 to 22 dBm was relayed by a duck that acts on cmd_tx");
     feed(link, packetBytes(topics::cmd_tx, "{\"txPwr\":21}", freshMuid()));
     check(stored(link) == -1, "DuckLink stored 21 dBm, which its SX1276 rejects");
     feed(link, packetBytes(topics::cmd_tx, "{\"txPwr\":17}", freshMuid()));
     check(stored(link) == (applies ? 17 : -1), "DuckLink didn't store 17 dBm");
+    feed(link, packetBytes(topics::cmd_tx, "{\"txPwr\":13}", freshMuid()));
+    check(stored(link) == (applies ? 17 : -1), "DuckLink stored 13 dBm, outside 14 to 22");
+    // A DuckLink ignores a cmd_tx addressed to it, as before.
+    feed(link, packetBytes(topics::cmd_tx, "{\"txPwr\":20}", freshMuid(), id("LINK0001")));
+    check(stored(link) == (applies ? 17 : -1), "DuckLink stored a cmd_tx addressed to it");
     feed(wide, packetBytes(topics::cmd_tx, "{\"txPwr\":22}", freshMuid()));
     check(stored(wide) == (applies ? 22 : -1), "SX1262 MamaDuck didn't store 22 dBm");
+    check(link.radio().setupPower == CDPCFG_RF_LORA_TXPOW && wide.radio().setupPower == CDPCFG_RF_LORA_TXPOW,
+          "TX power changed before the next boot (DuckLink or SX1262 MamaDuck)");
 
     // Boot with a stored value. One outside 14 to 22 dBm, or one the radio
     // can't use, is removed and the default used. If setup still fails with a
