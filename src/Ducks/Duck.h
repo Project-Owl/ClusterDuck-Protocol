@@ -73,10 +73,20 @@ class Duck {
       }
 
 #if CDPCFG_REMOTE_TX_POWER
-      // TX power last set by a topics::cmd_tx command, if any
-      int txPwr = eeprom_preferences.getInt("txPwr", CDPCFG_RF_LORA_TXPOW);
-      if (txPwr < 14 || txPwr > 22) {
-          txPwr = CDPCFG_RF_LORA_TXPOW;
+      // TX power last set by a topics::cmd_tx command, if any. A stored value
+      // outside 14 to 22 dBm, or one this radio doesn't take, would make radio
+      // setup fail at every boot: remove it and use the default. The check
+      // only compares numbers, so it runs before the radio is set up.
+      int txPwr = CDPCFG_RF_LORA_TXPOW;
+      if (eeprom_preferences.isKey("txPwr")) {
+        const int stored = eeprom_preferences.getInt("txPwr", CDPCFG_RF_LORA_TXPOW);
+        if (stored >= 14 && stored <= 22 && duckRadio.checkTxPower(stored) == DUCK_ERR_NONE) {
+          txPwr = stored;
+        } else {
+          eeprom_preferences.remove("txPwr");
+          logerr_ln("Stored tx power %d dBm not supported by this radio: removed, using %d dBm",
+            stored, CDPCFG_RF_LORA_TXPOW);
+        }
       }
 #else
       int txPwr = CDPCFG_RF_LORA_TXPOW;

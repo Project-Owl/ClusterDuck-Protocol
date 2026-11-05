@@ -63,8 +63,9 @@ private :
      *   PONG only reach direct neighbours.
      * - PONG: ignored.
      * - cmd_tx, if CDPCFG_REMOTE_TX_POWER is on: stores the new TX power
-     *   (14 to 22 dBm) and relays the packet. A command that doesn't parse or
-     *   is out of range is neither applied nor relayed.
+     *   (14 to 22 dBm) for the next boot, if this duck's radio takes it, and
+     *   relays the packet. A command that doesn't parse or is outside 14 to 22
+     *   dBm is neither applied nor relayed.
      * - cmd_time, if CDPCFG_REMOTE_TIME_SYNC is on: applyTimeCommand(), then
      *   relayed whether or not the time was applied.
      * - Anything else, including cmd_tx and cmd_time when their setting is
@@ -105,7 +106,12 @@ private :
                     break;
                   }
 
-                  if (err == DUCK_ERR_NONE){
+                  // Store only a value this duck's radio takes, or radio setup
+                  // fails at the next boot. Relay it either way: other ducks
+                  // may have a different radio.
+                  if (this->duckRadio.checkTxPower(txPwr) != DUCK_ERR_NONE) {
+                    logerr_ln("tx power %i dBm not supported by this radio, not stored", txPwr);
+                  } else {
                     Serial.print("updating tx power to value : ");
                     Serial.println(txPwr);
                     this->eeprom_preferences.putInt("txPwr", txPwr);
@@ -195,6 +201,12 @@ private :
                 if (txPwr < 14 || txPwr > 22) {
                     logerr_ln("Invalid argument -- tx power: %i", txPwr);
                     err = DUCK_ERR_INVALID_ARGUMENT;
+                    break;
+                }
+                // Store only a value this duck's radio takes, or radio setup
+                // fails at the next boot.
+                if (this->duckRadio.checkTxPower(txPwr) != DUCK_ERR_NONE) {
+                    logerr_ln("tx power %i dBm not supported by this radio, not stored", txPwr);
                     break;
                 }
                 this->eeprom_preferences.putInt("txPwr", txPwr);

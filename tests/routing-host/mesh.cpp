@@ -15,7 +15,19 @@ public:
     uint32_t done = 0;
     static void onInterrupt() {}
     inline static const LoRaConfigParams defaultRadioParams{915, 22, 125, 7, 0, onInterrupt};
-    int setupRadio(const LoRaConfigParams&) { return 0; }
+    // TX power range, like RadioLib's checkOutputPower(). By default an SX1276
+    // on PA_BOOST: 2 to 17 or 20 dBm. With sx1262 set: -9 to 22 dBm. Setup
+    // fails on any other value, as on the real radio.
+    bool sx1262 = false;
+    int setupPower = 0;
+    int checkTxPower(int power) const {
+        const bool ok = sx1262 ? power >= -9 && power <= 22 : (power >= 2 && power <= 17) || power == 20;
+        return ok ? DUCK_ERR_NONE : DUCK_ERR_INVALID_ARGUMENT;
+    }
+    int setupRadio(const LoRaConfigParams& config) {
+        setupPower = config.txPower;
+        return checkTxPower(config.txPower) == DUCK_ERR_NONE ? DUCK_ERR_NONE : DUCKLORA_ERR_SETUP;
+    }
     void serviceInterruptFlags() {}
     bool getReceiveFlag() { return !inbox.empty(); }
     std::optional<std::vector<uint8_t>> readReceivedData() {
@@ -221,6 +233,102 @@ void timeSyncChecks() {
     std::cout << "time sync: " << (applies ? "applied once per message, from a PapaDuck only"
                                             : "not applied (flag off)")
               << "; MamaDucks relay every cmd_time\n";
+}
+
+// cmd_tx allows 14 to 22 dBm, but an SX1276 only takes 14 to 17 or 20. A
+// stored 18, 19, 21 or 22 used to make radio setup fail at every boot.
+void txPowerChecks() {
+    constexpr bool applies = CDPCFG_REMOTE_TX_POWER;
+    Mesh mesh(true);   // SX1276-like radios
+    mesh.until(120000);
+    // Outside the mesh: fed directly, heard by nobody.
+    Node<Link> link{"LINK0001"};
+    Node<Mama> wide{"NODE0005"};
+    wide.radio().sx1262 = true;
+    assert(link.setupWithDefaults() == 0 && wide.setupWithDefaults() == 0);
+
+    uint8_t serial = 0;
+    auto freshMuid = [&] {
+        for (;;) {
+            const Muid muid{'P','W','R',serial++};
+            bool seen = false;
+            for (DuckRouter* router : {&mesh.a.routes(), &mesh.b.routes(), &mesh.c.routes(),
+                                       &mesh.p.routes(), &link.routes(), &wide.routes()})
+                if (router->getFilter().bloom_check(const_cast<uint8_t*>(muid.data()), MUID_LENGTH)) seen = true;
+            if (!seen) return muid;
+        }
+    };
+    auto feed = [](auto& node, const std::vector<uint8_t>& bytes) {
+        node.radio().inbox.push_back(bytes);
+        for (int i = 0; i < 3; ++i) node.run();
+    };
+    auto stored = [](auto& node) { return node.eeprom_preferences.getInt("txPwr", -1); };
+    auto relayedByA = [&](const Muid& muid) {
+        return std::count_if(mesh.sent.begin(), mesh.sent.end(), [&muid](const auto& item) {
+            return item.sender == 0 && item.packet.muid == muid;
+        });
+    };
+    // Report every failed check, then fail once at the end.
+    unsigned failures = 0;
+    auto check = [&failures](bool ok, const char* what) {
+        if (!ok) { ++failures; std::cout << "FAIL tx power: " << what << '\n'; }
+    };
+
+    // Commands. A value the radio can't use is not stored, but a MamaDuck still
+    // relays it: other ducks may have a radio that takes it.
+    const Muid p18 = freshMuid(), p20 = freshMuid(), p19 = freshMuid(), p23 = freshMuid();
+    feed(mesh.a, packetBytes(topics::cmd_tx, "{\"txPwr\":18}", p18));
+    check(stored(mesh.a) == -1, "MamaDuck stored 18 dBm, which its SX1276 rejects");
+    feed(mesh.a, packetBytes(topics::cmd_tx, "{\"txPwr\":20}", p20));
+    check(stored(mesh.a) == (applies ? 20 : -1), "MamaDuck didn't store 20 dBm");
+    int before = stored(mesh.a);
+    feed(mesh.a, packetBytes(topics::cmd_tx, "{\"txPwr\":19}", p19, id("NODE0001")));
+    check(stored(mesh.a) == before, "MamaDuck stored 19 dBm, addressed to it, which its SX1276 rejects");
+    before = stored(mesh.a);
+    feed(mesh.a, packetBytes(topics::cmd_tx, "{\"txPwr\":23}", p23));
+    check(stored(mesh.a) == before, "MamaDuck stored 23 dBm, outside 14 to 22");
+    check(mesh.a.radio().setupPower == CDPCFG_RF_LORA_TXPOW, "TX power changed before the next boot");
+    mesh.until(hostMillis + 30000);
+    check(relayedByA(p18) == 1 && relayedByA(p20) == 1, "a broadcast cmd_tx was not relayed once");
+    check(relayedByA(p19) == 0, "a cmd_tx addressed to the MamaDuck was relayed");
+    check(relayedByA(p23) == (applies ? 0 : 1), "23 dBm was relayed by a duck that acts on cmd_tx");
+    feed(link, packetBytes(topics::cmd_tx, "{\"txPwr\":21}", freshMuid()));
+    check(stored(link) == -1, "DuckLink stored 21 dBm, which its SX1276 rejects");
+    feed(link, packetBytes(topics::cmd_tx, "{\"txPwr\":17}", freshMuid()));
+    check(stored(link) == (applies ? 17 : -1), "DuckLink didn't store 17 dBm");
+    feed(wide, packetBytes(topics::cmd_tx, "{\"txPwr\":22}", freshMuid()));
+    check(stored(wide) == (applies ? 22 : -1), "SX1262 MamaDuck didn't store 22 dBm");
+
+    // Boot with a stored value. One the radio can't use, or outside 14 to 22,
+    // is removed and the default used. With the setting off the stored value
+    // is ignored and left alone, as before.
+    struct Boot { int value; bool sx1262; int power; bool kept; const char* what; };
+    const Boot boots[] = {
+        {18, false, CDPCFG_RF_LORA_TXPOW, !applies, "stored 18 dBm on an SX1276"},
+        {22, false, CDPCFG_RF_LORA_TXPOW, !applies, "stored 22 dBm on an SX1276"},
+        {30, false, CDPCFG_RF_LORA_TXPOW, !applies, "stored 30 dBm"},
+        {20, false, applies ? 20 : CDPCFG_RF_LORA_TXPOW, true, "stored 20 dBm on an SX1276"},
+        {22, true, applies ? 22 : CDPCFG_RF_LORA_TXPOW, true, "stored 22 dBm on an SX1262"},
+    };
+    for (const Boot& boot : boots) {
+        Node<Mama> mama{"NODE0006"};
+        Node<Link> leaf{"LINK0002"};
+        mama.radio().sx1262 = leaf.radio().sx1262 = boot.sx1262;
+        mama.eeprom_preferences.putInt("txPwr", boot.value);
+        leaf.eeprom_preferences.putInt("txPwr", boot.value);
+        const int mamaRc = mama.setupWithDefaults(), leafRc = leaf.setupWithDefaults();
+        const std::string what = boot.what;
+        check(mamaRc == DUCK_ERR_NONE && leafRc == DUCK_ERR_NONE, (what + ": setup failed").c_str());
+        check(mama.radio().setupPower == boot.power && leaf.radio().setupPower == boot.power,
+              (what + ": wrong TX power at setup").c_str());
+        check(mama.eeprom_preferences.isKey("txPwr") == boot.kept && leaf.eeprom_preferences.isKey("txPwr") == boot.kept,
+              (what + (boot.kept ? ": removed" : ": not removed")).c_str());
+    }
+    assert(failures == 0);
+    std::cout << "tx power: " << (applies ? "stored only if this duck's radio takes it; a bad stored value is "
+                                            "removed at boot"
+                                          : "not applied (flag off); stored values ignored")
+              << "; MamaDucks relay cmd_tx for other ducks\n";
 }
 
 void sleepChecks() {
@@ -563,6 +671,7 @@ int main() {
         std::cout << "PapaDuck health: handed to the application, not transmitted\n";
     }
     timeSyncChecks();
+    txPowerChecks();
     sleepChecks();
     bloomChecks();
     std::cout << "PASS\n";

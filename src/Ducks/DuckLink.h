@@ -81,7 +81,12 @@ class DuckLink : public Duck<WifiCapability, RadioType> {
                     break;
                   }
 
-                  if (err == DUCK_ERR_NONE){
+                  // Store only a value this duck's radio takes, or radio setup
+                  // fails at the next boot. Relay it either way: other ducks
+                  // may have a different radio.
+                  if (this->duckRadio.checkTxPower(txPwr) != DUCK_ERR_NONE) {
+                    logerr_ln("tx power %i dBm not supported by this radio, not stored", txPwr);
+                  } else {
                     this->eeprom_preferences.putInt("txPwr", txPwr);
                     Serial.print("updating tx power to value : ");
                     Serial.println(txPwr);
