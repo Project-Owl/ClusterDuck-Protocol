@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <random>
 #include <set>
 #include <tuple>
 #include "CdpPacket.h"
@@ -324,6 +325,103 @@ void toStringChecks() {
     std::cout << "toString: printable bytes kept, others written as hex\n";
 }
 
+// The duplicate filter names this class a friend, so the tests can reach inside.
+class BloomFilterTester {
+public:
+    static void setSeeds(BloomFilter& filter, uint32_t first, uint32_t second) {
+        filter.Seeds[0] = int(first); filter.Seeds[1] = int(second);
+    }
+    static int active(const BloomFilter& filter) { return filter.activeFilter; }
+    static bool empty(const BloomFilter& filter, int which) {
+        const unsigned int* words = which == 1 ? filter.filter1 : filter.filter2;
+        return std::all_of(words, words + filter.numSectors, [](unsigned int word) { return word == 0; });
+    }
+    static uint32_t hash(const std::string& data, uint32_t seed) {
+        return BloomFilter::murmur3Hash(reinterpret_cast<const unsigned char*>(data.data()), int(seed), int(data.size()));
+    }
+    // The two bit positions a MUID sets.
+    static std::pair<unsigned, unsigned> bits(BloomFilter& filter, Muid muid) {
+        std::unique_ptr<unsigned int[]> results(new unsigned int[filter.numHashes]);
+        filter.set_hash_results(muid.data(), MUID_LENGTH, results);
+        return {results[0], results[1]};
+    }
+};
+
+void bloomChecks() {
+    // MurmurHash3_x86_32 reference values.
+    assert(BloomFilterTester::hash("", 1) == 0x514E28B7);
+    assert(BloomFilterTester::hash(std::string("\x21\x43\x65\x87", 4), 0x5082EDEE) == 0x2362F9DE);
+    assert(BloomFilterTester::hash("Hello, world!", 0x9747B28C) == 0x24884CBA);
+
+    // MUIDs as ducks make them: four characters from 0-9 and A-Z. Not from the
+    // fake random(), which only ever gives 9^4 different MUIDs.
+    std::mt19937 rng(528);
+    auto newMuid = [&] {
+        Muid muid;
+        for (auto& c : muid) c = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[rng() % 36];
+        return muid;
+    };
+    auto add = [](BloomFilter& filter, Muid muid) { filter.bloom_add(muid.data(), MUID_LENGTH); };
+    auto seen = [](BloomFilter& filter, Muid muid) { return filter.bloom_check(muid.data(), MUID_LENGTH) == 1; };
+
+    // Every DEFAULT_MAX_MESSAGES the filter swaps halves and clears all words
+    // of the half it reuses, not 312 / 32 of them. A MUID is remembered for at
+    // least the next DEFAULT_MAX_MESSAGES.
+    {
+        BloomFilter filter;
+        for (int swap = 1; swap <= 4; ++swap) {
+            const Muid first = newMuid();
+            add(filter, first);
+            for (int i = 1; i < DEFAULT_MAX_MESSAGES; ++i) { add(filter, newMuid()); assert(seen(filter, first)); }
+            assert(seen(filter, first));
+            const int active = BloomFilterTester::active(filter);
+            assert(active == (swap % 2 ? 2 : 1) && BloomFilterTester::empty(filter, active));
+        }
+    }
+    // The two bits are independent: the distance between them takes many
+    // values. With the seeded djb2 hash it was nearly constant.
+    {
+        BloomFilter filter;
+        const unsigned size = filter.get_numSectors() * filter.get_bitsPerSector();
+        std::set<unsigned> distances;
+        for (int i = 0; i < 1000; ++i) {
+            const auto [a, b] = BloomFilterTester::bits(filter, newMuid());
+            distances.insert((b + size - a) % size);
+        }
+        assert(distances.size() > 800);
+    }
+    // Collisions depend on the seeds. With djb2, a filter holding only "05FM"
+    // reported "CMDD" as seen for every seed pair.
+    for (int i = 0; i < 100; ++i) {
+        BloomFilter filter;
+        BloomFilterTester::setSeeds(filter, rng(), rng());
+        add(filter, {'0','5','F','M'});
+        assert(!seen(filter, {'C','M','D','D'}));
+    }
+    // False positives over 200 swaps of new MUIDs, with the seeds a duck picks
+    // and with fixed ones, including adjacent seeds. Two independent hashes give
+    // about 0.05%; the djb2 filter gave 1.5%, and clearing 9 words per swap 60%.
+    {
+        unsigned checked = 0, falsePositives = 0;
+        for (int round = 0; round < 4; ++round) {
+            BloomFilter filter;
+            if (round == 1) BloomFilterTester::setSeeds(filter, 12345, 12346);
+            if (round > 1) BloomFilterTester::setSeeds(filter, rng(), rng());
+            std::set<Muid> used;
+            while (used.size() < 20000) {
+                const Muid muid = newMuid();
+                if (!used.insert(muid).second) continue;
+                ++checked;
+                if (seen(filter, muid)) ++falsePositives;
+                add(filter, muid);
+            }
+        }
+        std::cout << "duplicate filter: " << falsePositives << " false positives in " << checked
+                  << " new MUIDs (" << 100.0 * falsePositives / checked << "%)\n";
+        assert(falsePositives * 1000 < checked); // under 0.1%
+    }
+}
+
 int main() {
     std::cout << "remote commands: time sync=" << CDPCFG_REMOTE_TIME_SYNC
               << " tx power=" << CDPCFG_REMOTE_TX_POWER << '\n';
@@ -466,5 +564,6 @@ int main() {
     }
     timeSyncChecks();
     sleepChecks();
+    bloomChecks();
     std::cout << "PASS\n";
 }
