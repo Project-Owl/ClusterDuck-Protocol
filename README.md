@@ -35,6 +35,8 @@ Check out the [Wiki](https://github.com/ClusterDuck-Protocol/ClusterDuck-Protoco
 
 
 # Basic Usage
+The [examples](examples/README.md) folder has a complete sketch for each duck type, a full-featured MamaDuck, and how to build them with PlatformIO or the Arduino IDE.
+
 ## Constructing a Duck
 ```c++
 DuckLink duck("LINK0001"); //Declare the duck type and pass in your Device ID name
