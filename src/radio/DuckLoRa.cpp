@@ -164,13 +164,13 @@ std::optional<std::vector<uint8_t>> DuckLoRa::readReceivedData() { //return a st
         return std::nullopt;
     }
 
-    loginfo_ln("readReceivedData() - packet length returns: %d", packet_length);
+    logdbg_ln("readReceivedData() - packet length returns: %d", packet_length);
 
     packetBytes.resize(packet_length);
     err = lora.readData(packetBytes.data(), packet_length);
     lastRssi = lora.getRSSI();
     lastSnr = lora.getSNR();
-    loginfo_ln("readReceivedData() - lora.readData returns: err = %d", err);
+    logdbg_ln("readReceivedData() - lora.readData returns: err = %d", err);
 
     rxState = goToReceiveMode(true);
 
@@ -181,11 +181,11 @@ std::optional<std::vector<uint8_t>> DuckLoRa::readReceivedData() { //return a st
 
     loginfo_ln("Rx packet: %s", duckutils::toString(packetBytes.data(), packetBytes.size()).c_str());
 
-    loginfo_ln("readReceivedData: checking path offset integrity");
+    logdbg_ln("readReceivedData: checking path offset integrity");
 
     uint8_t* data = packetBytes.data();
 
-    loginfo_ln("readReceivedData: checking data section CRC");
+    logdbg_ln("readReceivedData: checking data section CRC");
 
     std::vector<uint8_t> data_section;
     data_section.insert(data_section.end(), &data[DATA_POS], &data[packet_length]);
@@ -234,7 +234,7 @@ void DuckLoRa::delay(size_t size) {
         // Add the time on air to the delay
         // txdelay_ms += lora.getTimeOnAir(size);
 
-        loginfo_ln("Last receive was %ld ms ago, delaying transmission by %ld ms", millis() - this->lastReceiveTime, txdelay.count());
+        logdbg_ln("Last receive was %ld ms ago, delaying transmission by %ld ms", millis() - this->lastReceiveTime, txdelay.count());
 
         // Use FreeRTOS task delay, which will not block other tasks
         // must pass ticks, so convert from ms to ticks
@@ -468,7 +468,7 @@ int DuckLoRa::startTransmitData(uint8_t* data, int length) {
             transmitting = true;
             txStartedAt = millis();
             txTimeoutMs = lora.getTimeOnAir(length) / 1000UL + 2000UL;
-            loginfo_ln("TX data done in : %d ms",(millis() - t1));
+            logdbg_ln("TX data done in : %d ms",(millis() - t1));
             break;
 
         case RADIOLIB_ERR_PACKET_TOO_LONG:

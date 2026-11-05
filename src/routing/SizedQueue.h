@@ -22,7 +22,7 @@ class SizedQueue{
       ++dropped;
       return false;
     }
-    loginfo_ln("[ROUTER] queue size: %zu", packetQueue.size());
+    logdbg_ln("[ROUTER] queue size: %zu", packetQueue.size());
     return true;
   }
 
