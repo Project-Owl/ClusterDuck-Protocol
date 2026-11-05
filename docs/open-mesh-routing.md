@@ -124,6 +124,18 @@ MamaDucks relay every broadcast `cmd_time` under the normal duplicate and hop ru
 - **Security:** these checks make spoofing harder, but the command isn't authenticated. Anyone in radio range using the same sync word can send a packet that claims to come from a PapaDuck.
 - **Echoes:** the PapaDuck's receive callback also gets the relayed copies of its own `cmd_time`. Leave them out when forwarding to the cloud.
 
+## TX power (`topics::cmd_tx`)
+
+A duck built with `CDPCFG_REMOTE_TX_POWER=1` stores the TX power from a `cmd_tx` packet, such as `{"txPwr":20}`, and uses it from its next boot.
+
+- **Range.** The command allows 14 to 22 dBm. A value outside that range, or broken JSON, is ignored and not relayed.
+- **Only what the radio takes.** SX1276 boards (Heltec V2, TTGO LoRa32) take 14 to 17 or 20 dBm. SX1262 boards take all of 14 to 22. The duck asks its radio before it stores a value. It doesn't store one the radio refuses, but still relays it for ducks with another radio.
+- **Safe boot.** At boot the duck checks the stored value again. If the radio doesn't take it, the duck removes it, logs one line and uses `CDPCFG_RF_LORA_TXPOW`.
+- **Next boot, not now.** On an SX1276, setting the power puts the radio in standby. That would cut off a packet being sent or received, so the new value waits for the next boot.
+- **For this duck.** A MamaDuck applies a broadcast or a command addressed to it. A command addressed to another duck is only passed on.
+
+The command isn't authenticated, and the top of the range can exceed regional limits.
+
 ## Deep sleep
 
 CDP doesn't decide when a duck sleeps, but it gives the sketch two hooks:
@@ -148,7 +160,7 @@ All of these can be overridden at build time with `-D`.
 | `CDPCFG_RF_LORA_SYNC_WORD` | `0x12` | LoRa sync word. Ducks only hear the same value; use different values to keep nearby deployments apart. Not security |
 | `CDPCFG_REMOTE_COMMANDS` | 0 (off) | Default for the next two settings, so `-DCDPCFG_REMOTE_COMMANDS=1` turns both on |
 | `CDPCFG_REMOTE_TIME_SYNC` | `CDPCFG_REMOTE_COMMANDS` | Set the clock from `cmd_time` (see [Time sync](#time-sync-topicscmd_time)). Not authenticated. When off, MamaDucks still relay it |
-| `CDPCFG_REMOTE_TX_POWER` | `CDPCFG_REMOTE_COMMANDS` | Set TX power from `cmd_tx`, 14 to 22 dBm, stored across reboots. Not authenticated, and the top of that range can exceed regional limits. When off, MamaDucks still relay it |
+| `CDPCFG_REMOTE_TX_POWER` | `CDPCFG_REMOTE_COMMANDS` | Set TX power from `cmd_tx`, 14 to 22 dBm, from the next boot (see [TX power](#tx-power-topicscmd_tx)). Only values the radio takes are stored. Not authenticated, and the top of that range can exceed regional limits. When off, MamaDucks still relay it |
 | `CDPCFG_TIME_MIN_EPOCH` | 1767225600 (2026-01-01) | Oldest UTC time, in seconds, that `cmd_time` and `sendTimeSync()` accept and `hasValidTime()` counts as valid |
 | `CDPCFG_MAX_QUEUE_SIZE` | 10 | Packets each of the RX, data-TX and control-TX queues can hold |
 | `CDPCFG_MAX_PACKET_SEND_RATE` | 3000 ms | Minimum time between two transmissions |
