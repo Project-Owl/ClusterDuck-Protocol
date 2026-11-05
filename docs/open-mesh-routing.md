@@ -130,9 +130,9 @@ A duck built with `CDPCFG_REMOTE_TX_POWER=1` stores the TX power from a `cmd_tx`
 
 - **Range.** The command allows 14 to 22 dBm. A value outside that range, or broken JSON, is ignored and not relayed.
 - **Only what the radio takes.** SX1276 boards (Heltec V2, TTGO LoRa32) take 14 to 17 or 20 dBm. SX1262 boards take all of 14 to 22. The duck asks its radio before it stores a value. It doesn't store one the radio refuses, but still relays it for ducks with another radio.
-- **Safe boot.** At boot the duck checks the stored value again. If the radio doesn't take it, the duck removes it, logs one line and uses `CDPCFG_RF_LORA_TXPOW`.
+- **Safe boot.** At boot the duck checks the stored value again. If it is outside 14 to 22 dBm or the radio doesn't take it, the duck removes it, logs one line and uses `CDPCFG_RF_LORA_TXPOW`. If radio setup still fails with the stored value, the duck sets up the radio again with the default, and removes the stored value if that works.
 - **Next boot, not now.** On an SX1276, setting the power puts the radio in standby. That would cut off a packet being sent or received, so the new value waits for the next boot.
-- **For this duck.** A MamaDuck applies a broadcast or a command addressed to it. A command addressed to another duck is only passed on.
+- **For this duck.** A MamaDuck applies a broadcast or a command addressed to it. A command addressed to another duck is only passed on. A DuckLink applies only a broadcast and ignores a command addressed to it.
 
 The command isn't authenticated, and the top of the range can exceed regional limits.
 
