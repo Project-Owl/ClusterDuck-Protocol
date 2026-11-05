@@ -82,7 +82,7 @@ void BloomFilter::set_hash_results(unsigned char* msg, int msgSize,
     std::unique_ptr<unsigned int[]> & hashResults
 ) {
     for (int i = 0; i < this->numHashes; i++){
-        unsigned int hashResult = djb2Hash(msg, this->Seeds[i], msgSize);
+        unsigned int hashResult = murmur3Hash(msg, this->Seeds[i], msgSize);
         unsigned int totalBitSize = this->numSectors * this->bitsPerSector;
         hashResult = hashResult % totalBitSize;
 
@@ -195,20 +195,26 @@ void BloomFilter::bloom_add(unsigned char* msg, int msgSize) {
 
 }
 
-unsigned int BloomFilter::djb2Hash(unsigned char* str, int seed, int msgSize){  // "version" of djb2Hash with seed
-    unsigned int hash = seed; 
-    int c;
-
-   //TODO: test that for loop outputs the same value as while loop
-   //  while ((c = *str++))
-   //      hash = ((hash << 5) + hash) + c; // (hash * 33) + c 
-
-   for(int i = 0; i < msgSize; i++) {
-      c = *str++;
-      hash = ((hash << 5) + hash) + c; // (hash * 33) + c
-   }
-    return hash;
+// MurmurHash3 (x86, 32-bit) by Austin Appleby, public domain. The seed is mixed
+// in nonlinearly, so the hashes for different seeds are independent. The seeded
+// djb2 hash used before only added a seed-dependent constant to the same sum, so
+// the second bit position was the first plus a fixed offset: the filter worked
+// like a single-hash filter, and which MUIDs collided did not depend on the seeds.
+unsigned int BloomFilter::murmur3Hash(const unsigned char* data, int seed, int length) {
+    auto rotl = [](uint32_t x, int r) { return (x << r) | (x >> (32 - r)); };
+    auto mixKey = [&](uint32_t k) { k *= 0xcc9e2d51u; k = rotl(k, 15); return k * 0x1b873593u; };
+    uint32_t h = uint32_t(seed);
+    int i = 0;
+    for (; i + 4 <= length; i += 4) {
+        const uint32_t k = uint32_t(data[i]) | uint32_t(data[i + 1]) << 8 |
+                           uint32_t(data[i + 2]) << 16 | uint32_t(data[i + 3]) << 24;
+        h ^= mixKey(k);
+        h = rotl(h, 13) * 5 + 0xe6546b64u;
+    }
+    uint32_t tail = 0;
+    for (int shift = 0; i < length; ++i, shift += 8) tail |= uint32_t(data[i]) << shift;
+    if (length & 3) h ^= mixKey(tail);
+    h ^= uint32_t(length);
+    h ^= h >> 16; h *= 0x85ebca6bu; h ^= h >> 13; h *= 0xc2b2ae35u; h ^= h >> 16;
+    return h;
 }
-
-   
-
