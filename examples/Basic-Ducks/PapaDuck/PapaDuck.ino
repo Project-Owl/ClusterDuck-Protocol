@@ -14,8 +14,8 @@
  *   downstream by MessageID, or call duck.muidNotReceived(packet.muid) in the
  *   callback to drop them here.
  * - Every 15 minutes the PapaDuck's own health (topics::health) also arrives in
- *   the callback, as a packet from this duck with hop count 0. It isn't sent
- *   over LoRa, so it is published like the health of the other ducks.
+ *   the callback, as a packet from this duck with hop count 0. It doesn't go
+ *   over LoRa. This sketch publishes it like the health of any other duck.
  * - Pings, pongs and other reserved topics are not published.
  * - While it connects to the broker, the PapaDuck doesn't receive, and LoRa
  *   packets that arrive then can be lost. The MQTT_TIMEOUT_S settings keep each
