@@ -62,6 +62,23 @@ int DuckLoRa::checkLoRaParameters(LoRaConfigParams config) { //this can be impro
     return rc;
 }
 
+int DuckLoRa::checkTxPower(int power) {
+    // The range checkLoRaParameters() allows.
+    if (power < -9 || power > 22) {
+        return DUCK_ERR_INVALID_ARGUMENT;
+    }
+    // RadioLib's own check, the one setOutputPower() runs before it touches the
+    // radio. It only compares numbers, so it works before begin().
+#ifdef CDPCFG_RADIO_SX1262
+    int16_t rc = lora.checkOutputPower(power, nullptr);
+#else
+    // SX1278::setOutputPower() uses the RFO output below 2 dBm and PA_BOOST
+    // from 2 dBm. Check the output it will use.
+    int16_t rc = lora.checkOutputPower(power, nullptr, power < 2);
+#endif
+    return rc == RADIOLIB_ERR_NONE ? DUCK_ERR_NONE : DUCK_ERR_INVALID_ARGUMENT;
+}
+
 int DuckLoRa::setupRadio(const LoRaConfigParams &config) {
     loginfo_ln("Setting up RADIOLIB LoRa radio...");
     int rc;
