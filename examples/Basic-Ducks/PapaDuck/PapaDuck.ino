@@ -17,11 +17,16 @@
  *   the callback, as a packet from this duck with hop count 0. It isn't sent
  *   over LoRa, so it is published like the health of the other ducks.
  * - Pings, pongs and other reserved topics are not published.
+ * - While it connects to the broker, the PapaDuck doesn't receive, and LoRa
+ *   packets that arrive then can be lost. The MQTT_TIMEOUT_S settings keep each
+ *   attempt short, and after each failed attempt it waits twice as long before
+ *   the next one, up to MQTT_RETRY_MAX_MS. WiFi reconnects by itself.
  * - WiFi, TLS and MQTT don't fit the default 1.25 MB app partition. The root
  *   platformio.ini sets board_build.partitions = no_ota.csv; in the Arduino IDE
  *   pick a partition scheme without OTA, such as "No OTA (2MB APP/2MB SPIFFS)".
  */
 
+#include <algorithm>
 #include <string>
 #include <CDP.h>
 #include <PubSubClient.h>
@@ -37,7 +42,9 @@ const uint16_t MQTT_PORT = 8883;                // TLS
 const char MQTT_CLIENT_ID[] = "papa-duck-mqtt-1";  // must be unique on the broker
 const char MQTT_PUB_TOPIC[] = "hub/event";        // where this PapaDuck publishes
 const char MQTT_SUB_TOPIC[] = "incoming/say_hello";  // what it subscribes to
-const unsigned long MQTT_RETRY_MS = 5000;       // time between two connection attempts
+const unsigned long MQTT_CHECK_MS = 5000;       // time between two connection checks
+const unsigned long MQTT_RETRY_MAX_MS = 60000;  // longest wait after failed attempts
+const uint16_t MQTT_TIMEOUT_S = 5;              // longest wait for each connection step
 // PubSubClient's default 256-byte buffer is too small for a 228-byte CDP
 // payload wrapped in JSON: publish() returns false when a message doesn't fit.
 const uint16_t MQTT_BUFFER_SIZE = 1024;
@@ -76,6 +83,7 @@ auto timer = timer_create_default();
 WiFiClientSecure wifiClient;
 PubSubClient mqttClient(wifiClient);
 bool setupOK = false;
+unsigned long mqttRetryMs = MQTT_CHECK_MS;   // wait before the next connection check
 
 void handleDuckData(CdpPacket packet);
 void handleMqttMessage(char* topic, byte* payload, unsigned int length);
@@ -93,15 +101,20 @@ void setup() {
   setupOK = true;
 
   // Retries a few times when the network isn't found, so this can take ~30 s.
+  // After that, the ESP32 reconnects to WiFi by itself.
   duck.joinWifiNetwork(WIFI_SSID, WIFI_PASS);
 
   wifiClient.setCACert(MQTT_CA_CERT);
+#if ESP_ARDUINO_VERSION_MAJOR < 3
+  wifiClient.setTimeout(MQTT_TIMEOUT_S);           // TCP connect, in seconds (ESP32 core 2.x)
+#endif
+  wifiClient.setHandshakeTimeout(MQTT_TIMEOUT_S);  // TLS handshake, in seconds
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setCallback(handleMqttMessage);
   mqttClient.setBufferSize(MQTT_BUFFER_SIZE);
   mqttClient.setKeepAlive(60);
-  connectMqtt(nullptr);
-  timer.every(MQTT_RETRY_MS, connectMqtt);   // reconnects after a drop
+  mqttClient.setSocketTimeout(MQTT_TIMEOUT_S);     // wait for the broker's answer
+  connectMqtt(nullptr);   // connects, and schedules the next check
 
   Serial.println("[PAPA] Setup OK");
 }
@@ -110,7 +123,7 @@ void loop() {
   if (!setupOK) {
     return;
   }
-  duck.run();          // receives packets and calls handleDuckData()
+  duck.run();         // receives packets and calls handleDuckData()
   timer.tick();
   mqttClient.loop();  // keeps the MQTT connection alive and calls handleMqttMessage()
 }
@@ -127,25 +140,30 @@ void handleDuckData(CdpPacket packet) {
 }
 
 /**
- * @brief Connect to the MQTT broker if WiFi is up and MQTT isn't. Called once
- * from setup() and then by the timer.
- * @returns true to keep the timer running
+ * @brief Connect to the MQTT broker if WiFi is up and MQTT isn't, then
+ * schedule the next check. Called once from setup() and then by the timer.
+ * Each failed attempt doubles the wait before the next one, up to
+ * MQTT_RETRY_MAX_MS, because duck.run() doesn't run during an attempt.
+ * @returns false: this is a one-shot timer, and the next one is set here
  */
 bool connectMqtt(void*) {
-  if (mqttClient.connected() || !duck.isWifiConnected()) {
-    return true;
+  if (!mqttClient.connected() && duck.isWifiConnected()) {
+    Serial.printf("[PAPA] Connecting to MQTT broker %s\n", MQTT_SERVER);
+    // For a broker that needs a login: mqttClient.connect(MQTT_CLIENT_ID, user, password)
+    if (mqttClient.connect(MQTT_CLIENT_ID)) {
+      Serial.println("[PAPA] MQTT connected");
+      mqttRetryMs = MQTT_CHECK_MS;
+      if (!mqttClient.subscribe(MQTT_SUB_TOPIC)) {
+        Serial.printf("[PAPA] Failed to subscribe to %s\n", MQTT_SUB_TOPIC);
+      }
+    } else {
+      mqttRetryMs = std::min(2 * mqttRetryMs, MQTT_RETRY_MAX_MS);
+      Serial.printf("[PAPA] MQTT connect failed, state = %d, next attempt in %lu s\n",
+        mqttClient.state(), mqttRetryMs / 1000);
+    }
   }
-  Serial.printf("[PAPA] Connecting to MQTT broker %s\n", MQTT_SERVER);
-  // For a broker that needs a login: mqttClient.connect(MQTT_CLIENT_ID, user, password)
-  if (!mqttClient.connect(MQTT_CLIENT_ID)) {
-    Serial.printf("[PAPA] MQTT connect failed, state = %d\n", mqttClient.state());
-    return true;
-  }
-  Serial.println("[PAPA] MQTT connected");
-  if (!mqttClient.subscribe(MQTT_SUB_TOPIC)) {
-    Serial.printf("[PAPA] Failed to subscribe to %s\n", MQTT_SUB_TOPIC);
-  }
-  return true;
+  timer.in(mqttRetryMs, connectMqtt);
+  return false;
 }
 
 /**
