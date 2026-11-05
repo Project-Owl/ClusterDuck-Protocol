@@ -33,9 +33,9 @@ public:
    * - Allocates two unsigned int arrays (filter1 and filter2), each containing DEFAULT_NUM_SECTORS
    *   elements initialized to zero
    * - Sets the active filter to filter1 upon initialization
-   * - Draws DEFAULT_NUM_HASH_FUNCS seeds from rand(), seeded with srand(time(NULL)). The seeds
+   * - Draws DEFAULT_NUM_HASH_FUNCS seeds from esp_random(), so each duck has its own. The seeds
    *   are not compared with each other, so two can be equal
-   * - These seeds are used by the djb2Hash function to generate consistent hash values for messages
+   * - Each seed gives one MurmurHash3 hash of the MUID, so the hashes are independent
    *
    * Default parameters used:
    * - DEFAULT_NUM_SECTORS: 312 sectors for bit storage
