@@ -106,17 +106,15 @@ inline void appendPrintable(std::string& out, unsigned char c) {
  * @brief Convert a vector into an ASCII string.
  * 
  * @param vec A vector to convert
- * @returns A std::string representing the byte array in ASCII.
- * 
+ * @returns A std::string representing the byte array in ASCII, with each
+ * non-printable byte written as two hex digits (see detail::appendPrintable).
+ *
  */
 template<typename T>
 std::string toString(const std::vector<T>& vec) {
     std::string result;
-    for (const auto& element : vec) {
-        if (!std::isprint(element)) {
-            return "ERROR: Non-printable character";
-        }
-        result += static_cast<char>(element);
+    for (unsigned char c : vec) {
+        detail::appendPrintable(result, c);
     }
     return result;
 }
