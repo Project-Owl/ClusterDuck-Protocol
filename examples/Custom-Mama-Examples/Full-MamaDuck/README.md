@@ -16,8 +16,6 @@ From the CDP folder with PlatformIO:
 EXAMPLE_DIR=Custom-Mama-Examples/Full-MamaDuck pio run -e local_heltec_wifi_lora_32_V3 -t upload
 ```
 
-In the Arduino IDE, open `Full-MamaDuck.ino` from File > Examples > ClusterDuck Protocol.
-
 ## Optional features (all off)
 
 | Feature | How to turn it on | Notes |
@@ -34,7 +32,7 @@ PLATFORMIO_BUILD_FLAGS="-DCDPCFG_REMOTE_TIME_SYNC=1" \
   EXAMPLE_DIR=Custom-Mama-Examples/Full-MamaDuck pio run -e local_heltec_wifi_lora_32_V3
 ```
 
-In your own PlatformIO project, add the flag to `build_flags` instead. The Arduino IDE can't set build flags, so build with PlatformIO to use these.
+In your own PlatformIO project, add the flag to `build_flags` instead.
 
 **Deep sleep warning:** a sleeping MamaDuck receives and relays nothing, so ducks that depend on it lose their path to the PapaDuck. Use it only for a duck that no other duck needs as a relay. Before sleeping, the sketch keeps calling `run()` until `txIdle()` is true (at most 10 s), then calls `prepareForSleep()` and `esp_deep_sleep_start()`. Waking up is a reboot, so the counter and uptime start again, and a duck that is never awake for 15 minutes sends no CDP health message.
 

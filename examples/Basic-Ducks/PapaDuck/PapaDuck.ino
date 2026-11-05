@@ -22,8 +22,8 @@
  *   attempt short, and after each failed attempt it waits twice as long before
  *   the next one, up to MQTT_RETRY_MAX_MS. WiFi reconnects by itself.
  * - WiFi, TLS and MQTT don't fit the default 1.25 MB app partition. The root
- *   platformio.ini sets board_build.partitions = no_ota.csv; in the Arduino IDE
- *   pick a partition scheme without OTA, such as "No OTA (2MB APP/2MB SPIFFS)".
+ *   platformio.ini sets board_build.partitions = no_ota.csv; use the same in
+ *   your own PlatformIO project.
  */
 
 #include <algorithm>

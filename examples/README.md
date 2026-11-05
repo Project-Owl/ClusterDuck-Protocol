@@ -1,6 +1,6 @@
 # ClusterDuck Protocol examples
 
-Example sketches for CDP 5.5. Each example is a folder with a sketch of the same name, so it opens directly in the Arduino IDE, and the root `platformio.ini` builds any of them with PlatformIO.
+Example sketches for CDP 5.5. Each example is a folder with a sketch of the same name. Build any of them with PlatformIO from the root `platformio.ini`.
 
 | Example | What it does |
 |---|---|
@@ -78,16 +78,9 @@ pio run -e local_heltec_wifi_lora_32_V3 -t upload
 PLATFORMIO_BUILD_FLAGS="-DCDPCFG_REMOTE_TIME_SYNC=1" EXAMPLE_DIR=Custom-Mama-Examples/Full-MamaDuck pio run -e local_heltec_wifi_lora_32_V3
 ```
 
-### Arduino IDE
+The Basic-Ducks, Full-MamaDuck and External-Boards sketches print with `Serial`. The CDP library's own log lines, and those of AWS-PapaDuck, use CDP's logger, which needs `-D CDP_INFO`; the PlatformIO configuration sets it.
 
-1. Install the ESP32 board package and the ClusterDuck Protocol library, with the libraries it depends on: arduino-timer, ArduinoJson, CRC32, RadioLib, PubSubClient and FastLED. CDP 5.5 needs C++17 or newer; see the note below.
-2. Open the example from File > Examples > ClusterDuck Protocol.
-3. Select your board. For the PapaDuck examples, also pick a partition scheme without OTA, such as "No OTA (2MB APP/2MB SPIFFS)" (see below).
-4. Upload, and open the serial monitor at 115200 baud.
-
-The Basic-Ducks, Full-MamaDuck and External-Boards sketches print with `Serial`, so their output shows in both tools. The CDP library's own log lines, and those of AWS-PapaDuck, use CDP's logger, which needs `-D CDP_INFO`; the PlatformIO configuration sets it. Build flags such as `CDPCFG_REMOTE_TIME_SYNC` are set with PlatformIO.
-
-CDP 5.5 needs C++17 or newer and is built and tested with PlatformIO. The ESP32 board package 2.0.x compiles Arduino IDE sketches as C++11, which CDP 5.5 doesn't support: the build fails with errors such as `'optional' in namespace 'std' does not name a template type`. The Arduino IDE steps above haven't been tested with CDP 5.5.
+CDP 5.5 needs C++17 or newer. `src/config/cdp_common.ini` builds with `-std=gnu++2a` and removes the default `-std=gnu++11` with `build_unflags`; do the same in your own PlatformIO project.
 
 ## Notes for writing a 5.5 sketch
 
