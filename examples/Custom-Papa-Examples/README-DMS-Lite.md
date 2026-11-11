@@ -80,7 +80,9 @@ For Heltec V2 or T-Beam, use the corresponding `local_` environment from
 this checkout while 5.5 is in testing; the `prod_` environments fetch a release
 archive instead. The root configuration already selects the larger `no_ota.csv`
 app partition. For Arduino IDE, open the matching `.ino` and install CDP 5.5 and
-its dependencies; the WiFi sketch also uses PubSubClient.
+its dependencies; the WiFi sketch also uses PubSubClient. The board toolchain
+must compile with C++17 or newer, as CDP 5.5 requires. The root PlatformIO
+configuration sets the language standard for you.
 
 ## JSON format
 
