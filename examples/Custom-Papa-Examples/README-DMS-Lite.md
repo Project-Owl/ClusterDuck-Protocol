@@ -5,8 +5,8 @@ These two standalone sketches connect CDP 5.5 to
 
 | Sketch | Connection to DMS Lite |
 |---|---|
-| [PapiDuck-DMS-Lite-WiFi-Example](PapiDuck-DMS-Lite-WiFi-Example) | WiFi and MQTT to the Docker host's Mosquitto broker |
-| [PapiDuck-DMS-Lite-Serial-Example](PapiDuck-DMS-Lite-Serial-Example) | USB serial to the Docker host at 115200 baud |
+| [DMS-Lite-WiFi-PapaDuck](DMS-Lite-WiFi-PapaDuck) | WiFi and MQTT to the Docker host's Mosquitto broker |
+| [DMS-Lite-Serial-PapaDuck](DMS-Lite-Serial-PapaDuck) | USB serial to the Docker host at 115200 baud |
 
 Use one sketch per PapaDuck. Give every duck a unique eight-character
 `DEVICE_ID`; the defaults are `PAPAMQTT` and `PAPASER1`. All ducks in the mesh
@@ -26,7 +26,7 @@ the selected board's pins and CDP's default radio settings, including 915 MHz.
 3. Build and flash from this CDP checkout's root, selecting your board:
 
    ```sh
-   EXAMPLE_DIR=Custom-Papa-Examples/PapiDuck-DMS-Lite-WiFi-Example pio run -e local_heltec_wifi_lora_32_V3
+   EXAMPLE_DIR=Custom-Papa-Examples/DMS-Lite-WiFi-PapaDuck pio run -e local_heltec_wifi_lora_32_V3
    # Add -t upload when the correct PapaDuck is connected.
    ```
 
@@ -55,7 +55,7 @@ publish is not a database acknowledgement. Queued messages are lost on reboot.
 1. Build and flash the serial sketch from the CDP checkout's root:
 
    ```sh
-   EXAMPLE_DIR=Custom-Papa-Examples/PapiDuck-DMS-Lite-Serial-Example pio run -e local_heltec_wifi_lora_32_V3
+   EXAMPLE_DIR=Custom-Papa-Examples/DMS-Lite-Serial-PapaDuck pio run -e local_heltec_wifi_lora_32_V3
    # Add -t upload when the correct PapaDuck is connected.
    ```
 

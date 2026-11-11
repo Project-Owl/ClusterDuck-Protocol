@@ -1,5 +1,5 @@
 /**
- * @file PapiDuck-DMS-Lite-WiFi-Example.ino
+ * @file DMS-Lite-WiFi-PapaDuck.ino
  * @brief CDP 5.5 gateway for the DMS Lite Docker MQTT adapter.
  *
  * The Docker WiFi stack runs Mosquitto. This PapaDuck joins the same LAN and

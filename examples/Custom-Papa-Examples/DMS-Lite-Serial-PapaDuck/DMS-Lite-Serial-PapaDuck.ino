@@ -1,5 +1,5 @@
 /**
- * @file PapiDuck-DMS-Lite-Serial-Example.ino
+ * @file DMS-Lite-Serial-PapaDuck.ino
  * @brief CDP 5.5 gateway for the DMS Lite Docker serial adapter.
  *
  * Connect this PapaDuck to the Docker host over USB. Each received application

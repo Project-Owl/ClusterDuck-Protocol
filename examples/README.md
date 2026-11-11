@@ -10,8 +10,8 @@ Example sketches for CDP 5.5. Each example is a folder with a sketch of the same
 | [Basic-Ducks/DetectorDuck](Basic-Ducks/DetectorDuck) | Signal-strength meter for placing ducks |
 | [Custom-Mama-Examples/Full-MamaDuck](Custom-Mama-Examples/Full-MamaDuck) | MamaDuck with a status LED, a JSON reading and the optional 5.5 features |
 | [Custom-Papa-Examples/AWS-PapaDuck](Custom-Papa-Examples/AWS-PapaDuck) | PapaDuck that publishes to AWS IoT Core |
-| [Custom-Papa-Examples/PapiDuck-DMS-Lite-WiFi-Example](Custom-Papa-Examples/PapiDuck-DMS-Lite-WiFi-Example) | Gateway for DMS Lite Docker over local MQTT |
-| [Custom-Papa-Examples/PapiDuck-DMS-Lite-Serial-Example](Custom-Papa-Examples/PapiDuck-DMS-Lite-Serial-Example) | Gateway for DMS Lite Docker over USB serial |
+| [Custom-Papa-Examples/DMS-Lite-WiFi-PapaDuck](Custom-Papa-Examples/DMS-Lite-WiFi-PapaDuck) | Gateway for DMS Lite Docker over local MQTT |
+| [Custom-Papa-Examples/DMS-Lite-Serial-PapaDuck](Custom-Papa-Examples/DMS-Lite-Serial-PapaDuck) | Gateway for DMS Lite Docker over USB serial |
 | [External-Boards-Example/DuckLink](External-Boards-Example/DuckLink) | DuckLink for a board that CDP doesn't define itself |
 
 ## Basic-Ducks
