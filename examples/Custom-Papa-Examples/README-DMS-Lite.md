@@ -126,23 +126,6 @@ duck applied it. Those controls need a separate coordinated DMS/firmware update;
 this restoration does not reintroduce a legacy command receiver into the mesh.
 MQTT mode in DMS Lite already hides those controls.
 
-## Validation
-
-The host tests compile the actual two sketches with simulated transports and
-the real CDP packet/JSON code. They exercise framing, reserved topics, relay
-copies, maximum-size payloads, UTF-8/binary data, bounded queues and reconnects:
-
-```sh
-python3 tests/dms-lite-host/run.py
-# Also check their emitted messages with both real DMS Lite adapters:
-python3 tests/dms-lite-host/run.py --dms-lite-repo /path/to/dms-lite-docker
-```
-
-The optional integration check reads `origin/modern-update` from that checkout
-with Git and does not modify it. It does not connect to a database or device.
-Hardware flashing, live LoRa delivery and a physical Docker-host connection
-must still be verified on the deployment's equipment.
-
 ## Historical reference
 
 These replace the old examples from
