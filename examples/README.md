@@ -43,7 +43,7 @@ See [its README](Custom-Mama-Examples/Full-MamaDuck/README.md). QuackPack sensor
 
 **AWS-PapaDuck** publishes every message it receives to AWS IoT Core, on `owl/device/<THINGNAME>/evt/<topic>`. While MQTT is down it keeps up to 5 messages in a queue and publishes them after it reconnects. Set the WiFi network in the sketch, and the thing name, endpoint and certificates in `secrets.h`. It needs the PubSubClient library (`libraries.txt`).
 
-**DMS Lite PapaDucks** forward the flat JSON expected by DMS Lite Docker's `modern-update` branch. The WiFi example publishes to the Docker host's local Mosquitto broker; the serial example writes newline-delimited JSON at 115200 baud. See [the setup and compatibility guide](Custom-Papa-Examples/README-DMS-Lite.md), including the CDP 5.5 serial-command limitation.
+**DMS Lite PapaDucks** forward the flat JSON expected by DMS Lite Docker. The WiFi example publishes to the Docker host's local Mosquitto broker; the serial example writes newline-delimited JSON at 115200 baud. See [the setup and compatibility guide](Custom-Papa-Examples/README-DMS-Lite.md), including the CDP 5.5 serial-command limitation.
 
 ## External-Boards-Example
 

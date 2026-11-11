@@ -1,7 +1,7 @@
 # DMS Lite Docker PapaDucks
 
 These two standalone sketches connect CDP 5.5 to
-[DMS Lite Docker's `modern-update` branch](https://github.com/Project-Owl/dms-lite-docker/tree/modern-update):
+[DMS Lite Docker](https://github.com/Project-Owl/dms-lite-docker):
 
 | Sketch | Connection to DMS Lite |
 |---|---|
@@ -119,12 +119,6 @@ as deprecated and does not implement the legacy WiFi, health or channel
 commands. The old command-enabled serial example's `sendCommand()` API is also
 gone. The new serial sketch drains incoming bytes in bounded batches and logs
 one warning instead of executing those commands.
-
-The current DMS Lite `modern-update` UI still offers WiFi buttons in serial
-mode. A command being queued or dispatched there does **not** mean a CDP 5.5
-duck applied it. Those controls need a separate coordinated DMS/firmware update;
-this restoration does not reintroduce a legacy command receiver into the mesh.
-MQTT mode in DMS Lite already hides those controls.
 
 ## Historical reference
 

@@ -42,7 +42,7 @@ void loop() {
   if (!setupOK) return;
   duck.run();
 
-  // Charlie's serial writer may send legacy commands without a newline. Do
+  // The serial writer may send legacy commands without a newline. Do
   // not wait for framing or let an input stream starve LoRa processing.
   for (unsigned n = 0; n < 64 && Serial.available(); ++n) {
     Serial.read();
