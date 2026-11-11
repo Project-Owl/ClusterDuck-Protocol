@@ -51,6 +51,10 @@ jobs:
         EXAMPLE_DIR=Basic-Ducks/DuckLink platformio run -e local_lilygo_t_beam_sx1262
         EXAMPLE_DIR=Basic-Ducks/MamaDuck platformio run -e local_lilygo_t_beam_sx1262
         EXAMPLE_DIR=Custom-Mama-Examples/Full-MamaDuck platformio run -e local_lilygo_t_beam_sx1262
+        EXAMPLE_DIR=Custom-Papa-Examples/PapiDuck-DMS-Lite-Serial-Example platformio run -e local_lilygo_t_beam_sx1262
+        EXAMPLE_DIR=Custom-Papa-Examples/PapiDuck-DMS-Lite-WiFi-Example platformio run -e local_lilygo_t_beam_sx1262
+    - name: Check DMS Lite sketches and wire formats
+      run: CDP_LIBDEPS=.pio/libdeps/local_lilygo_t_beam_sx1262 python3 tests/dms-lite-host/run.py
     - name: Release Build
       if: startsWith(github.head_ref, 'release') || github.ref_type == 'tag'
       run: |
