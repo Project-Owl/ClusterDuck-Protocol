@@ -303,6 +303,14 @@ class Duck {
      */ 
     virtual void handleReceivedPacket(CdpPacket packet) = 0;
 
+    /**
+     * Report this duck's own health. Ordinary ducks send to Papa over LoRa;
+     * Papa overrides this to deliver directly to its cloud application.
+     */
+    virtual int reportHealth(const std::string& message) {
+      return sendData(topics::health, message);
+    }
+
     int broadcastPacket(CdpPacket& packet){
       if (packet.hopCount >= MAX_HOPS) { ++hopDropped; return DUCKPACKET_ERR_MAX_HOPS; }
       if (router.getFilter().bloom_check(packet.muid.data(), MUID_LENGTH)) {
@@ -413,7 +421,7 @@ class Duck {
      */
     static bool sendHealth(void* p){
       Duck* duck = static_cast<Duck*>(p);
-      const int err = duck->sendData(topics::health, duck->healthMessage());
+      const int err = duck->reportHealth(duck->healthMessage());
       if (err == DUCK_ERR_NONE) ++duck->counter;
       loginfo_ln("[DUCK] health enqueue rc=%d", err);
       return true;
@@ -635,7 +643,7 @@ class Duck {
       const std::string detail = duck->routingDiagnostics(duck->diagnosticPage);
       loginfo_ln("[CDP_DIAG] health_detail=%s", detail.c_str());
       const std::string message = duck->healthMessage();
-      if (duck->sendData(topics::health, message) == DUCK_ERR_NONE) {
+      if (duck->reportHealth(message) == DUCK_ERR_NONE) {
         ++duck->counter;
         duck->diagnosticPage = (duck->diagnosticPage + 1) % 4;
       }
