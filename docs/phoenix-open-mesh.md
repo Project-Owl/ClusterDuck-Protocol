@@ -74,7 +74,7 @@ retains at most 32 direct peers and 64 route destinations; direct-peer capacity
 evictions are counted separately. All expiry comparisons tolerate timer rollover.
 
 A first signal snapshot is attempted with the first five-minute diagnostic page,
-then the original 195-minute signal timer remains active. This adds one topology
+then signal snapshots run on the regular 30-minute timer. This adds one topology
 packet per boot to permit a short installation preflight. The existing DMS
 formatter maps every array entry, but its formatted signal display/CSV omits the
 new metadata. Raw MQTT payloads and serial diagnostic page 3 preserve completeness evidence;

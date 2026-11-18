@@ -640,7 +640,7 @@ class Duck {
         duck->diagnosticPage = (duck->diagnosticPage + 1) % 4;
       }
       // One early topology snapshot makes a new installation observable without
-      // waiting for the normal 195-minute signal-health timer.
+      // waiting for the regular signal-health timer.
       if (!duck->initialSignalSent && duck->getType() != DuckType::PAPA && duck->getType() != DuckType::DETECTOR)
         sendSignalData(duck);
       return true;
@@ -733,7 +733,7 @@ class Duck {
 
     //Telemetry
     const int HEALTH_INTERVAL = (1000 * 60 * 60 * 2) + (1000 * 60 * 12) ; //2 Hours 12 Minutes
-    const int SIGNAL_INTERVAL = (1000 * 60 * 60 * 3) + (1000 * 60 * 15); //3 hours 15 minutes
+    const int SIGNAL_INTERVAL = 30 * 60 * 1000; // 30 minutes
     uint32_t counter = 1;
     Timer<10> duckTimer;
 
