@@ -136,6 +136,24 @@ A duck built with `CDPCFG_REMOTE_TX_POWER=1` stores the TX power from a `cmd_tx`
 
 The command isn't authenticated, and the top of the range can exceed regional limits.
 
+## Demo application commands and reporting stop
+
+The demo branch reserves `topics::cmd_demo` (0x30, `"cmd_demo"`) for application
+commands and `topics::demo_receipt` (0x31, `"demo_receipt"`) for their results or
+event receipts. Their payloads remain ordinary bounded CDP data. CDP forwards
+them without interpreting or executing the application command; the sketch owns
+the payload contract, target checks and results. Existing GPS, health and signal
+topics are unchanged.
+
+After disabling its position report scheduler, a sketch can call
+`clearOwnQueuedData(topics::gps)` before queuing its stop result. The method
+returns the number of pending packets removed. It removes only GPS packets whose
+origin is this duck, preserving other origins' forwarded GPS, SOS/other topics,
+and routing/receive queues. Call it from the loop/task that owns `run()` and
+`sendData()`. It cannot retract an in-flight radio packet, earlier transmissions
+or copies already queued at other relays; receivers still need to distinguish
+late position history from the current reporting state.
+
 ## Deep sleep
 
 CDP doesn't decide when a duck sleeps, but it gives the sketch two hooks:

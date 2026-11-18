@@ -178,6 +178,24 @@ class Duck {
     }
 
     /**
+     * @brief Cancel this duck's pending application packets on one topic.
+     *
+     * For example, a reporting-stop handler can remove its queued GPS reports
+     * before it queues the stop result. Packets forwarded for another source,
+     * other topics, receive/control queues and an in-flight radio packet are
+     * untouched. Reserved topics cannot be cancelled through this API.
+     * Call from the same loop/task that services run() and sendData(). This
+     * does not cancel copies already transmitted or queued at another node.
+     * @returns Number of packets removed from the application TX queue.
+     */
+    size_t clearOwnQueuedData(uint8_t topic) {
+      if (topic < reservedTopic::max_reserved) return 0;
+      return txQueue.removeIf([this, topic](const CdpPacket& packet) {
+        return packet.topic == topic && packet.sduid == duid;
+      });
+    }
+
+    /**
      * @brief sendData that allows sending for reserved topic ping
      * @returns DUCK_ERR_NONE if the data was sent successfully, an error code otherwise.
      */

@@ -42,7 +42,10 @@ public:
         if (inbox.empty()) return std::nullopt;
         auto data = inbox.front(); inbox.pop_front(); return data;
     }
-    int sendData(std::vector<uint8_t> data) { ++done; deliver(this, data); return 0; }
+    int sendData(std::vector<uint8_t> data) {
+        if (transmitting) return DUCKLORA_ERR_TX_BUSY;
+        ++done; deliver(this, data); return 0;
+    }
     int startReceive() { return 0; }
     uint32_t getTxDoneCount() const { return done; }
     uint32_t getTxTimeoutCount() const { return 0; }
@@ -590,6 +593,50 @@ void bloomChecks() {
     }
 }
 
+void queuedDataCancellationChecks() {
+    CdpPacket named;
+    named.topic = topics::cmd_demo;
+    assert(named.topic == 0x30 && named.topicToString() == "cmd_demo");
+    named.topic = topics::demo_receipt;
+    assert(named.topic == 0x31 && named.topicToString() == "demo_receipt");
+
+    Mesh mesh(true);
+    mesh.until(120000);
+    const size_t start = mesh.sent.size();
+    mesh.a.radio().transmitting = true; // Keep newly queued packets pending.
+    assert(mesh.a.sendData(topics::gps, "old-local-1") == DUCK_ERR_NONE);
+    assert(mesh.a.sendData(topics::alert, "sos") == DUCK_ERR_NONE);
+    assert(mesh.a.sendData(topics::gps, "old-local-2") == DUCK_ERR_NONE);
+    // The missing destination also queues a routing request.
+    assert(mesh.a.sendData(topics::sensor, "keep", id("ABSENT01")) == DUCK_ERR_NONE);
+    assert(mesh.a.sendPing() == DUCK_ERR_NONE);
+
+    CdpPacket foreign(PAPADUCK_DUID, topics::gps, {'r'}, id("OTHER001"), DuckType::MAMA);
+    foreign.muid = {'F', 'G', 'P', 'S'};
+    assert(foreign.prepareForSending() == DUCK_ERR_NONE);
+    mesh.a.radio().inbox.push_back(foreign.asBytes());
+    mesh.a.run(); // Receive and queue another origin's GPS for forwarding.
+
+    assert(mesh.a.clearOwnQueuedData(topics::gps) == 2);
+    assert(mesh.a.clearOwnQueuedData(topics::gps) == 0);
+    assert(mesh.a.clearOwnQueuedData(reservedTopic::ping) == 0);
+    mesh.a.radio().transmitting = false;
+    mesh.until(hostMillis + 120000);
+
+    auto sentByA = [&](uint8_t topic, Duid origin) {
+        return std::count_if(mesh.sent.begin() + start, mesh.sent.end(), [&](const auto& item) {
+            return item.sender == 0 && item.packet.topic == topic && item.packet.sduid == origin;
+        });
+    };
+    assert(sentByA(topics::gps, id("NODE0001")) == 0);
+    assert(sentByA(topics::gps, id("OTHER001")) == 1);
+    assert(sentByA(topics::alert, id("NODE0001")) == 1);
+    assert(sentByA(topics::sensor, id("NODE0001")) == 1);
+    assert(sentByA(reservedTopic::ping, id("NODE0001")) == 1);
+    assert(sentByA(reservedTopic::rreq, id("NODE0001")) >= 1);
+    std::cout << "own-topic cancellation: removes queued GPS, retains forwarding/SOS/control/other data\n";
+}
+
 int main() {
     std::cout << "remote commands: time sync=" << CDPCFG_REMOTE_TIME_SYNC
               << " tx power=" << CDPCFG_REMOTE_TX_POWER << '\n';
@@ -730,6 +777,7 @@ int main() {
         }));
         std::cout << "PapaDuck health: handed to the application, not transmitted\n";
     }
+    queuedDataCancellationChecks();
     timeSyncChecks();
     txPowerChecks();
     sleepChecks();

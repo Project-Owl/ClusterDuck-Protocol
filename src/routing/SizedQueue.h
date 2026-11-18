@@ -5,6 +5,7 @@
 #include <queue>
 #include <algorithm>
 #include <optional>
+#include <utility>
 #include "../CdpPacket.h"
 
 class SizedQueue{
@@ -39,6 +40,22 @@ class SizedQueue{
   void clear(){
     cleared += packetQueue.size();
     packetQueue = std::queue<CdpPacket>{};
+  }
+
+  // Remove selected pending packets while retaining FIFO order and admission
+  // statistics. Intentional removals count as cleared, not overflow drops.
+  template <typename Predicate>
+  size_t removeIf(Predicate predicate) {
+    const size_t originalSize = packetQueue.size();
+    size_t removed = 0;
+    for (size_t i = 0; i < originalSize; ++i) {
+      CdpPacket packet = std::move(packetQueue.front());
+      packetQueue.pop();
+      if (predicate(packet)) ++removed;
+      else packetQueue.push(std::move(packet));
+    }
+    cleared += removed;
+    return removed;
   }
 
   const CdpPacket* front() const { return packetQueue.empty() ? nullptr : &packetQueue.front(); }

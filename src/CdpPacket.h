@@ -106,6 +106,10 @@ enum topics {
   cmd_tx = 0x20,
   //UTC time from a PapaDuck, {"epoch":<seconds>}; see PapaDuck::sendTimeSync()
   cmd_time = 0x22,
+  /// Application-defined demo command; CDP transports its payload unchanged.
+  cmd_demo = 0x30,
+  /// Application-defined demo command result or event receipt.
+  demo_receipt = 0x31,
   //gps
   gps = 0xEA,
   // MQ7 Gas Sensor
@@ -316,6 +320,10 @@ class CdpPacket {
                 return "cmd_time";
             case topics::cmd_tx:
                 return "cmd_tx";
+            case topics::cmd_demo:
+                return "cmd_demo";
+            case topics::demo_receipt:
+                return "demo_receipt";
             case topics::mq7:
                 return "mq7";
             case topics::gp2y:

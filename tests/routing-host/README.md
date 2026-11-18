@@ -29,3 +29,7 @@ To use other copies of those libraries, set `ARDUINOJSON_SRC` and `CRC32_SRC` to
 - **`toString()` for logs:** arrays, vectors, strings and byte pointers (the `Rx packet` line) keep printable ASCII and write every other byte as two hex digits, so `0x0A` becomes `0A`. DUIDs in the routing table and route JSON stay the raw eight bytes.
 
 These tests don't model RF loss, collisions, power or real timing. Hardware testing is still needed before a release.
+
+The demo transport checks also verify topic names for `cmd_demo`/`demo_receipt`
+and cancel this duck's queued GPS while preserving another origin's forwarded
+GPS, SOS, other application data and reserved/routing traffic.
