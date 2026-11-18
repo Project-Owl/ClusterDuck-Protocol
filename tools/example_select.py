@@ -1,7 +1,7 @@
 Import("env")
 import os
 
-example_dir = os.getenv("EXAMPLE_DIR", "Basic-Ducks/MamaDuck")
+example_dir = os.getenv("EXAMPLE_DIR") or env.GetProjectOption("custom_example", "Basic-Ducks/MamaDuck")
 env['PROJECT_SRC_DIR'] = env['PROJECT_DIR'] + "/examples/" + example_dir
 env['PROJECTSRC_DIR'] = env['PROJECT_DIR'] + "/examples/" + example_dir
 

@@ -1,4 +1,5 @@
 #include "DuckLoRa.h"
+#include <SPI.h>
 #ifdef CDPCFG_RADIO_SX1262
 #define DUCK_RADIO_IRQ_TIMEOUT RADIOLIB_SX126X_IRQ_TIMEOUT
 #define DUCK_RADIO_IRQ_TX_DONE RADIOLIB_SX126X_IRQ_TX_DONE
@@ -92,6 +93,12 @@ int DuckLoRa::setupRadio(const LoRaConfigParams &config) {
         return DUCK_ERR_NONE;
     }
 
+    // Start non-default board SPI pins before RadioLib's default SPI.begin().
+    // ESP32 preserves the configuration of an already-started SPI bus.
+#if defined(CDPCFG_PIN_LORA_SCK) && defined(CDPCFG_PIN_LORA_MISO) && defined(CDPCFG_PIN_LORA_MOSI)
+    SPI.begin(CDPCFG_PIN_LORA_SCK, CDPCFG_PIN_LORA_MISO,
+              CDPCFG_PIN_LORA_MOSI, CDPCFG_PIN_LORA_CS);
+#endif
     rc = lora.begin();
     if (rc != RADIOLIB_ERR_NONE) {
         logerr_ln("ERROR  initializing LoRa driver. state = %d", rc);
